@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: mge-social-command-center
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: YOUTUBE_API_KEY
+        sync: false
+      - key: YOUTUBE_CHANNEL_ID
+        sync: false
+      - key: FACEBOOK_PAGE_TOKEN
+        sync: false
+      - key: FACEBOOK_APP_ID
+        sync: false
+      - key: FACEBOOK_PAGE_ID
+        sync: false
+      - key: INSTAGRAM_TOKEN
+        sync: false
+      - key: INSTAGRAM_USER_ID
+        sync: false
+      - key: LINKEDIN_TOKEN
+        sync: false
+      - key: LINKEDIN_ORG_ID
+        sync: false
+      - key: DASHBOARD_PASSWORD
+        sync: false
