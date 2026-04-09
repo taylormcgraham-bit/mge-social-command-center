@@ -7,584 +7,751 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #F7F8FC; color: #1B2559; overflow-x: hidden; }
-        header { background: linear-gradient(135deg, #003B71 0%, #004B8F 100%); color: white; padding: 20px 40px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 100; }
-        .header-left { display: flex; align-items: center; gap: 20px; }
-        .header-title { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
-        .header-title-sub { font-size: 12px; opacity: 0.8; margin-top: 2px; }
-        .live-indicator { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.1); padding: 10px 16px; border-radius: 50px; font-size: 13px; font-weight: 600; }
-        .live-dot { width: 10px; height: 10px; background-color: #22C55E; border-radius: 50%; animation: pulse 2s infinite; }
-        @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.7; transform: scale(1.1); } }
-        .header-right { display: flex; align-items: center; gap: 30px; font-size: 13px; }
+        html, body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #F7F8FC; color: #1B2559; overflow-x: hidden;
+        }
+
+        /* --- Header --- */
+        header {
+            background: linear-gradient(135deg, #003B71 0%, #004B8F 100%);
+            color: white; padding: 18px 36px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+            display: flex; justify-content: space-between; align-items: center;
+            position: relative; z-index: 100;
+        }
+        .header-left { display: flex; align-items: center; gap: 18px; }
+        .header-title { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+        .header-title-sub { font-size: 11px; opacity: 0.8; margin-top: 2px; }
+        .live-indicator {
+            display: flex; align-items: center; gap: 8px;
+            background: rgba(255,255,255,0.1); padding: 8px 14px;
+            border-radius: 50px; font-size: 12px; font-weight: 600;
+        }
+        .live-dot {
+            width: 9px; height: 9px; background-color: #22C55E;
+            border-radius: 50%; animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.7; transform:scale(1.15); } }
+        .header-right { display: flex; align-items: center; gap: 24px; font-size: 12px; }
         .refresh-info { text-align: right; }
         .refresh-countdown { font-weight: 600; color: #FFD700; }
-        .loading-bar { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #003B71, #00A651, #003B71); width: 0%; z-index: 1000; transition: none; }
+
+        /* --- Loading bar --- */
+        .loading-bar {
+            position: fixed; top: 0; left: 0; height: 3px;
+            background: linear-gradient(90deg, #003B71, #00A651, #003B71);
+            width: 0%; z-index: 1000; transition: none;
+        }
         .loading-bar.active { animation: loading 1.5s ease-in-out; }
-        @keyframes loading { 0% { width: 0%; } 50% { width: 70%; } 100% { width: 100%; } }
-        .tab-container { display: flex; gap: 0; border-bottom: 2px solid #E5E7EB; background: white; padding: 0 40px; position: sticky; top: 0; z-index: 99; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .tab { padding: 16px 24px; font-size: 15px; font-weight: 600; cursor: pointer; color: #8F9BBA; border-bottom: 3px solid transparent; transition: all 0.3s ease; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
-        .tab:hover { color: #1B2559; }
-        .tab.active { color: #003B71; border-bottom-color: #003B71; }
-        .tab.active.facebook-active { border-bottom-color: #1877F2; color: #1877F2; }
-        .tab.active.instagram-active { border-bottom-color: #E1306C; color: #E1306C; }
-        .tab.active.linkedin-active { border-bottom-color: #0A66C2; color: #0A66C2; }
-        .tab.active.youtube-active { border-bottom-color: #FF0000; color: #FF0000; }
-        .main-container { padding: 40px; max-width: 1600px; margin: 0 auto; }
-        .card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); transition: all 0.3s ease; }
-        .card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.12); transform: translateY(-2px); }
-        .card.highlight { animation: highlight-flash 0.6s ease-in-out; }
-        @keyframes highlight-flash { 0% { background-color: #FFF9E6; } 100% { background-color: white; } }
-        .platform-banner { background: linear-gradient(135deg, #1877F2 0%, #0A66C2 100%); color: white; padding: 32px 24px; border-radius: 16px; margin-bottom: 32px; display: flex; justify-content: space-between; align-items: center; }
-        .platform-banner.instagram { background: linear-gradient(135deg, #833AB4 0%, #E1306C 50%, #F77737 100%); }
-        .platform-banner.linkedin { background: linear-gradient(135deg, #0A66C2 0%, #004B96 100%); }
-        .platform-banner.youtube { background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%); }
-        .platform-banner-left { display: flex; align-items: center; gap: 20px; }
-        .platform-banner-icon { font-size: 48px; }
-        .platform-banner-text h2 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
-        .platform-banner-text p { font-size: 14px; opacity: 0.9; }
-        .platform-banner-right { text-align: right; }
-        .platform-banner-number { font-size: 36px; font-weight: 700; }
-        .platform-banner-label { font-size: 13px; opacity: 0.9; margin-top: 4px; }
-        .connection-badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-top: 12px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); }
-        .connection-badge.connected { background: rgba(34,197,94,0.3); border-color: rgba(34,197,94,0.5); color: #22C55E; }
-        .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 32px; }
-        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 32px; margin-bottom: 32px; }
-        .grid-2-strict { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 32px; }
-        .kpi-card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border-left: 4px solid #003B71; transition: all 0.3s ease; }
-        .kpi-card.facebook { border-left-color: #1877F2; }
-        .kpi-card.instagram { border-left-color: #E1306C; }
-        .kpi-card.linkedin { border-left-color: #0A66C2; }
-        .kpi-card.youtube { border-left-color: #FF0000; }
-        .kpi-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.12); transform: translateY(-2px); }
-        .kpi-label { font-size: 12px; color: #8F9BBA; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-        .kpi-value { font-size: 28px; font-weight: 700; color: #1B2559; font-variant-numeric: tabular-nums; }
-        .kpi-sub { font-size: 13px; color: #8F9BBA; margin-top: 6px; }
-        .sentiment-gauge-container { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; margin-bottom: 32px; }
-        .sentiment-gauge-label { font-size: 14px; color: #8F9BBA; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 30px; }
-        .gauge-svg { width: 300px; height: 300px; margin-bottom: 20px; }
-        .gauge-center-text { font-size: 48px; font-weight: 700; color: #1B2559; text-align: center; margin-top: -80px; position: relative; z-index: 2; }
-        .gauge-center-label { font-size: 12px; color: #8F9BBA; font-weight: 600; margin-top: 8px; }
-        .platform-sentiment-card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border-left: 4px solid; transition: all 0.3s ease; display: flex; flex-direction: column; gap: 12px; }
-        .platform-sentiment-card.facebook { border-left-color: #1877F2; }
-        .platform-sentiment-card.instagram { border-left-color: #E1306C; }
-        .platform-sentiment-card.linkedin { border-left-color: #0A66C2; }
-        .platform-sentiment-card.youtube { border-left-color: #FF0000; }
-        .platform-sentiment-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.12); transform: translateY(-2px); }
-        .platform-sentiment-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-        .platform-sentiment-icon { font-size: 24px; }
-        .platform-sentiment-name { font-size: 14px; font-weight: 600; color: #1B2559; }
-        .mini-gauge { width: 80px; height: 80px; margin: 0 auto; }
-        .platform-sentiment-metrics { display: flex; justify-content: space-between; font-size: 13px; text-align: center; gap: 8px; }
-        .metric-item { flex: 1; }
-        .metric-label { font-size: 11px; color: #8F9BBA; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
-        .metric-value { font-size: 16px; font-weight: 700; color: #1B2559; margin-top: 4px; }
-        .platform-sentiment-status { display: flex; justify-content: center; margin-top: 8px; }
-        .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; background: #E5E7EB; color: #6B7280; }
-        .status-badge.connected { background: #DCFCE7; color: #22C55E; }
-        .chart-container { position: relative; height: 300px; margin-bottom: 24px; }
-        .chart-title { font-size: 16px; font-weight: 700; color: #1B2559; margin-bottom: 16px; }
-        .activity-feed { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); max-height: 600px; overflow-y: auto; margin-bottom: 32px; }
-        .activity-feed-title { font-size: 16px; font-weight: 700; color: #1B2559; margin-bottom: 20px; }
-        .activity-item { display: flex; gap: 16px; padding: 16px; border-radius: 12px; background: #F9FAFB; margin-bottom: 12px; transition: all 0.3s ease; animation: slideInActivity 0.4s ease-out; }
-        @keyframes slideInActivity { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        .activity-item:hover { background: #F3F4F6; transform: translateX(4px); }
-        .activity-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
-        .activity-content { flex: 1; min-width: 0; }
-        .activity-author { font-size: 13px; font-weight: 600; color: #1B2559; margin-bottom: 4px; }
-        .activity-platform { font-size: 11px; color: #8F9BBA; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
-        .activity-text { font-size: 13px; color: #1B2559; margin-top: 8px; line-height: 1.4; word-break: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .activity-meta { display: flex; gap: 12px; margin-top: 10px; font-size: 12px; color: #8F9BBA; }
-        .sentiment-badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; background: #F3F4F6; color: #6B7280; }
-        .sentiment-badge.positive { background: #DCFCE7; color: #22C55E; }
-        .sentiment-badge.neutral { background: #FEF3C7; color: #F59E0B; }
-        .sentiment-badge.negative { background: #FEE2E2; color: #EF4444; }
-        .post-card { background: white; border-radius: 12px; padding: 16px; border: 1px solid #E5E7EB; transition: all 0.3s ease; margin-bottom: 12px; }
-        .post-card:hover { border-color: #D1D5DB; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-        .post-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; gap: 12px; }
-        .post-date { font-size: 12px; color: #8F9BBA; font-weight: 500; white-space: nowrap; }
-        .post-content { font-size: 13px; line-height: 1.5; color: #1B2559; margin-bottom: 12px; }
-        .post-thumbnail { width: 100%; height: 120px; background: #F3F4F6; border-radius: 8px; margin-bottom: 12px; object-fit: cover; display: none; }
-        .post-thumbnail.show { display: block; }
-        .post-metrics { display: flex; gap: 16px; font-size: 12px; color: #8F9BBA; border-top: 1px solid #F3F4F6; padding-top: 12px; }
-        .post-metric { display: flex; gap: 4px; align-items: center; }
-        .comment-card { background: white; border-radius: 12px; padding: 16px; border-left: 3px solid #E5E7EB; transition: all 0.3s ease; margin-bottom: 12px; }
-        .comment-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); transform: translateX(4px); }
-        .comment-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-        .comment-avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #003B71, #00A651); display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; font-weight: 700; flex-shrink: 0; }
-        .comment-info { flex: 1; }
+        @keyframes loading { 0%{width:0%} 50%{width:70%} 100%{width:100%} }
+
+        /* --- Platform connection strip --- */
+        .platform-strip {
+            display: flex; gap: 10px; padding: 12px 36px;
+            background: white; border-bottom: 1px solid #E5E7EB;
+            flex-wrap: wrap; align-items: center;
+        }
+        .platform-strip-label { font-size: 12px; font-weight: 600; color: #8F9BBA; margin-right: 6px; }
+        .platform-chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 5px 14px; border-radius: 20px;
+            font-size: 12px; font-weight: 600; color: white;
+        }
+        .platform-chip.fb  { background: #1877F2; }
+        .platform-chip.ig  { background: #E1306C; }
+        .platform-chip.li  { background: #0A66C2; }
+        .platform-chip.yt  { background: #FF0000; }
+        .platform-chip.off { background: #CBD5E1; color: #64748B; }
+        .chip-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.6); }
+        .chip-dot.on  { background: #86EFAC; }
+
+        /* --- Quota warning --- */
+        .quota-banner {
+            display: none; padding: 10px 36px;
+            background: #FEF3C7; border-bottom: 1px solid #FDE68A;
+            font-size: 13px; color: #92400E;
+        }
+        .quota-banner.visible { display: block; }
+
+        /* --- Two-column layout --- */
+        .main-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 24px; padding: 28px 36px; max-width: 1600px; margin: 0 auto;
+        }
+        @media (max-width: 960px) { .main-grid { grid-template-columns: 1fr; } }
+
+        /* --- Cards --- */
+        .card {
+            background: white; border-radius: 14px; padding: 22px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+        }
+        .card-title {
+            font-size: 14px; font-weight: 700; color: #8F9BBA;
+            text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px;
+        }
+
+        /* --- Sentiment gauge --- */
+        .sentiment-gauge { text-align: center; padding: 10px 0; }
+        .gauge-score { font-size: 48px; font-weight: 800; color: #003B71; }
+        .gauge-label { font-size: 14px; color: #8F9BBA; margin-top: 4px; }
+        .platform-sentiments {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 10px; margin-top: 18px;
+        }
+        .plat-sent {
+            text-align: center; padding: 10px 6px;
+            border-radius: 10px; background: #F8FAFC;
+        }
+        .plat-sent-name { font-size: 11px; font-weight: 600; color: #64748B; margin-bottom: 4px; }
+        .plat-sent-score { font-size: 22px; font-weight: 700; }
+        .plat-sent-score.positive { color: #16A34A; }
+        .plat-sent-score.neutral  { color: #CA8A04; }
+        .plat-sent-score.negative { color: #DC2626; }
+
+        /* --- Comment feed --- */
+        .comment-feed { max-height: 520px; overflow-y: auto; }
+        .comment-feed::-webkit-scrollbar { width: 5px; }
+        .comment-feed::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+        .comment-item {
+            padding: 12px 0; border-bottom: 1px solid #F1F5F9;
+            display: flex; gap: 10px; align-items: flex-start;
+        }
+        .comment-item:last-child { border-bottom: none; }
+        .comment-platform {
+            flex-shrink: 0; width: 32px; height: 32px;
+            border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; color: white; font-size: 13px; font-weight: 700;
+        }
+        .comment-platform.fb { background: #1877F2; }
+        .comment-platform.ig { background: #E1306C; }
+        .comment-platform.li { background: #0A66C2; }
+        .comment-platform.yt { background: #FF0000; }
+        .comment-body { flex: 1; min-width: 0; }
         .comment-author { font-size: 13px; font-weight: 600; color: #1B2559; }
-        .comment-meta { font-size: 12px; color: #8F9BBA; margin-top: 2px; }
-        .comment-text { font-size: 13px; line-height: 1.5; color: #1B2559; margin-bottom: 12px; word-break: break-word; }
-        .comment-footer { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #8F9BBA; }
-        .comment-sentiment { font-weight: 600; }
-        .hidden { display: none !important; }
-        .tab-content { animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .no-data-message { background: #F9FAFB; border: 2px dashed #E5E7EB; border-radius: 12px; padding: 24px; text-align: center; color: #8F9BBA; font-size: 13px; margin: 20px 0; }
-        .number-animate { font-variant-numeric: tabular-nums; }
-        .activity-feed::-webkit-scrollbar, .comment-list::-webkit-scrollbar { width: 6px; }
-        .activity-feed::-webkit-scrollbar-track, .comment-list::-webkit-scrollbar-track { background: #F3F4F6; border-radius: 10px; }
-        .activity-feed::-webkit-scrollbar-thumb, .comment-list::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 10px; }
-        .activity-feed::-webkit-scrollbar-thumb:hover, .comment-list::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
-        @media (max-width: 1024px) { .main-container { padding: 24px; } .grid-2-strict { grid-template-columns: 1fr; } header { flex-direction: column; gap: 20px; align-items: flex-start; } .header-right { flex-direction: column; gap: 12px; align-items: flex-start; width: 100%; font-size: 12px; } .tab-container { padding: 0 24px; overflow-x: auto; } .platform-banner { flex-direction: column; align-items: flex-start; gap: 16px; } .platform-banner-right { text-align: left; } .gauge-svg { width: 200px; height: 200px; } .gauge-center-text { font-size: 36px; margin-top: -60px; } }
-    
-        /* Enhanced YouTube-style comment cards */
-        .comment-card { background: white; border-radius: 12px; padding: 16px; border-left: 3px solid #E5E7EB; transition: all 0.3s ease; margin-bottom: 12px; opacity: 1; }
-        .comment-card.fade-in { animation: commentFadeIn 0.4s ease-out; }
-        @keyframes commentFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        .comment-video-context { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #F8F9FC; border-radius: 8px; margin-bottom: 12px; cursor: default; }
-        .comment-video-thumb { width: 64px; height: 36px; border-radius: 4px; object-fit: cover; flex-shrink: 0; background: #E5E7EB; }
-        .comment-video-title { font-size: 12px; font-weight: 600; color: #1B2559; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .comment-avatar-img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid #F3F4F6; }
-        .comment-actions { display: flex; align-items: center; gap: 16px; font-size: 12px; color: #8F9BBA; }
-        .comment-action { display: flex; align-items: center; gap: 4px; }
-        .comment-action svg { width: 14px; height: 14px; }
-        .comment-card:hover { border-left-color: #FF0000; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
-        .comment-card.youtube-card { border-left-color: #FF000040; }
-        .comment-card.facebook-card { border-left-color: #1877F240; }
-        .comment-card.instagram-card { border-left-color: #E1306C40; }
-        .comment-card.linkedin-card { border-left-color: #0A66C240; }
-        .comment-card.youtube-card:hover { border-left-color: #FF0000; }
-        .comment-card.facebook-card:hover { border-left-color: #1877F2; }
-        .comment-card.instagram-card:hover { border-left-color: #E1306C; }
-        .comment-card.linkedin-card:hover { border-left-color: #0A66C2; }
-        .comment-list { transition: opacity 0.2s ease; }
-        .comment-list.refreshing { opacity: 0.6; }
-    
-        .quota-warning { position: fixed; top: 0; left: 0; right: 0; background: linear-gradient(135deg, #F59E0B, #D97706); color: white; padding: 12px 40px; text-align: center; font-weight: 600; font-size: 14px; z-index: 2000; display: none; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
-        .quota-warning.visible { display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .quota-warning .close-btn { cursor: pointer; background: rgba(255,255,255,0.3); border: none; color: white; border-radius: 50%; width: 24px; height: 24px; font-size: 16px; line-height: 24px; text-align: center; margin-left: 16px; }
-        </style>
+        .comment-text { font-size: 13px; color: #475569; margin-top: 3px; line-height: 1.45; }
+        .comment-meta { font-size: 11px; color: #94A3B8; margin-top: 4px; display: flex; gap: 10px; }
+        .comment-sentiment {
+            display: inline-block; padding: 1px 8px; border-radius: 10px;
+            font-size: 10px; font-weight: 600;
+        }
+        .comment-sentiment.positive { background: #DCFCE7; color: #16A34A; }
+        .comment-sentiment.neutral  { background: #FEF9C3; color: #CA8A04; }
+        .comment-sentiment.negative { background: #FEE2E2; color: #DC2626; }
+
+        /* --- KPI cards --- */
+        .kpi-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+        }
+        .kpi-card {
+            background: #F8FAFC; border-radius: 12px; padding: 18px;
+            text-align: center;
+        }
+        .kpi-value { font-size: 32px; font-weight: 800; color: #003B71; }
+        .kpi-label { font-size: 12px; font-weight: 600; color: #8F9BBA; margin-top: 4px; }
+
+        /* --- Engagement by platform --- */
+        .platform-engagement {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 10px; margin-top: 14px;
+        }
+        .plat-eng {
+            text-align: center; padding: 14px 6px; border-radius: 10px;
+        }
+        .plat-eng.fb { background: #EBF5FF; }
+        .plat-eng.ig { background: #FDF2F8; }
+        .plat-eng.li { background: #EFF6FF; }
+        .plat-eng.yt { background: #FEF2F2; }
+        .plat-eng-name { font-size: 11px; font-weight: 600; color: #64748B; margin-bottom: 4px; }
+        .plat-eng-value { font-size: 20px; font-weight: 700; color: #1B2559; }
+        .plat-eng-label { font-size: 10px; color: #94A3B8; margin-top: 2px; }
+
+        /* --- Charts --- */
+        .chart-container { position: relative; height: 240px; margin-top: 8px; }
+        .chart-row { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; }
+
+        /* --- Empty state --- */
+        .empty-state {
+            text-align: center; padding: 40px 20px; color: #94A3B8;
+        }
+        .empty-state-icon { font-size: 28px; margin-bottom: 8px; }
+        .empty-state-text { font-size: 14px; }
+    </style>
 </head>
 <body>
-    <div class="loading-bar" id="loadingBar"></div><div id="quotaWarning" class="quota-warning"><span>[!] API quota exceeded for one or more platforms. Some data may be stale or unavailable.</span><button class="close-btn" onclick="this.parentElement.classList.remove('visible')">&times;</button></div>
-    <header>
-        <div class="header-left">
-            <div>
-                <div class="header-title">MGE Social Command Center</div>
-                <div class="header-title-sub">Real-time Engagement & Sentiment Monitoring</div>
-            </div>
+
+<div class="loading-bar" id="loadingBar"></div>
+
+<!-- Header -->
+<header>
+    <div class="header-left">
+        <div>
+            <div class="header-title">MGE Social Command Center</div>
+            <div class="header-title-sub">Madison Gas and Electric - Social Media Dashboard</div>
         </div>
         <div class="live-indicator">
             <div class="live-dot"></div>
             <span>LIVE</span>
         </div>
-        <div class="header-right">
-            <div class="refresh-info">
-                <div>Last refreshed: <span id="lastRefreshTime">now</span></div>
-                <div class="refresh-countdown">Next refresh in: <span id="refreshCountdown">60m</span></div>
+    </div>
+    <div class="header-right">
+        <div class="refresh-info">
+            <div>Next refresh in <span class="refresh-countdown" id="countdown">--:--</span></div>
+            <div id="lastUpdated" style="opacity:0.7; margin-top:2px;">--</div>
+        </div>
+    </div>
+</header>
+
+<!-- Platform connection strip -->
+<div class="platform-strip" id="platformStrip">
+    <span class="platform-strip-label">Platforms:</span>
+    <span class="platform-chip off" id="chipFB"><span class="chip-dot"></span> Facebook</span>
+    <span class="platform-chip off" id="chipIG"><span class="chip-dot"></span> Instagram</span>
+    <span class="platform-chip off" id="chipLI"><span class="chip-dot"></span> LinkedIn</span>
+    <span class="platform-chip off" id="chipYT"><span class="chip-dot"></span> YouTube</span>
+</div>
+
+<!-- Quota warning banner -->
+<div class="quota-banner" id="quotaBanner">
+    [!] API quota limit reached for one or more platforms. Some data may be incomplete. Quotas typically reset at midnight Pacific Time.
+</div>
+
+<!-- Main two-column grid -->
+<div class="main-grid">
+
+    <!-- ==================== LEFT COLUMN: Comments + Sentiment ==================== -->
+    <div class="left-col">
+
+        <!-- Overall Sentiment -->
+        <div class="card" style="margin-bottom:24px;">
+            <div class="card-title">Audience Sentiment</div>
+            <div class="sentiment-gauge">
+                <div class="gauge-score" id="overallScore">--</div>
+                <div class="gauge-label" id="overallLabel">Analyzing comments...</div>
+            </div>
+            <div class="platform-sentiments" id="platformSentiments">
+                <div class="plat-sent"><div class="plat-sent-name">Facebook</div><div class="plat-sent-score neutral" id="sentFB">--</div></div>
+                <div class="plat-sent"><div class="plat-sent-name">Instagram</div><div class="plat-sent-score neutral" id="sentIG">--</div></div>
+                <div class="plat-sent"><div class="plat-sent-name">LinkedIn</div><div class="plat-sent-score neutral" id="sentLI">--</div></div>
+                <div class="plat-sent"><div class="plat-sent-name">YouTube</div><div class="plat-sent-score neutral" id="sentYT">--</div></div>
             </div>
         </div>
-    </header>
 
-    <div class="tab-container">
-        <div class="tab active" data-tab="overview">&#x1F4CA; Overview</div>
-        <div class="tab" data-tab="facebook">&#x1F4D8; Facebook</div>
-        <div class="tab" data-tab="instagram">&#x1F4F8; Instagram</div>
-        <div class="tab" data-tab="linkedin">&#x1F4BC; LinkedIn</div>
-        <div class="tab" data-tab="youtube">&#x25B6;&#xEF;&#xB8;&#x8F; YouTube</div>
+        <!-- Live Comment Feed -->
+        <div class="card">
+            <div class="card-title">Live Comment Feed <span id="commentCount" style="font-weight:400; text-transform:none; letter-spacing:0;"></span></div>
+            <div class="comment-feed" id="commentFeed">
+                <div class="empty-state">
+                    <div class="empty-state-icon">[ ]</div>
+                    <div class="empty-state-text">Loading comments...</div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="main-container">
-        <div id="overview" class="tab-content">
-            <div class="card sentiment-gauge-container">
-                <div class="sentiment-gauge-label">Overall Audience Sentiment</div>
-                <svg class="gauge-svg" id="mainGauge" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M 30 100 A 70 70 0 0 1 170 100" stroke="#E5E7EB" stroke-width="12" fill="none" stroke-linecap="round"/>
-                    <path class="sentiment-arc" d="M 30 100 A 70 70 0 0 1 170 100" stroke="#22C55E" stroke-width="12" fill="none" stroke-linecap="round" style="stroke-dasharray: 0, 219; transition: stroke-dasharray 1s ease-out;"/>
-                </svg>
-                <div class="gauge-center-text"><span id="mainSentimentScore">0</span></div>
-                <div class="gauge-center-label">out of 100</div>
-            </div>
+    <!-- ==================== RIGHT COLUMN: KPIs + Charts ==================== -->
+    <div class="right-col">
 
-            <div class="grid-4">
-                <div class="platform-sentiment-card facebook">
-                    <div class="platform-sentiment-header">
-                        <div class="platform-sentiment-icon">&#x1F4D8;</div>
-                        <div class="platform-sentiment-name">Facebook</div>
-                    </div>
-                    <svg class="mini-gauge" id="facebookGauge" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="50" cy="50" r="40" stroke="#E5E7EB" stroke-width="8" fill="none"/>
-                        <circle class="sentiment-arc-mini" cx="50" cy="50" r="40" stroke="#1877F2" stroke-width="8" fill="none" style="stroke-dasharray: 0, 251.3; stroke-dashoffset: 0; transform: rotate(-90deg); transform-origin: 50px 50px; transition: stroke-dasharray 0.8s ease-out;"/>
-                        <text x="50" y="55" text-anchor="middle" font-size="20" font-weight="700" fill="#1B2559" id="facebookSentimentText">0</text>
-                    </svg>
-                    <div class="platform-sentiment-metrics">
-                        <div class="metric-item">
-                            <div class="metric-label">Followers</div>
-                            <div class="metric-value" id="facebookFollowers">0</div>
-                        </div>
-                        <div class="metric-item">
-                            <div class="metric-label">Engagement</div>
-                            <div class="metric-value" id="facebookEngagement">0%</div>
-                        </div>
-                    </div>
-                    <div class="platform-sentiment-status">
-                        <span class="status-badge" id="facebookStatus">Not Connected</span>
-                    </div>
+        <!-- Engagement KPIs -->
+        <div class="card" style="margin-bottom:24px;">
+            <div class="card-title">Engagement Overview</div>
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-value" id="kpiReactions">0</div>
+                    <div class="kpi-label">Total Reactions</div>
                 </div>
-
-                <div class="platform-sentiment-card instagram">
-                    <div class="platform-sentiment-header">
-                        <div class="platform-sentiment-icon">&#x1F4F8;</div>
-                        <div class="platform-sentiment-name">Instagram</div>
-                    </div>
-                    <svg class="mini-gauge" id="instagramGauge" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="50" cy="50" r="40" stroke="#E5E7EB" stroke-width="8" fill="none"/>
-                        <circle class="sentiment-arc-mini" cx="50" cy="50" r="40" stroke="#E1306C" stroke-width="8" fill="none" style="stroke-dasharray: 0, 251.3; stroke-dashoffset: 0; transform: rotate(-90deg); transform-origin: 50px 50px; transition: stroke-dasharray 0.8s ease-out;"/>
-                        <text x="50" y="55" text-anchor="middle" font-size="20" font-weight="700" fill="#1B2559" id="instagramSentimentText">0</text>
-                    </svg>
-                    <div class="platform-sentiment-metrics">
-                        <div class="metric-item">
-                            <div class="metric-label">Followers</div>
-                            <div class="metric-value" id="instagramFollowers">0</div>
-                        </div>
-                        <div class="metric-item">
-                            <div class="metric-label">Engagement</div>
-                            <div class="metric-value" id="instagramEngagement">0%</div>
-                        </div>
-                    </div>
-                    <div class="platform-sentiment-status">
-                        <span class="status-badge" id="instagramStatus">Not Connected</span>
-                    </div>
+                <div class="kpi-card">
+                    <div class="kpi-value" id="kpiComments">0</div>
+                    <div class="kpi-label">Total Comments</div>
                 </div>
-
-                <div class="platform-sentiment-card linkedin">
-                    <div class="platform-sentiment-header">
-                        <div class="platform-sentiment-icon">&#x1F4BC;</div>
-                        <div class="platform-sentiment-name">LinkedIn</div>
-                    </div>
-                    <svg class="mini-gauge" id="linkedinGauge" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="50" cy="50" r="40" stroke="#E5E7EB" stroke-width="8" fill="none"/>
-                        <circle class="sentiment-arc-mini" cx="50" cy="50" r="40" stroke="#0A66C2" stroke-width="8" fill="none" style="stroke-dasharray: 0, 251.3; stroke-dashoffset: 0; transform: rotate(-90deg); transform-origin: 50px 50px; transition: stroke-dasharray 0.8s ease-out;"/>
-                        <text x="50" y="55" text-anchor="middle" font-size="20" font-weight="700" fill="#1B2559" id="linkedinSentimentText">0</text>
-                    </svg>
-                    <div class="platform-sentiment-metrics">
-                        <div class="metric-item">
-                            <div class="metric-label">Followers</div>
-                            <div class="metric-value" id="linkedinFollowers">0</div>
-                        </div>
-                        <div class="metric-item">
-                            <div class="metric-label">Engagement</div>
-                            <div class="metric-value" id="linkedinEngagement">0%</div>
-                        </div>
-                    </div>
-                    <div class="platform-sentiment-status">
-                        <span class="status-badge" id="linkedinStatus">Not Connected</span>
-                    </div>
+                <div class="kpi-card">
+                    <div class="kpi-value" id="kpiShares">0</div>
+                    <div class="kpi-label">Total Shares</div>
                 </div>
-
-                <div class="platform-sentiment-card youtube">
-                    <div class="platform-sentiment-header">
-                        <div class="platform-sentiment-icon">&#x25B6;&#xEF;&#xB8;&#x8F;</div>
-                        <div class="platform-sentiment-name">YouTube</div>
-                    </div>
-                    <svg class="mini-gauge" id="youtubeGauge" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="50" cy="50" r="40" stroke="#E5E7EB" stroke-width="8" fill="none"/>
-                        <circle class="sentiment-arc-mini" cx="50" cy="50" r="40" stroke="#FF0000" stroke-width="8" fill="none" style="stroke-dasharray: 0, 251.3; stroke-dashoffset: 0; transform: rotate(-90deg); transform-origin: 50px 50px; transition: stroke-dasharray 0.8s ease-out;"/>
-                        <text x="50" y="55" text-anchor="middle" font-size="20" font-weight="700" fill="#1B2559" id="youtubeSentimentText">0</text>
-                    </svg>
-                    <div class="platform-sentiment-metrics">
-                        <div class="metric-item">
-                            <div class="metric-label">Subscribers</div>
-                            <div class="metric-value" id="youtubeSubscribers">0</div>
-                        </div>
-                        <div class="metric-item">
-                            <div class="metric-label">Engagement</div>
-                            <div class="metric-value" id="youtubeEngagement">0%</div>
-                        </div>
-                    </div>
-                    <div class="platform-sentiment-status">
-                        <span class="status-badge" id="youtubeStatus">Not Connected</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid-2-strict">
-                <div class="card">
-                    <div class="chart-title">Engagement by Platform</div>
-                    <div class="chart-container">
-                        <canvas id="engagementChart"></canvas>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="chart-title">Sentiment Trend (Last 7 Days)</div>
-                    <div class="chart-container">
-                        <canvas id="sentimentTrendChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <div class="activity-feed">
-                <div class="activity-feed-title">Live Activity Feed</div>
-                <div id="activityFeed"></div>
-                <div id="noActivityMessage" class="no-data-message">
-                    No recent activity. Connect platforms to see live comments and posts.
-                </div>
-            </div>
-        </div>
-
-        <div id="facebook" class="tab-content hidden">
-            <div class="platform-banner facebook">
-                <div class="platform-banner-left">
-                    <div class="platform-banner-icon">&#x1F4D8;</div>
-                    <div class="platform-banner-text">
-                        <h2 id="facebookName">Facebook Page</h2>
-                        <p id="facebookUsername">@page</p>
-                        <span class="connection-badge" id="facebookConnectionBadge">Not Connected</span>
-                    </div>
-                </div>
-                <div class="platform-banner-right">
-                    <div class="platform-banner-number" id="facebookPageLikes">0</div>
-                    <div class="platform-banner-label">Page Likes</div>
-                </div>
-            </div>
-
-            <div class="grid-4">
-                <div class="kpi-card facebook">
-                    <div class="kpi-label">Total Followers</div>
-                    <div class="kpi-value" id="facebookKPILikes">0</div>
-                </div>
-                <div class="kpi-card facebook">
-                    <div class="kpi-label">Engagement Rate</div>
-                    <div class="kpi-value" id="facebookKPIEngagement">0%</div>
-                </div>
-                <div class="kpi-card facebook">
-                    <div class="kpi-label">Reactions (30d)</div>
-                    <div class="kpi-value" id="facebookKPIReactions">0</div>
-                </div>
-                <div class="kpi-card facebook">
-                    <div class="kpi-label">Avg Post Reach</div>
-                    <div class="kpi-value" id="facebookKPIReach">0</div>
-                </div>
-            </div>
-
-            <div class="grid-2">
-                <div class="card">
-                    <div class="chart-title">Recent Posts</div>
-                    <div id="facebookPostsList"></div>
-                    <div id="facebookNoPostsMessage" class="no-data-message hidden">
-                        No posts found. Connect your Facebook account to see posts.
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="chart-title">Sentiment Analysis</div>
-                    <div class="chart-container">
-                        <canvas id="facebookSentimentChart"></canvas>
-                    </div>
-                    <div style="text-align: center; margin-top: 16px;">
-                        <div style="font-size: 12px; color: #8F9BBA; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Sentiment Score</div>
-                        <div style="font-size: 28px; font-weight: 700; color: #1B2559; margin-top: 8px;" id="facebookSentimentScore">0</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="activity-feed">
-                <div class="activity-feed-title">Live Comments</div>
-                <div id="facebookCommentsList" class="comment-list"></div>
-                <div id="facebookNoCommentsMessage" class="no-data-message hidden">
-                    No comments yet. Connect your Facebook account to see live comments.
-                </div>
-            </div>
-        </div>
-
-        <div id="instagram" class="tab-content hidden">
-            <div class="platform-banner instagram">
-                <div class="platform-banner-left">
-                    <div class="platform-banner-icon">&#x1F4F8;</div>
-                    <div class="platform-banner-text">
-                        <h2 id="instagramName">Instagram Profile</h2>
-                        <p id="instagramUsername">@profile</p>
-                        <span class="connection-badge" id="instagramConnectionBadge">Not Connected</span>
-                    </div>
-                </div>
-                <div class="platform-banner-right">
-                    <div class="platform-banner-number" id="instagramFollowerCount">0</div>
-                    <div class="platform-banner-label">Followers</div>
-                </div>
-            </div>
-
-            <div class="grid-4">
-                <div class="kpi-card instagram">
-                    <div class="kpi-label">Followers</div>
-                    <div class="kpi-value" id="instagramKPIFollowers">0</div>
-                </div>
-                <div class="kpi-card instagram">
-                    <div class="kpi-label">Engagement Rate</div>
-                    <div class="kpi-value" id="instagramKPIEngagement">0%</div>
-                </div>
-                <div class="kpi-card instagram">
-                    <div class="kpi-label">Avg Likes</div>
-                    <div class="kpi-value" id="instagramKPILikes">0</div>
-                </div>
-                <div class="kpi-card instagram">
-                    <div class="kpi-label">Media Count</div>
-                    <div class="kpi-value" id="instagramKPIMedia">0</div>
-                </div>
-            </div>
-
-            <div class="grid-2">
-                <div class="card">
-                    <div class="chart-title">Recent Media</div>
-                    <div id="instagramPostsList"></div>
-                    <div id="instagramNoPostsMessage" class="no-data-message hidden">
-                        No media found. Connect your Instagram account to see posts.
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="chart-title">Sentiment Analysis</div>
-                    <div class="chart-container">
-                        <canvas id="instagramSentimentChart"></canvas>
-                    </div>
-                    <div style="text-align: center; margin-top: 16px;">
-                        <div style="font-size: 12px; color: #8F9BBA; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Sentiment Score</div>
-                        <div style="font-size: 28px; font-weight: 700; color: #1B2559; margin-top: 8px;" id="instagramSentimentScore">0</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="activity-feed">
-                <div class="activity-feed-title">Live Comments</div>
-                <div id="instagramCommentsList" class="comment-list"></div>
-                <div id="instagramNoCommentsMessage" class="no-data-message hidden">
-                    No comments yet. Connect your Instagram account to see live comments.
-                </div>
-            </div>
-        </div>
-
-        <div id="linkedin" class="tab-content hidden">
-            <div class="platform-banner linkedin">
-                <div class="platform-banner-left">
-                    <div class="platform-banner-icon">&#x1F4BC;</div>
-                    <div class="platform-banner-text">
-                        <h2 id="linkedinName">LinkedIn Company Page</h2>
-                        <p id="linkedinUsername">@company</p>
-                        <span class="connection-badge" id="linkedinConnectionBadge">Not Connected</span>
-                    </div>
-                </div>
-                <div class="platform-banner-right">
-                    <div class="platform-banner-number" id="linkedinFollowerCount">0</div>
-                    <div class="platform-banner-label">Followers</div>
-                </div>
-            </div>
-
-            <div class="grid-4">
-                <div class="kpi-card linkedin">
-                    <div class="kpi-label">Followers</div>
-                    <div class="kpi-value" id="linkedinKPIFollowers">0</div>
-                </div>
-                <div class="kpi-card linkedin">
-                    <div class="kpi-label">Engagement Rate</div>
-                    <div class="kpi-value" id="linkedinKPIEngagement">0%</div>
-                </div>
-                <div class="kpi-card linkedin">
-                    <div class="kpi-label">Avg Reactions</div>
-                    <div class="kpi-value" id="linkedinKPIReactions">0</div>
-                </div>
-                <div class="kpi-card linkedin">
-                    <div class="kpi-label">Post Count</div>
-                    <div class="kpi-value" id="linkedinKPIPosts">0</div>
-                </div>
-            </div>
-
-            <div class="grid-2">
-                <div class="card">
-                    <div class="chart-title">Recent Posts</div>
-                    <div id="linkedinPostsList"></div>
-                    <div id="linkedinNoPostsMessage" class="no-data-message hidden">
-                        No posts found. Connect your LinkedIn account to see posts.
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="chart-title">Sentiment Analysis</div>
-                    <div class="chart-container">
-                        <canvas id="linkedinSentimentChart"></canvas>
-                    </div>
-                    <div style="text-align: center; margin-top: 16px;">
-                        <div style="font-size: 12px; color: #8F9BBA; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Sentiment Score</div>
-                        <div style="font-size: 28px; font-weight: 700; color: #1B2559; margin-top: 8px;" id="linkedinSentimentScore">0</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="activity-feed">
-                <div class="activity-feed-title">Live Comments</div>
-                <div id="linkedinCommentsList" class="comment-list"></div>
-                <div id="linkedinNoCommentsMessage" class="no-data-message hidden">
-                    No comments yet. Connect your LinkedIn account to see live comments.
-                </div>
-            </div>
-        </div>
-
-        <div id="youtube" class="tab-content hidden">
-            <div class="platform-banner youtube">
-                <div class="platform-banner-left">
-                    <div class="platform-banner-icon">&#x25B6;&#xEF;&#xB8;&#x8F;</div>
-                    <div class="platform-banner-text">
-                        <h2 id="youtubeName">YouTube Channel</h2>
-                        <p id="youtubeUsername">@channel</p>
-                        <span class="connection-badge" id="youtubeConnectionBadge">Not Connected</span>
-                    </div>
-                </div>
-                <div class="platform-banner-right">
-                    <div class="platform-banner-number" id="youtubeSubscriberCount">0</div>
-                    <div class="platform-banner-label">Subscribers</div>
-                </div>
-            </div>
-
-            <div class="grid-4">
-                <div class="kpi-card youtube">
-                    <div class="kpi-label">Subscribers</div>
-                    <div class="kpi-value" id="youtubeKPISubscribers">0</div>
-                </div>
-                <div class="kpi-card youtube">
+                <div class="kpi-card">
+                    <div class="kpi-value" id="kpiViews">0</div>
                     <div class="kpi-label">Total Views</div>
-                    <div class="kpi-value" id="youtubeKPIViews">0</div>
-                </div>
-                <div class="kpi-card youtube">
-                    <div class="kpi-label">Avg Video Views</div>
-                    <div class="kpi-value" id="youtubeKPIAvgViews">0</div>
-                </div>
-                <div class="kpi-card youtube">
-                    <div class="kpi-label">Avg Engagement</div>
-                    <div class="kpi-value" id="youtubeKPIEngagement">0%</div>
-                </div>
-            </div>
-
-            <div class="grid-2">
-                <div class="card">
-                    <div class="chart-title">Recent Videos</div>
-                    <div id="youtubePostsList"></div>
-                    <div id="youtubeNoPostsMessage" class="no-data-message hidden">
-                        No videos found. Connect your YouTube channel to see videos.
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="chart-title">Sentiment Analysis</div>
-                    <div class="chart-container">
-                        <canvas id="youtubeSentimentChart"></canvas>
-                    </div>
-                    <div style="text-align: center; margin-top: 16px;">
-                        <div style="font-size: 12px; color: #8F9BBA; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Sentiment Score</div>
-                        <div style="font-size: 28px; font-weight: 700; color: #1B2559; margin-top: 8px;" id="youtubeSentimentScore">0</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="activity-feed">
-                <div class="activity-feed-title">Live Comments</div>
-                <div id="youtubeCommentsList" class="comment-list"></div>
-                <div id="youtubeNoCommentsMessage" class="no-data-message hidden">
-                    No comments yet. Connect your YouTube channel to see live comments.
                 </div>
             </div>
         </div>
-    </div>
 
-    <script>
-        const AFINN={amazing:4,awesome:4,excellent:4,fantastic:4,love:4,wonderful:4,brilliant:4,outstanding:5,perfect:5,superb:5,incredible:5,magnificent:5,exceptional:5,phenomenal:5,extraordinary:5,tremendous:4,marvelous:4,spectacular:4,glorious:4,fabulous:4,splendid:4,stunning:4,delightful:4,finest:4,genius:4,greatest:4,inspiring:4,legendary:4,masterpiece:5,premium:3,radiant:4,remarkable:4,sensational:4,stellar:4,sublime:4,supreme:4,terrific:4,thriving:4,triumphant:4,victorious:4,charming:3,divine:4,dazzling:4,graceful:3,heavenly:4,jewel:3,joyful:4,lively:2,lucky:2,lovely:3,meaningful:3,modern:2,neat:2,nice:2,novel:2,nurturing:3,optimal:2,optimistic:3,original:2,passionate:3,patient:2,peaceful:3,perceptive:2,personable:2,persuasive:2,pleasant:3,pleased:3,pleasure:3,plentiful:2,positive:3,powerful:2,practical:2,praise:3,precious:3,prepared:2,pretty:2,principal:2,privileged:2,productive:2,proficient:2,profitable:2,profound:2,prominent:2,promoted:2,prompt:2,proper:2,prosperous:2,proud:2,pure:2,purposeful:2,quick:2,quiet:2,rare:2,rational:2,ready:2,real:2,realistic:2,recommend:3,recovery:2,reduced:1,refined:2,refreshing:2,relaxed:2,reliable:3,relief:2,remarkable:3,remember:1,reminiscent:2,renewed:2,renowned:2,repair:2,reputed:2,resilient:2,resolute:2,resolved:2,resonant:2,resourceful:2,respect:3,respectable:2,respected:3,respectful:3,responsive:2,restored:2,restraint:2,rewarding:3,rhetoric:1,rhythm:1,rich:2,robust:2,romantic:3,rooted:2,sacred:3,satisfied:3,satisfying:3,sensible:1,simple:0,smooth:1,stable:1,steady:1,straightforward:1,strong:2,structured:1,sure:1,tangible:1,thoughtful:2,traditional:0,transparent:1,trustable:2,tried:1,true:1,trusted:2,truthful:2,understanding:2,united:1,universal:1,unselfish:2,updated:1,uplifting:3,useful:2,utility:1,utmost:2,valid:1,valued:2,valiant:2,vitality:2,vital:2,vivacious:2,vocalized:1,vowed:2,warm:3,warmth:3,watchful:1,waving:1,welcomed:2,welfare:2,wellbeing:2,wellness:2,well_being:2,well_done:3,well_intentioned:2,well_liked:3,well_known:2,well_meaning:2,well_received:3,well_regarded:3,well_rounded:2,well_trained:2,well_versed:2,ok:1,okay:1,fine:1,decent:1,fair:1,adequate:1,reasonable:1,satisfactory:1,acceptable:1,suitable:1,sufficient:1,alright:1,good:3,great:3,happy:3,glad:3,thankful:3,pleased:3,helpful:3,fun:3,enjoy:3,like:2,appreciate:3,beautiful:3,clean:2,cool:2,easy:2,efficient:2,elegant:3,exciting:3,friendly:3,gracious:3,gratifying:3,handsome:3,healthy:3,honest:3,hopeful:3,impressive:3,inspired:3,intelligent:3,interested:2,intimate:2,keen:2,kind:3,knowledge:2,likable:3,boring:2,bad:2,dislike:2,meh:1,unfortunate:2,mediocre:2,bland:2,dull:2,tired:1,ordinary:1,uninspiring:2,bleak:2,drab:2,dreary:2,gloomy:2,gray:1,grey:1,lifeless:2,monotonous:2,murky:2,plain:1,somber:2,tedious:2,unfulfilling:2,unimpressive:2,uninspired:2,uninteresting:2,unpleasant:2,unremarkable:2,unsatisfying:2,weak:2,wearisome:2,weary:2,awful:3,terrible:3,horrible:3,hate:3,ugly:2,annoyed:1,angry:2,frustrated:2,disappointed:2,disgusting:3,pathetic:2,poor:2,waste:2,worst:3,broken:2,fail:2,sucks:3,stupid:3,useless:2,abominable:3,abysmal:3,adverse:2,aggravating:2,aggression:2,aggressive:2,agonizing:3,agony:3,ailment:2,alarm:2,alarmed:2,alarming:2,alienate:2,alienated:2,alienating:2,allergic:1,allergy:1,altercation:2,antagonism:2,antagonist:2,antagonistic:2,antagonize:2,anguish:2,anguished:2,angular:1,angst:2,animosity:3,annoyance:2,annoyed:2,annoying:2,anxious:2,appalled:3,appalling:3,aversion:2,awfully:3,atrocious:4,catastrophic:4,devastating:4,horrendous:4,nightmare:3,outrageous:3,repulsive:4,vile:4,wretched:3,renewable:3,sustainable:3,responsive:2,community:2,invest:2,upgrade:2,innovative:3,affordable:3,service:1,support:2,care:2,commitment:2,improvement:2,solutions:1,better:2,advanced:2,technology:1,partnership:2,collaboration:2,together:1,growth:2,progress:2,outage:3,expensive:2,billing:1,overcharge:3,unreliable:3,pollution:3,hike:2,blackout:3,slow:1,leak:2,shutoff:3,disconnected:2,problem:2,issue:1,complaint:2,failure:3,error:2,delay:1,wait:1,increase:1,cut:1,reduce:1,loss:1,damage:2,accident:2,storm:1,weather:1,emergency:2,crisis:3,risk:1,danger:3,unsafe:3,hazard:3,threat:2,concern:1,worry:1,stressed:2,upset:2,unhappy:2,sad:2,power:1,rate:0,bill:1,cost:1,cheap:1,quality:1,reliability:2};const NEGATIONS=new Set(['no','not',"don't","doesn't","didn't","won't","can't",'never','neither','nobody','nothing','nowhere']);const INTENSIFIERS=new Set(['very','really','extremely','so','incredibly','absolutely','totally','completely','utterly','quite','highly','deeply','truly','awfully']);const EMOJI_SENTIMENT={'&#x1F60D;':5,'&#x2764;&#xEF;&#xB8;&#x8F;':4,'&#x1F44F;':4,'&#x1F525;':3,'&#x1F49A;':4,'&#x1F44D;':3,'&#x2728;':3,'&#x1F389;':4,'&#x1F60A;':3,'&#x1F604;':3,'&#x1F602;':3,'&#x1F973;':4,'&#x1F31F;':4,'&#x1F4AF;':4,'&#x1F4AA;':3,'&#x1F680;':3,'&#x2B50;':3,'&#x1F621;':-4,'&#x1F624;':-3,'&#x1F44E;':-3,'&#x1F4A9;':-4,'&#x1F926;':-2,'&#x1F61E;':-3,'&#x1F62D;':-3,'&#x1F620;':-3,'&#x1F641;':-2,'&#x274C;':-2,'&#x26D4;':-2,'&#x1F6AB;':-2};function analyzeSentiment(text){if(!text||typeof text!=='string')return 50;const words=text.toLowerCase().match(/\b[\w']+\b/g)||[];let score=0;let wordCount=0;for(let emoji in EMOJI_SENTIMENT){const count=(text.match(new RegExp(emoji,'g'))||[]).length;score+=count*EMOJI_SENTIMENT[emoji];wordCount+=count;}for(let i=0;i<words.length;i++){const word=words[i];let wordScore=AFINN[word]||0;if(wordScore!==0){if(i>0&&NEGATIONS.has(words[i-1])){wordScore=-wordScore;}if(i>0&&INTENSIFIERS.has(words[i-1])){wordScore=wordScore*1.5;}score+=wordScore;wordCount++;}}if(wordCount===0)return 50;const avgScore=score/wordCount;const normalized=50+(avgScore*10);return Math.max(0,Math.min(100,Math.round(normalized)));}let allComments=[];let refreshInterval=3600000;let lastRefreshTime=new Date();let refreshCountdownInterval;let dataRefreshInterval;let charts={};async function initializeDashboard(){setupTabNavigation();initializeCharts();await fetchData();startAutoRefresh();}function setupTabNavigation(){document.querySelectorAll('.tab').forEach(tab=>{tab.addEventListener('click',()=>{const tabName=tab.getAttribute('data-tab');switchTab(tabName);});});}function switchTab(tabName){document.querySelectorAll('.tab-content').forEach(content=>{content.classList.add('hidden');});document.querySelectorAll('.tab').forEach(tab=>{tab.classList.remove('active','facebook-active','instagram-active','linkedin-active','youtube-active');});document.getElementById(tabName).classList.remove('hidden');const activeTab=document.querySelector(`[data-tab="${tabName}"]`);activeTab.classList.add('active');if(tabName==='facebook'){activeTab.classList.add('facebook-active');}else if(tabName==='instagram'){activeTab.classList.add('instagram-active');}else if(tabName==='linkedin'){activeTab.classList.add('linkedin-active');}else if(tabName==='youtube'){activeTab.classList.add('youtube-active');}setTimeout(()=>{Object.values(charts).forEach(chart=>{if(chart&&chart.resize)chart.resize();});},300);}async function fetchData(){showLoadingBar();try{const statusRes=await fetch('/api/status');const status=await statusRes.json();refreshInterval=(status.refreshInterval||3600)*1000;const promises=[];if(status.facebook){promises.push(fetch('/api/facebook/page').then(r=>r.json()).then(d=>({platform:'facebook',type:'page',data:d})),fetch('/api/facebook/posts').then(r=>r.json()).then(d=>({platform:'facebook',type:'posts',data:d})),fetch('/api/facebook/all-comments').then(r=>r.json()).then(d=>({platform:'facebook',type:'comments',data:d})),fetch('/api/facebook/insights').then(r=>r.json()).then(d=>({platform:'facebook',type:'insights',data:d})));}if(status.instagram){promises.push(fetch('/api/instagram/profile').then(r=>r.json()).then(d=>({platform:'instagram',type:'profile',data:d})),fetch('/api/instagram/media').then(r=>r.json()).then(d=>({platform:'instagram',type:'media',data:d})),fetch('/api/instagram/all-comments').then(r=>r.json()).then(d=>({platform:'instagram',type:'comments',data:d})));}if(status.linkedin){promises.push(fetch('/api/linkedin/organization').then(r=>r.json()).then(d=>({platform:'linkedin',type:'org',data:d})),fetch('/api/linkedin/posts').then(r=>r.json()).then(d=>({platform:'linkedin',type:'posts',data:d})),fetch('/api/linkedin/all-comments').then(r=>r.json()).then(d=>({platform:'linkedin',type:'comments',data:d})));}if(status.youtube){promises.push(fetch('/api/youtube/channel').then(r=>r.json()).then(d=>({platform:'youtube',type:'channel',data:d})),fetch('/api/youtube/videos').then(r=>r.json()).then(d=>({platform:'youtube',type:'videos',data:d})),fetch('/api/youtube/all-comments').then(r=>r.json()).then(d=>({platform:'youtube',type:'comments',data:d})));}const results=await Promise.allSettled(promises);results.forEach(result=>{if(result.status==='fulfilled'&&result.value){const{platform,type,data}=result.value;processData(platform,type,data);}});const hasQuota=results.some(r=>r.status==='fulfilled'&&r.value&&r.value.data&&r.value.data.quotaExceeded);if(hasQuota){const qw=document.getElementById('quotaWarning');if(qw)qw.classList.add('visible');}lastRefreshTime=new Date();updateRefreshTime();updateOverviewTab();hideLoadingBar();}catch(error){console.error('Error fetching data:',error);hideLoadingBar();}}function processData(platform,type,data){if(!data)return;if(type==='page')updateFacebookPage(data);else if(type==='posts'&&platform==='facebook')updateFacebookPosts(data);else if(type==='comments'&&platform==='facebook')updateFacebookComments(data);else if(type==='insights')updateFacebookInsights(data);else if(type==='profile')updateInstagramProfile(data);else if(type==='media')updateInstagramMedia(data);else if(type==='comments'&&platform==='instagram')updateInstagramComments(data);else if(type==='org')updateLinkedInOrg(data);else if(type==='posts'&&platform==='linkedin')updateLinkedInPosts(data);else if(type==='comments'&&platform==='linkedin')updateLinkedInComments(data);else if(type==='channel')updateYouTubeChannel(data);else if(type==='videos')updateYouTubeVideos(data);else if(type==='comments'&&platform==='youtube')updateYouTubeComments(data);}let facebookData={page:null,posts:[],comments:[],insights:null,sentiment:50};function updateFacebookPage(data){facebookData.page=data;const likes=data.followers||0;document.getElementById('facebookName').textContent=data.name||'Facebook Page';document.getElementById('facebookUsername').textContent='@'+(data.username||'page');document.getElementById('facebookPageLikes').textContent=formatNumber(likes);document.getElementById('facebookKPILikes').textContent=formatNumber(likes);document.getElementById('facebookFollowers').textContent=formatNumber(likes);document.getElementById('facebookConnectionBadge').classList.add('connected');document.getElementById('facebookConnectionBadge').textContent='Connected';document.getElementById('facebookStatus').classList.add('connected');document.getElementById('facebookStatus').textContent='Connected';}function updateFacebookPosts(data){facebookData.posts=Array.isArray(data)?data:(data.posts||[]);renderFacebookPosts();updateEngagementCharts();}function updateFacebookComments(data){const comments=Array.isArray(data)?data:(data.comments||[]);facebookData.comments=comments;allComments=allComments.filter(c=>c.platform!=='facebook');comments.forEach(comment=>{const sentiment=analyzeSentiment(comment.text);allComments.push({platform:'facebook',author:comment.author||'Anonymous',text:comment.text,sentiment,timestamp:new Date(comment.created_time||comment.timestamp||Date.now()),likes:comment.likes||0});});renderFacebookComments();updateActivityFeed();}function updateFacebookInsights(data){facebookData.insights=data;if(data.engagement_rate!==undefined){document.getElementById('facebookKPIEngagement').textContent=formatPercent(data.engagement_rate);document.getElementById('facebookEngagement').textContent=formatPercent(data.engagement_rate);}if(data.reactions_30d!==undefined){document.getElementById('facebookKPIReactions').textContent=formatNumber(data.reactions_30d);}if(data.avg_reach!==undefined){document.getElementById('facebookKPIReach').textContent=formatNumber(data.avg_reach);}}function renderFacebookPosts(){const container=document.getElementById('facebookPostsList');const noMessage=document.getElementById('facebookNoPostsMessage');if(!facebookData.posts||facebookData.posts.length===0){noMessage.classList.remove('hidden');container.innerHTML='';return;}noMessage.classList.add('hidden');container.innerHTML=facebookData.posts.map(post=>`<div class="post-card"><div class="post-header"><div class="post-content" style="flex: 1;">${post.message||post.story||'Posted update'}</div><div class="post-date">${formatRelativeTime(new Date(post.created_time||post.timestamp||Date.now()))}</div></div>${post.image?`<img src="${post.image}" alt="post" class="post-thumbnail show">`:''}<div class="post-metrics"><div class="post-metric">&#x1F44D; ${formatNumber(post.likes||0)}</div><div class="post-metric">&#x1F4AC; ${formatNumber(post.comments||0)}</div><div class="post-metric">&#x2197;&#xEF;&#xB8;&#x8F; ${formatNumber(post.shares||0)}</div></div></div>`).join('');}function renderFacebookComments(){const container=document.getElementById('facebookCommentsList');const noMessage=document.getElementById('facebookNoCommentsMessage');if(!facebookData.comments||facebookData.comments.length===0){noMessage.classList.remove('hidden');container.innerHTML='';return;}noMessage.classList.add('hidden');const sorted=[...facebookData.comments].sort((a,b)=>new Date(b.created_time||b.timestamp||0)-new Date(a.created_time||a.timestamp||0));container.innerHTML=sorted.slice(0,30).map(comment=>{const sentiment=analyzeSentiment(comment.text);const sentimentLabel=sentiment>60?'positive':sentiment>40?'neutral':'negative';return`<div class="comment-card"><div class="comment-header"><div class="comment-avatar">${(comment.author||'A')[0].toUpperCase()}</div><div class="comment-info"><div class="comment-author">${comment.author||'Anonymous'}</div><div class="comment-meta">Facebook &#x2022; ${formatRelativeTime(new Date(comment.created_time||comment.timestamp||Date.now()))}</div></div></div><div class="comment-text">${escapeHtml(comment.text)}</div><div class="comment-footer"><span class="sentiment-badge ${sentimentLabel}">Sentiment: ${sentiment}%</span><span>&#x1F44D; ${comment.likes||0}</span></div></div>`;}).join('');}let instagramData={profile:null,media:[],comments:[],sentiment:50};function updateInstagramProfile(data){instagramData.profile=data;const followers=data.followers||0;document.getElementById('instagramName').textContent=data.name||'Instagram Profile';document.getElementById('instagramUsername').textContent='@'+(data.username||'profile');document.getElementById('instagramFollowerCount').textContent=formatNumber(followers);document.getElementById('instagramKPIFollowers').textContent=formatNumber(followers);document.getElementById('instagramFollowers').textContent=formatNumber(followers);document.getElementById('instagramConnectionBadge').classList.add('connected');document.getElementById('instagramConnectionBadge').textContent='Connected';document.getElementById('instagramStatus').classList.add('connected');document.getElementById('instagramStatus').textContent='Connected';}function updateInstagramMedia(data){instagramData.media=Array.isArray(data)?data:(data.media||[]);const totalLikes=instagramData.media.reduce((sum,m)=>sum+(m.likes||0),0);const avgLikes=instagramData.media.length>0?Math.round(totalLikes/instagramData.media.length):0;document.getElementById('instagramKPILikes').textContent=formatNumber(avgLikes);document.getElementById('instagramKPIMedia').textContent=formatNumber(instagramData.media.length);renderInstagramMedia();updateEngagementCharts();}function updateInstagramComments(data){const comments=Array.isArray(data)?data:(data.comments||[]);instagramData.comments=comments;allComments=allComments.filter(c=>c.platform!=='instagram');comments.forEach(comment=>{const sentiment=analyzeSentiment(comment.text);allComments.push({platform:'instagram',author:comment.author||'Anonymous',text:comment.text,sentiment,timestamp:new Date(comment.timestamp||Date.now()),likes:comment.likes||0});});renderInstagramComments();updateActivityFeed();}function renderInstagramMedia(){const container=document.getElementById('instagramPostsList');const noMessage=document.getElementById('instagramNoPostsMessage');if(!instagramData.media||instagramData.media.length===0){noMessage.classList.remove('hidden');container.innerHTML='';return;}noMessage.classList.add('hidden');container.innerHTML=instagramData.media.map(media=>`<div class="post-card"><div class="post-header"><div class="post-content" style="flex: 1;">${media.caption||'Photo'}</div><div class="post-date">${formatRelativeTime(new Date(media.timestamp||Date.now()))}</div></div>${media.media_url?`<img src="${media.media_url}" alt="media" class="post-thumbnail show">`:''}<div class="post-metrics"><div class="post-metric">&#x2764;&#xEF;&#xB8;&#x8F; ${formatNumber(media.likes||0)}</div><div class="post-metric">&#x1F4AC; ${formatNumber(media.comments||0)}</div></div></div>`).join('');}function renderInstagramComments(){const container=document.getElementById('instagramCommentsList');const noMessage=document.getElementById('instagramNoCommentsMessage');if(!instagramData.comments||instagramData.comments.length===0){noMessage.classList.remove('hidden');container.innerHTML='';return;}noMessage.classList.add('hidden');const sorted=[...instagramData.comments].sort((a,b)=>new Date(b.timestamp||0)-new Date(a.timestamp||0));container.innerHTML=sorted.slice(0,30).map(comment=>{const sentiment=analyzeSentiment(comment.text);const sentimentLabel=sentiment>60?'positive':sentiment>40?'neutral':'negative';return`<div class="comment-card"><div class="comment-header"><div class="comment-avatar" style="background: linear-gradient(135deg, #E1306C, #F77737);">${(comment.author||'A')[0].toUpperCase()}</div><div class="comment-info"><div class="comment-author">${comment.author||'Anonymous'}</div><div class="comment-meta">Instagram &#x2022; ${formatRelativeTime(new Date(comment.timestamp||Date.now()))}</div></div></div><div class="comment-text">${escapeHtml(comment.text)}</div><div class="comment-footer"><span class="sentiment-badge ${sentimentLabel}">Sentiment: ${sentiment}%</span><span>&#x2764;&#xEF;&#xB8;&#x8F; ${comment.likes||0}</span></div></div>`;}).join('');}let linkedinData={org:null,posts:[],comments:[],sentiment:50};function updateLinkedInOrg(data){linkedinData.org=data;const followers=data.followers||0;document.getElementById('linkedinName').textContent=data.name||'LinkedIn Company Page';document.getElementById('linkedinUsername').textContent='@'+(data.username||'company');document.getElementById('linkedinFollowerCount').textContent=formatNumber(followers);document.getElementById('linkedinKPIFollowers').textContent=formatNumber(followers);document.getElementById('linkedinFollowers').textContent=formatNumber(followers);document.getElementById('linkedinConnectionBadge').classList.add('connected');document.getElementById('linkedinConnectionBadge').textContent='Connected';document.getElementById('linkedinStatus').classList.add('connected');document.getElementById('linkedinStatus').textContent='Connected';}function updateLinkedInPosts(data){linkedinData.posts=Array.isArray(data)?data:(data.posts||[]);const totalReactions=linkedinData.posts.reduce((sum,p)=>sum+(p.reactions||0),0);const avgReactions=linkedinData.posts.length>0?Math.round(totalReactions/linkedinData.posts.length):0;document.getElementById('linkedinKPIReactions').textContent=formatNumber(avgReactions);document.getElementById('linkedinKPIPosts').textContent=formatNumber(linkedinData.posts.length);renderLinkedInPosts();updateEngagementCharts();}function updateLinkedInComments(data){const comments=Array.isArray(data)?data:(data.comments||[]);linkedinData.comments=comments;allComments=allComments.filter(c=>c.platform!=='linkedin');comments.forEach(comment=>{const sentiment=analyzeSentiment(comment.text);allComments.push({platform:'linkedin',author:comment.author||'Anonymous',text:comment.text,sentiment,timestamp:new Date(comment.timestamp||Date.now()),likes:comment.likes||0});});renderLinkedInComments();updateActivityFeed();}function renderLinkedInPosts(){const container=document.getElementById('linkedinPostsList');const noMessage=document.getElementById('linkedinNoPostsMessage');if(!linkedinData.posts||linkedinData.posts.length===0){noMessage.classList.remove('hidden');container.innerHTML='';return;}noMessage.classList.add('hidden');container.innerHTML=linkedinData.posts.map(post=>`<div class="post-card"><div class="post-header"><div class="post-content" style="flex: 1;">${post.content||post.message||'Posted update'}</div><div class="post-date">${formatRelativeTime(new Date(post.timestamp||Date.now()))}</div></div><div class="post-metrics"><div class="post-metric">&#x1F44D; ${formatNumber(post.reactions||0)}</div><div class="post-metric">&#x1F4AC; ${formatNumber(post.comments||0)}</div><div class="post-metric">&#x2197;&#xEF;&#xB8;&#x8F; ${formatNumber(post.shares||0)}</div></div></div>`).join('');}function renderLinkedInComments(){const container=document.getElementById('linkedinCommentsList');const noMessage=document.getElementById('linkedinNoCommentsMessage');if(!linkedinData.comments||linkedinData.comments.length===0){noMessage.classList.remove('hidden');container.innerHTML='';return;}noMessage.classList.add('hidden');const sorted=[...linkedinData.comments].sort((a,b)=>new Date(b.timestamp||0)-new Date(a.timestamp||0));container.innerHTML=sorted.slice(0,30).map(comment=>{const sentiment=analyzeSentiment(comment.text);const sentimentLabel=sentiment>60?'positive':sentiment>40?'neutral':'negative';return`<div class="comment-card"><div class="comment-header"><div class="comment-avatar" style="background: linear-gradient(135deg, #0A66C2, #004B96);">${(comment.author||'A')[0].toUpperCase()}</div><div class="comment-info"><div class="comment-author">${comment.author||'Anonymous'}</div><div class="comment-meta">LinkedIn &#x2022; ${formatRelativeTime(new Date(comment.timestamp||Date.now()))}</div></div></div><div class="comment-text">${escapeHtml(comment.text)}</div><div class="comment-footer"><span class="sentiment-badge ${sentimentLabel}">Sentiment: ${sentiment}%</span><span>&#x1F44D; ${comment.likes||0}</span></div></div>`;}).join('');}let youtubeData={channel:null,videos:[],comments:[],sentiment:50};function updateYouTubeChannel(data){youtubeData.channel=data;const subscribers=data.subscribers||0;document.getElementById('youtubeName').textContent=data.title||'YouTube Channel';document.getElementById('youtubeUsername').textContent='@'+(data.custom_url||'channel');document.getElementById('youtubeSubscriberCount').textContent=formatNumber(subscribers);document.getElementById('youtubeKPISubscribers').textContent=formatNumber(subscribers);document.getElementById('youtubeSubscribers').textContent=formatNumber(subscribers);document.getElementById('youtubeConnectionBadge').classList.add('connected');document.getElementById('youtubeConnectionBadge').textContent='Connected';document.getElementById('youtubeStatus').classList.add('connected');document.getElementById('youtubeStatus').textContent='Connected';if(data.view_count!==undefined){document.getElementById('youtubeKPIViews').textContent=formatNumber(data.view_count);}}function updateYouTubeVideos(data){youtubeData.videos=Array.isArray(data)?data:(data.videos||[]);const totalViews=youtubeData.videos.reduce((sum,v)=>sum+(v.view_count||0),0);const avgViews=youtubeData.videos.length>0?Math.round(totalViews/youtubeData.videos.length):0;const totalEngagement=youtubeData.videos.reduce((sum,v)=>sum+((v.like_count||0)+(v.comment_count||0)),0);const avgEngagement=youtubeData.videos.length>0?Math.round((totalEngagement/youtubeData.videos.length)/(totalViews/youtubeData.videos.length)*100):0;document.getElementById('youtubeKPIAvgViews').textContent=formatNumber(avgViews);document.getElementById('youtubeKPIEngagement').textContent=formatPercent(avgEngagement/100);renderYouTubeVideos();updateEngagementCharts();}function updateYouTubeComments(data){const comments=Array.isArray(data)?data:(data.comments||[]);youtubeData.comments=comments;allComments=allComments.filter(c=>c.platform!=='youtube');comments.forEach(comment=>{const sentiment=analyzeSentiment(comment.text||comment.text_display||'');allComments.push({platform:'youtube',author:comment.author||comment.author_display_name||'Anonymous',text:comment.text||comment.text_display||'',sentiment,timestamp:new Date(comment.publishedAt||comment.updated_at||comment.published_at||comment.timestamp||Date.now()),likes:comment.likeCount||comment.like_count||0,authorImage:comment.authorImage||comment.author_profile_image_url||'',videoTitle:comment.videoTitle||'',videoId:comment.videoId||''});});renderYouTubeComments();updateActivityFeed();}
-function renderYouTubeVideos(){const container=document.getElementById('youtubePostsList');const noMessage=document.getElementById('youtubeNoPostsMessage');if(!youtubeData.videos||youtubeData.videos.length===0){noMessage.classList.remove('hidden');container.innerHTML='';return;}noMessage.classList.add('hidden');container.innerHTML=youtubeData.videos.map(video=>`<div class="post-card"><div class="post-header"><div class="post-content" style="flex: 1;">${video.title||'Video'}</div><div class="post-date">${formatRelativeTime(new Date(video.published_at||video.timestamp||Date.now()))}</div></div>${video.thumbnail_url?`<img src="${video.thumbnail_url}" alt="thumbnail" class="post-thumbnail show">`:''}<div class="post-metrics"><div class="post-metric">&#x1F440; ${formatNumber(video.view_count||0)}</div><div class="post-metric">&#x1F44D; ${formatNumber(video.like_count||0)}</div><div class="post-metric">&#x1F4AC; ${formatNumber(video.comment_count||0)}</div></div></div>`).join('');}function renderYouTubeComments(){const container=document.getElementById('youtubeCommentsList');const noMessage=document.getElementById('youtubeNoCommentsMessage');if(!youtubeData.comments||youtubeData.comments.length===0){noMessage.classList.remove('hidden');container.innerHTML='';return;}noMessage.classList.add('hidden');const sorted=[...youtubeData.comments].sort((a,b)=>new Date(b.publishedAt||b.updated_at||b.published_at||b.timestamp||0)-new Date(a.publishedAt||a.updated_at||a.published_at||a.timestamp||0));const newHTML=sorted.slice(0,30).map(comment=>{const sentiment=analyzeSentiment(comment.text||comment.text_display||'');const sentimentLabel=sentiment>60?'positive':sentiment>40?'neutral':'negative';const authorName=comment.author||comment.author_display_name||'Anonymous';const authorImg=comment.authorImage||comment.author_profile_image_url||'';const videoTitle=comment.videoTitle||'';const videoId=comment.videoId||'';const likeCount=comment.likeCount||comment.like_count||0;const commentText=escapeHtml(comment.text||comment.text_display||'');const timeStr=formatRelativeTime(new Date(comment.publishedAt||comment.updated_at||comment.published_at||comment.timestamp||Date.now()));const thumbUrl=videoId?`https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`:'';const avatarHTML=authorImg?`<img src="${authorImg}" alt="${authorName}" class="comment-avatar-img" referrerpolicy="no-referrer">`:`<div class="comment-avatar" style="background: linear-gradient(135deg, #FF0000, #CC0000);">${authorName[0].toUpperCase()}</div>`;const videoCtx=videoTitle?`<div class="comment-video-context">${thumbUrl?`<img src="${thumbUrl}" alt="" class="comment-video-thumb">`:''}  <div class="comment-video-title">${escapeHtml(videoTitle)}</div></div>`:'';return`<div class="comment-card youtube-card fade-in"><div class="comment-header">${avatarHTML}<div class="comment-info"><div class="comment-author">${escapeHtml(authorName)}</div><div class="comment-meta">YouTube &bull; ${timeStr}</div></div></div>${videoCtx}<div class="comment-text">${commentText}</div><div class="comment-footer"><span class="sentiment-badge ${sentimentLabel}">Sentiment: ${sentiment}%</span><div class="comment-actions"><span class="comment-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 00-6 0v4H5l1.5 9h11L19 9h-5z"/></svg> ${formatNumber(likeCount)}</span></div></div></div>`;}).join('');if(container.innerHTML!==newHTML){container.classList.add('refreshing');setTimeout(()=>{container.innerHTML=newHTML;container.classList.remove('refreshing');},150);}}
-function updateOverviewTab(){updateSentimentGauges();updateEngagementCharts();updateActivityFeed();}function updateSentimentGauges(){const calculatePlatformSentiment=(comments)=>{if(!comments||comments.length===0)return 50;const scores=comments.map(c=>analyzeSentiment(c.text||c.text_display||''));return Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);};facebookData.sentiment=calculatePlatformSentiment(facebookData.comments);instagramData.sentiment=calculatePlatformSentiment(instagramData.comments);linkedinData.sentiment=calculatePlatformSentiment(linkedinData.comments);youtubeData.sentiment=calculatePlatformSentiment(youtubeData.comments);updateSentimentGaugeDisplay('facebook',facebookData.sentiment);updateSentimentGaugeDisplay('instagram',instagramData.sentiment);updateSentimentGaugeDisplay('linkedin',linkedinData.sentiment);updateSentimentGaugeDisplay('youtube',youtubeData.sentiment);const allSentiments=[facebookData.sentiment,instagramData.sentiment,linkedinData.sentiment,youtubeData.sentiment];const overallSentiment=Math.round(allSentiments.reduce((a,b)=>a+b,0)/allSentiments.length);updateMainGaugeDisplay(overallSentiment);document.getElementById('facebookEngagement').textContent=formatPercent(facebookData.sentiment/100);document.getElementById('instagramEngagement').textContent=formatPercent(instagramData.sentiment/100);document.getElementById('linkedinEngagement').textContent=formatPercent(linkedinData.sentiment/100);document.getElementById('youtubeEngagement').textContent=formatPercent(youtubeData.sentiment/100);}function updateSentimentGaugeDisplay(platform,score){const gauge=document.getElementById(platform+'Gauge');const text=document.getElementById(platform+'SentimentText');const scoreEl=document.getElementById(platform+'SentimentScore');if(!gauge||!text)return;const circle=gauge.querySelector('circle.sentiment-arc-mini');if(circle){circle.style.strokeDasharray=score+', 251.3';}if(text)text.textContent=score;if(scoreEl)scoreEl.textContent=score;}function updateMainGaugeDisplay(score){const arc=document.querySelector('.sentiment-arc');const text=document.getElementById('mainSentimentScore');if(arc){arc.style.strokeDasharray=(score/100)*219+', 219';if(score>=67){arc.setAttribute('stroke','#22C55E');}else if(score>=34){arc.setAttribute('stroke','#F59E0B');}else{arc.setAttribute('stroke','#EF4444');}}if(text){text.textContent=score;}}function updateEngagementCharts(){const engagementData={facebook:facebookData.posts.reduce((sum,p)=>sum+((p.likes||0)+(p.comments||0)+(p.shares||0)),0),instagram:instagramData.media.reduce((sum,m)=>sum+((m.likes||0)+(m.comments||0)),0),linkedin:linkedinData.posts.reduce((sum,p)=>sum+((p.reactions||0)+(p.comments||0)+(p.shares||0)),0),youtube:youtubeData.videos.reduce((sum,v)=>sum+((v.like_count||0)+(v.comment_count||0)),0)};if(charts.engagementChart){charts.engagementChart.data.datasets[0].data=Object.values(engagementData);charts.engagementChart.update();}const last7Days=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-i);return d.toISOString().split('T')[0];}).reverse();const sentimentByDay=last7Days.map(day=>{const dayComments=allComments.filter(c=>new Date(c.timestamp).toISOString().split('T')[0]===day);if(dayComments.length===0)return 50;return Math.round(dayComments.reduce((sum,c)=>sum+c.sentiment,0)/dayComments.length);});if(charts.sentimentTrendChart){charts.sentimentTrendChart.data.labels=last7Days.map(d=>{const date=new Date(d);return(date.getMonth()+1)+'/'+date.getDate();});charts.sentimentTrendChart.data.datasets[0].data=sentimentByDay;charts.sentimentTrendChart.update();}}function updateActivityFeed(){const sorted=[...allComments].sort((a,b)=>b.timestamp-a.timestamp).slice(0,50);const container=document.getElementById('activityFeed');const noMessage=document.getElementById('noActivityMessage');if(sorted.length===0){noMessage.classList.remove('hidden');container.innerHTML='';return;}noMessage.classList.add('hidden');const platformIcons={facebook:'&#x1F4D8;',instagram:'&#x1F4F8;',linkedin:'&#x1F4BC;',youtube:'&#x25B6;&#xFE0F;'};const newFeedHTML=sorted.map(comment=>{const sentimentLabel=comment.sentiment>60?'positive':comment.sentiment>40?'neutral':'negative';const authorImgHTML=comment.authorImage?`<img src="${comment.authorImage}" alt="" style="width:28px;height:28px;border-radius:50%;object-fit:cover;" referrerpolicy="no-referrer">`:`<span>${platformIcons[comment.platform]||'&#x1F4F1;'}</span>`;return`<div class="activity-item"><div class="activity-icon">${authorImgHTML}</div><div class="activity-content"><div class="activity-author">${escapeHtml(comment.author)}</div><div class="activity-platform">${comment.platform}${comment.videoTitle?' &bull; '+escapeHtml(comment.videoTitle.substring(0,50)):''}</div><div class="activity-text">${escapeHtml(comment.text.substring(0,120))}</div><div class="activity-meta"><span class="sentiment-badge ${sentimentLabel}">Sentiment: ${comment.sentiment}%</span><span>${formatRelativeTime(comment.timestamp)}</span>${comment.likes?`<span>&#x1F44D; ${comment.likes}</span>`:''}</div></div></div>`;}).join('');if(container.innerHTML!==newFeedHTML){container.innerHTML=newFeedHTML;}}
-function initializeCharts(){const engagementCtx=document.getElementById('engagementChart');if(engagementCtx){charts.engagementChart=new Chart(engagementCtx,{type:'bar',data:{labels:['Facebook','Instagram','LinkedIn','YouTube'],datasets:[{label:'Total Engagement',data:[0,0,0,0],backgroundColor:['#1877F2','#E1306C','#0A66C2','#FF0000'],borderRadius:8,borderSkipped:false}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.05)'}},y:{grid:{display:false}}}}});}const sentimentCtx=document.getElementById('sentimentTrendChart');if(sentimentCtx){charts.sentimentTrendChart=new Chart(sentimentCtx,{type:'line',data:{labels:['Day 1','Day 2','Day 3','Day 4','Day 5','Day 6','Day 7'],datasets:[{label:'Average Sentiment',data:[50,50,50,50,50,50,50],borderColor:'#003B71',backgroundColor:'rgba(0, 59, 113, 0.1)',borderWidth:2,fill:true,tension:0.4,pointRadius:4,pointBackgroundColor:'#003B71',pointBorderColor:'white',pointBorderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true}},scales:{y:{beginAtZero:true,max:100,ticks:{callback:v=>v+'%'},grid:{color:'rgba(0,0,0,0.05)'}},x:{grid:{display:false}}}}})}const platforms=['facebook','instagram','linkedin','youtube'];platforms.forEach(platform=>{const ctx=document.getElementById(platform+'SentimentChart');if(ctx){charts[platform+'SentimentChart']=new Chart(ctx,{type:'doughnut',data:{labels:['Positive','Neutral','Negative'],datasets:[{data:[0,0,0],backgroundColor:['#22C55E','#F59E0B','#EF4444'],borderColor:'white',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'bottom'}}}});}});}function startAutoRefresh(){updateRefreshCountdown();refreshCountdownInterval=setInterval(updateRefreshCountdown,1000);dataRefreshInterval=setInterval(async()=>{await fetchData();},refreshInterval);}function updateRefreshCountdown(){const now=new Date();const elapsed=now-lastRefreshTime;const remaining=Math.max(0,Math.round((refreshInterval-elapsed)/1000));document.getElementById('refreshCountdown').textContent=remaining>=60?Math.ceil(remaining/60)+'m':remaining+'s';}function updateRefreshTime(){const hours=lastRefreshTime.getHours().toString().padStart(2,'0');const minutes=lastRefreshTime.getMinutes().toString().padStart(2,'0');const seconds=lastRefreshTime.getSeconds().toString().padStart(2,'0');document.getElementById('lastRefreshTime').textContent=`${hours}:${minutes}:${seconds}`;}function showLoadingBar(){const bar=document.getElementById('loadingBar');bar.classList.add('active');}function hideLoadingBar(){const bar=document.getElementById('loadingBar');setTimeout(()=>{bar.classList.remove('active');},1500);}function formatNumber(num){if(num>=1000000){return(num/1000000).toFixed(1)+'M';}if(num>=1000){return(num/1000).toFixed(1)+'K';}return num.toString();}function formatPercent(num){return(num*100).toFixed(1)+'%';}function formatRelativeTime(date){const seconds=Math.floor((new Date()-date)/1000);const minutes=Math.floor(seconds/60);const hours=Math.floor(minutes/60);const days=Math.floor(hours/24);if(days>0)return days+'d ago';if(hours>0)return hours+'h ago';if(minutes>0)return minutes+'m ago';return'now';}function escapeHtml(text){const map={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'};return text.replace(/[&<>"']/g,m=>map[m]);}document.addEventListener('DOMContentLoaded',initializeDashboard);
-    </script>
+        <!-- Engagement by Platform -->
+        <div class="card" style="margin-bottom:24px;">
+            <div class="card-title">Engagement by Platform</div>
+            <div class="platform-engagement">
+                <div class="plat-eng fb">
+                    <div class="plat-eng-name">Facebook</div>
+                    <div class="plat-eng-value" id="engFB">0</div>
+                    <div class="plat-eng-label">interactions</div>
+                </div>
+                <div class="plat-eng ig">
+                    <div class="plat-eng-name">Instagram</div>
+                    <div class="plat-eng-value" id="engIG">0</div>
+                    <div class="plat-eng-label">interactions</div>
+                </div>
+                <div class="plat-eng li">
+                    <div class="plat-eng-name">LinkedIn</div>
+                    <div class="plat-eng-value" id="engLI">0</div>
+                    <div class="plat-eng-label">interactions</div>
+                </div>
+                <div class="plat-eng yt">
+                    <div class="plat-eng-name">YouTube</div>
+                    <div class="plat-eng-value" id="engYT">0</div>
+                    <div class="plat-eng-label">interactions</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="card" style="margin-bottom:24px;">
+            <div class="card-title">Engagement Trend by Platform</div>
+            <div class="chart-container">
+                <canvas id="engagementChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Sentiment Distribution</div>
+            <div class="chart-container" style="height:220px;">
+                <canvas id="sentimentChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const API_BASE = window.location.origin;
+let refreshInterval = 3600; // seconds (1 hour default)
+let countdownSeconds = 0;
+let countdownTimer = null;
+let engagementChartInstance = null;
+let sentimentChartInstance = null;
+
+// ============================================================
+// AFINN-based sentiment lexicon (condensed)
+// ============================================================
+const AFINN = {
+    'good':3,'great':4,'excellent':5,'amazing':5,'awesome':4,'love':3,'wonderful':4,
+    'fantastic':4,'best':3,'happy':3,'thank':2,'thanks':2,'appreciate':3,'helpful':2,
+    'nice':2,'beautiful':3,'perfect':3,'outstanding':5,'brilliant':4,'superb':5,
+    'pleased':2,'enjoy':2,'impressive':3,'remarkable':4,'positive':2,'success':3,
+    'reliable':2,'efficient':2,'clean':1,'safe':1,'friendly':2,'improve':1,
+    'bad':-3,'terrible':-4,'awful':-4,'horrible':-4,'hate':-4,'worst':-5,'poor':-3,
+    'ugly':-3,'angry':-3,'disappointed':-3,'annoying':-2,'frustrating':-3,'expensive':-2,
+    'broken':-3,'fail':-3,'failed':-3,'failure':-3,'wrong':-2,'problem':-2,'issue':-2,
+    'complaint':-2,'slow':-1,'difficult':-1,'confusing':-2,'unreliable':-3,'waste':-3,
+    'ridiculous':-3,'outage':-3,'outages':-3,'down':-1,'increase':-1,'high':-1,
+    'overcharge':-3,'scam':-4,'rip':-3,'gouge':-3,'monopoly':-3,
+    'okay':1,'ok':1,'fine':1,'decent':1,'alright':1,'average':0,'meh':-1,
+    'renewable':2,'solar':1,'wind':1,'green':1,'sustainable':2,'energy':0,
+    'power':0,'electric':0,'gas':0,'bill':-1,'rate':-1,'rates':-1,'price':-1
+};
+
+function analyzeSentiment(text) {
+    if (!text) return { score: 50, label: 'Neutral' };
+    const words = text.toLowerCase().replace(/[^a-z\s]/g, '').split(/\s+/);
+    let total = 0, count = 0;
+    words.forEach(w => {
+        if (AFINN[w] !== undefined) { total += AFINN[w]; count++; }
+    });
+    if (count === 0) return { score: 50, label: 'Neutral' };
+    // Normalize from AFINN range (-5..5) to 0..100
+    const avg = total / count;
+    const score = Math.round(Math.min(100, Math.max(0, (avg + 5) * 10)));
+    const label = score >= 60 ? 'Positive' : score <= 40 ? 'Negative' : 'Neutral';
+    return { score, label };
+}
+
+// ============================================================
+// DATA FETCHING
+// ============================================================
+async function apiFetch(endpoint) {
+    try {
+        const r = await fetch(API_BASE + endpoint);
+        if (!r.ok) {
+            if (r.status === 403) {
+                const t = await r.text();
+                if (t.toLowerCase().includes('quota')) return { quotaExceeded: true };
+            }
+            return null;
+        }
+        return await r.json();
+    } catch (e) {
+        console.warn('API fetch error:', endpoint, e.message);
+        return null;
+    }
+}
+
+async function fetchAllData() {
+    showLoading();
+    const status = await apiFetch('/api/status');
+    if (!status) { hideLoading(); return null; }
+
+    if (status.refreshInterval) refreshInterval = status.refreshInterval;
+    updatePlatformChips(status);
+
+    // Fetch all enabled platforms in parallel
+    const [fbPosts, fbComments, fbInsights,
+           igMedia, igComments,
+           liPosts, liComments,
+           ytVideos, ytComments] = await Promise.all([
+        status.facebook  ? apiFetch('/api/facebook/posts')        : null,
+        status.facebook  ? apiFetch('/api/facebook/all-comments') : null,
+        status.facebook  ? apiFetch('/api/facebook/insights')     : null,
+        status.instagram ? apiFetch('/api/instagram/media')        : null,
+        status.instagram ? apiFetch('/api/instagram/all-comments') : null,
+        status.linkedin  ? apiFetch('/api/linkedin/posts')         : null,
+        status.linkedin  ? apiFetch('/api/linkedin/all-comments')  : null,
+        status.youtube   ? apiFetch('/api/youtube/videos')         : null,
+        status.youtube   ? apiFetch('/api/youtube/all-comments')   : null
+    ]);
+
+    // Check for quota issues
+    const quotaHit = [fbPosts,fbComments,igMedia,igComments,liPosts,liComments,ytVideos,ytComments]
+        .some(r => r && r.quotaExceeded);
+    document.getElementById('quotaBanner').classList.toggle('visible', quotaHit);
+
+    hideLoading();
+
+    return {
+        status,
+        facebook:  { posts: fbPosts, comments: fbComments, insights: fbInsights },
+        instagram: { media: igMedia, comments: igComments },
+        linkedin:  { posts: liPosts, comments: liComments },
+        youtube:   { videos: ytVideos, comments: ytComments }
+    };
+}
+
+// ============================================================
+// DATA PROCESSING
+// ============================================================
+function processData(raw) {
+    if (!raw) return null;
+    const result = {
+        comments: [],
+        kpis: { reactions: 0, comments: 0, shares: 0, views: 0 },
+        platformEngagement: { fb: 0, ig: 0, li: 0, yt: 0 },
+        platformComments: { fb: [], ig: [], li: [], yt: [] },
+        postEngagement: []
+    };
+
+    // --- Facebook ---
+    if (raw.facebook.posts && Array.isArray(raw.facebook.posts)) {
+        raw.facebook.posts.forEach(p => {
+            const reactions = p.reactions?.summary?.total_count || p.likes?.summary?.total_count || 0;
+            const comments = p.comments?.summary?.total_count || 0;
+            const shares = p.shares?.count || 0;
+            result.kpis.reactions += reactions;
+            result.kpis.comments += comments;
+            result.kpis.shares += shares;
+            result.platformEngagement.fb += reactions + comments + shares;
+            result.postEngagement.push({ platform: 'Facebook', label: (p.message || 'Post').substring(0, 30), value: reactions + comments + shares });
+        });
+    }
+    if (raw.facebook.comments && Array.isArray(raw.facebook.comments)) {
+        raw.facebook.comments.forEach(c => {
+            const item = { platform: 'fb', author: c.from?.name || 'Facebook User', text: c.message || '', time: c.created_time || '' };
+            result.comments.push(item);
+            result.platformComments.fb.push(item);
+        });
+    }
+    if (raw.facebook.insights && raw.facebook.insights.page_views_total) {
+        result.kpis.views += raw.facebook.insights.page_views_total;
+    }
+
+    // --- Instagram ---
+    if (raw.instagram.media && Array.isArray(raw.instagram.media)) {
+        raw.instagram.media.forEach(m => {
+            const likes = m.like_count || 0;
+            const comments = m.comments_count || 0;
+            result.kpis.reactions += likes;
+            result.kpis.comments += comments;
+            result.platformEngagement.ig += likes + comments;
+            result.postEngagement.push({ platform: 'Instagram', label: (m.caption || 'Post').substring(0, 30), value: likes + comments });
+        });
+    }
+    if (raw.instagram.comments && Array.isArray(raw.instagram.comments)) {
+        raw.instagram.comments.forEach(c => {
+            const item = { platform: 'ig', author: c.username || 'Instagram User', text: c.text || '', time: c.timestamp || '' };
+            result.comments.push(item);
+            result.platformComments.ig.push(item);
+        });
+    }
+
+    // --- LinkedIn ---
+    if (raw.linkedin.posts && Array.isArray(raw.linkedin.posts)) {
+        raw.linkedin.posts.forEach(p => {
+            const likes = p.likeCount || p.numLikes || 0;
+            const comments = p.commentCount || p.numComments || 0;
+            const shares = p.shareCount || p.numShares || 0;
+            result.kpis.reactions += likes;
+            result.kpis.comments += comments;
+            result.kpis.shares += shares;
+            result.platformEngagement.li += likes + comments + shares;
+            const txt = p.commentary || p.text || p.specificContent?.['com.linkedin.ugc.ShareContent']?.shareCommentary?.text || 'Post';
+            result.postEngagement.push({ platform: 'LinkedIn', label: txt.substring(0, 30), value: likes + comments + shares });
+        });
+    }
+    if (raw.linkedin.comments && Array.isArray(raw.linkedin.comments)) {
+        raw.linkedin.comments.forEach(c => {
+            const item = { platform: 'li', author: c.authorName || c.actor || 'LinkedIn User', text: c.message || c.comment || '', time: c.created || '' };
+            result.comments.push(item);
+            result.platformComments.li.push(item);
+        });
+    }
+
+    // --- YouTube ---
+    if (raw.youtube.videos && Array.isArray(raw.youtube.videos)) {
+        raw.youtube.videos.forEach(v => {
+            const stats = v.statistics || {};
+            const likes = parseInt(stats.likeCount) || 0;
+            const comments = parseInt(stats.commentCount) || 0;
+            const views = parseInt(stats.viewCount) || 0;
+            result.kpis.reactions += likes;
+            result.kpis.comments += comments;
+            result.kpis.views += views;
+            result.platformEngagement.yt += likes + comments + views;
+            const title = v.snippet?.title || 'Video';
+            result.postEngagement.push({ platform: 'YouTube', label: title.substring(0, 30), value: likes + comments });
+        });
+    }
+    if (raw.youtube.comments && Array.isArray(raw.youtube.comments)) {
+        raw.youtube.comments.forEach(c => {
+            const s = c.snippet?.topLevelComment?.snippet || c.snippet || {};
+            const item = { platform: 'yt', author: s.authorDisplayName || 'YouTube User', text: s.textDisplay || s.textOriginal || '', time: s.publishedAt || '' };
+            result.comments.push(item);
+            result.platformComments.yt.push(item);
+        });
+    }
+
+    // Sort comments by time (newest first)
+    result.comments.sort((a, b) => {
+        const ta = a.time ? new Date(a.time).getTime() : 0;
+        const tb = b.time ? new Date(b.time).getTime() : 0;
+        return tb - ta;
+    });
+
+    // Keep only most recent 50
+    result.comments = result.comments.slice(0, 50);
+
+    // Sort post engagement for chart (top 10)
+    result.postEngagement.sort((a, b) => b.value - a.value);
+    result.postEngagement = result.postEngagement.slice(0, 10);
+
+    return result;
+}
+
+// ============================================================
+// RENDERING
+// ============================================================
+function fmt(n) {
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+    return n.toLocaleString();
+}
+
+function renderKPIs(data) {
+    document.getElementById('kpiReactions').textContent = fmt(data.kpis.reactions);
+    document.getElementById('kpiComments').textContent = fmt(data.kpis.comments);
+    document.getElementById('kpiShares').textContent = fmt(data.kpis.shares);
+    document.getElementById('kpiViews').textContent = fmt(data.kpis.views);
+
+    document.getElementById('engFB').textContent = fmt(data.platformEngagement.fb);
+    document.getElementById('engIG').textContent = fmt(data.platformEngagement.ig);
+    document.getElementById('engLI').textContent = fmt(data.platformEngagement.li);
+    document.getElementById('engYT').textContent = fmt(data.platformEngagement.yt);
+}
+
+function renderSentiment(data) {
+    // Overall
+    const allText = data.comments.map(c => c.text).join(' ');
+    const overall = analyzeSentiment(allText);
+    document.getElementById('overallScore').textContent = overall.score;
+    document.getElementById('overallLabel').textContent = overall.label + ' Overall Sentiment';
+
+    // Per platform
+    const platforms = [
+        { key: 'fb', el: 'sentFB' },
+        { key: 'ig', el: 'sentIG' },
+        { key: 'li', el: 'sentLI' },
+        { key: 'yt', el: 'sentYT' }
+    ];
+    platforms.forEach(p => {
+        const texts = data.platformComments[p.key].map(c => c.text).join(' ');
+        const s = analyzeSentiment(texts);
+        const el = document.getElementById(p.el);
+        el.textContent = data.platformComments[p.key].length > 0 ? s.score : '--';
+        el.className = 'plat-sent-score ' + s.label.toLowerCase();
+    });
+}
+
+function renderComments(data) {
+    const feed = document.getElementById('commentFeed');
+    if (data.comments.length === 0) {
+        feed.innerHTML = '<div class="empty-state"><div class="empty-state-text">No comments found across connected platforms.</div></div>';
+        document.getElementById('commentCount').textContent = '';
+        return;
+    }
+    document.getElementById('commentCount').textContent = '(' + data.comments.length + ')';
+
+    feed.innerHTML = data.comments.map(c => {
+        const s = analyzeSentiment(c.text);
+        const initial = c.platform.toUpperCase().charAt(0);
+        // Platform abbreviation for the avatar
+        const platMap = { fb: 'F', ig: 'I', li: 'L', yt: 'Y' };
+        const timeStr = c.time ? new Date(c.time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+        const platLabel = { fb: 'Facebook', ig: 'Instagram', li: 'LinkedIn', yt: 'YouTube' }[c.platform] || '';
+
+        return `<div class="comment-item">
+            <div class="comment-platform ${c.platform}">${platMap[c.platform] || '?'}</div>
+            <div class="comment-body">
+                <div class="comment-author">${escapeHtml(c.author)}</div>
+                <div class="comment-text">${escapeHtml(c.text)}</div>
+                <div class="comment-meta">
+                    <span>${platLabel}</span>
+                    <span>${timeStr}</span>
+                    <span class="comment-sentiment ${s.label.toLowerCase()}">${s.label}</span>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+function renderCharts(data) {
+    // --- Engagement by platform bar chart ---
+    const platformColors = { Facebook: '#1877F2', Instagram: '#E1306C', LinkedIn: '#0A66C2', YouTube: '#FF0000' };
+    const engData = data.postEngagement;
+
+    if (engagementChartInstance) engagementChartInstance.destroy();
+    const ctx1 = document.getElementById('engagementChart').getContext('2d');
+    engagementChartInstance = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+            labels: engData.map(d => d.label),
+            datasets: [{
+                label: 'Engagement',
+                data: engData.map(d => d.value),
+                backgroundColor: engData.map(d => platformColors[d.platform] || '#94A3B8'),
+                borderRadius: 6,
+                barThickness: 24
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { ticks: { maxRotation: 45, font: { size: 10 } }, grid: { display: false } },
+                y: { beginAtZero: true, grid: { color: '#F1F5F9' } }
+            }
+        }
+    });
+
+    // --- Sentiment doughnut ---
+    const sentCounts = { positive: 0, neutral: 0, negative: 0 };
+    data.comments.forEach(c => {
+        const s = analyzeSentiment(c.text);
+        sentCounts[s.label.toLowerCase()]++;
+    });
+
+    if (sentimentChartInstance) sentimentChartInstance.destroy();
+    const ctx2 = document.getElementById('sentimentChart').getContext('2d');
+    sentimentChartInstance = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+            labels: ['Positive', 'Neutral', 'Negative'],
+            datasets: [{
+                data: [sentCounts.positive, sentCounts.neutral, sentCounts.negative],
+                backgroundColor: ['#22C55E', '#EAB308', '#EF4444'],
+                borderWidth: 0, hoverOffset: 6
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            cutout: '65%',
+            plugins: {
+                legend: { position: 'bottom', labels: { padding: 16, font: { size: 12 } } }
+            }
+        }
+    });
+}
+
+// ============================================================
+// PLATFORM CHIPS
+// ============================================================
+function updatePlatformChips(status) {
+    const chips = [
+        { id: 'chipFB', key: 'facebook',  cls: 'fb' },
+        { id: 'chipIG', key: 'instagram', cls: 'ig' },
+        { id: 'chipLI', key: 'linkedin',  cls: 'li' },
+        { id: 'chipYT', key: 'youtube',   cls: 'yt' }
+    ];
+    chips.forEach(c => {
+        const el = document.getElementById(c.id);
+        const on = status[c.key];
+        el.className = 'platform-chip ' + (on ? c.cls : 'off');
+        el.querySelector('.chip-dot').className = 'chip-dot ' + (on ? 'on' : '');
+    });
+}
+
+// ============================================================
+// LOADING + COUNTDOWN
+// ============================================================
+function showLoading() {
+    const bar = document.getElementById('loadingBar');
+    bar.classList.remove('active');
+    void bar.offsetWidth;
+    bar.classList.add('active');
+}
+function hideLoading() {
+    const bar = document.getElementById('loadingBar');
+    setTimeout(() => bar.classList.remove('active'), 1600);
+}
+
+function startCountdown() {
+    countdownSeconds = refreshInterval;
+    if (countdownTimer) clearInterval(countdownTimer);
+    countdownTimer = setInterval(() => {
+        countdownSeconds--;
+        if (countdownSeconds <= 0) {
+            clearInterval(countdownTimer);
+            runDashboard();
+            return;
+        }
+        const m = Math.floor(countdownSeconds / 60);
+        const s = countdownSeconds % 60;
+        document.getElementById('countdown').textContent =
+            String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    }, 1000);
+}
+
+// ============================================================
+// MAIN
+// ============================================================
+async function runDashboard() {
+    const raw = await fetchAllData();
+    const data = processData(raw);
+    if (data) {
+        renderKPIs(data);
+        renderSentiment(data);
+        renderComments(data);
+        renderCharts(data);
+    }
+    document.getElementById('lastUpdated').textContent =
+        'Updated: ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    startCountdown();
+}
+
+// Start on load
+window.addEventListener('DOMContentLoaded', runDashboard);
+</script>
 </body>
 </html>
