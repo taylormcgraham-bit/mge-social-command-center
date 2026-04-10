@@ -90,23 +90,53 @@
             text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px;
         }
 
-        /* --- Sentiment gauge --- */
-        .sentiment-gauge { text-align: center; padding: 10px 0; }
-        .gauge-score { font-size: 48px; font-weight: 800; color: #003B71; }
-        .gauge-label { font-size: 14px; color: #8F9BBA; margin-top: 4px; }
+        /* --- Sentiment gauge (arc) --- */
+        .sentiment-gauge { text-align: center; padding: 10px 0; position: relative; }
+        .gauge-wrap { position: relative; width: 220px; height: 130px; margin: 0 auto; }
+        .gauge-wrap svg { width: 220px; height: 130px; }
+        .gauge-center {
+            position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+            text-align: center;
+        }
+        .gauge-score { font-size: 42px; font-weight: 800; color: #003B71; line-height: 1; }
+        .gauge-label { font-size: 12px; color: #8F9BBA; margin-top: 2px; }
+        .sentiment-dist-row {
+            display: flex; justify-content: center; gap: 24px;
+            margin-top: 16px; padding-top: 14px; border-top: 1px solid #F1F5F9;
+        }
+        .sent-dist-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748B; }
+        .sent-dist-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .sent-dist-dot.pos { background: #22C55E; }
+        .sent-dist-dot.neu { background: #EAB308; }
+        .sent-dist-dot.neg { background: #EF4444; }
+        .sent-dist-val { font-weight: 700; color: #1B2559; }
+        .gauge-bar-wrap { margin-top: 14px; }
+        .gauge-bar {
+            display: flex; height: 8px; border-radius: 4px; overflow: hidden;
+            width: 100%; background: #F1F5F9;
+        }
+        .gauge-bar .seg-pos { background: #22C55E; transition: width 0.5s; }
+        .gauge-bar .seg-neu { background: #EAB308; transition: width 0.5s; }
+        .gauge-bar .seg-neg { background: #EF4444; transition: width 0.5s; }
         .platform-sentiments {
             display: grid; grid-template-columns: repeat(4, 1fr);
             gap: 10px; margin-top: 18px;
         }
         .plat-sent {
-            text-align: center; padding: 10px 6px;
+            text-align: center; padding: 12px 8px;
             border-radius: 10px; background: #F8FAFC;
         }
-        .plat-sent-name { font-size: 11px; font-weight: 600; color: #64748B; margin-bottom: 4px; }
+        .plat-sent-name { font-size: 11px; font-weight: 600; color: #64748B; margin-bottom: 6px; }
         .plat-sent-score { font-size: 22px; font-weight: 700; }
         .plat-sent-score.positive { color: #16A34A; }
         .plat-sent-score.neutral  { color: #CA8A04; }
         .plat-sent-score.negative { color: #DC2626; }
+        .plat-sent-pct { font-size: 10px; color: #94A3B8; margin-top: 1px; }
+        .plat-sent-bar {
+            height: 4px; border-radius: 2px; background: #E2E8F0;
+            margin-top: 6px; overflow: hidden;
+        }
+        .plat-sent-bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
 
         /* --- Comment Controls --- */
         .comment-controls {
@@ -212,16 +242,24 @@
         .kpi-value { font-size: 32px; font-weight: 800; color: #003B71; }
         .kpi-label { font-size: 12px; font-weight: 600; color: #8F9BBA; margin-top: 4px; }
 
-        /* --- Engagement by platform --- */
-        .platform-engagement { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; }
-        .plat-eng { text-align: center; padding: 14px 6px; border-radius: 10px; }
+        /* --- Engagement by platform (detailed) --- */
+        .platform-engagement { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 14px; }
+        .plat-eng { padding: 14px 10px; border-radius: 12px; }
         .plat-eng.fb { background: #EBF5FF; }
         .plat-eng.ig { background: #FDF2F8; }
         .plat-eng.li { background: #EFF6FF; }
         .plat-eng.yt { background: #FEF2F2; }
-        .plat-eng-name { font-size: 11px; font-weight: 600; color: #64748B; margin-bottom: 4px; }
-        .plat-eng-value { font-size: 20px; font-weight: 700; color: #1B2559; }
-        .plat-eng-label { font-size: 10px; color: #94A3B8; margin-top: 2px; }
+        .plat-eng-header { text-align: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid rgba(0,0,0,0.06); }
+        .plat-eng-name { font-size: 11px; font-weight: 600; color: #64748B; margin-bottom: 2px; }
+        .plat-eng-total { font-size: 20px; font-weight: 800; color: #1B2559; }
+        .plat-eng-label { font-size: 10px; color: #94A3B8; }
+        .plat-eng-breakdown { display: flex; flex-direction: column; gap: 4px; }
+        .plat-eng-row {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 11px; color: #64748B; padding: 2px 0;
+        }
+        .plat-eng-row-val { font-weight: 700; color: #1B2559; }
+        .plat-eng-row-icon { width: 14px; text-align: center; flex-shrink: 0; }
 
         /* --- Charts --- */
         .chart-container { position: relative; height: 240px; margin-top: 8px; }
@@ -280,14 +318,30 @@
         <div class="card" style="margin-bottom:24px;">
             <div class="card-title">Audience Sentiment</div>
             <div class="sentiment-gauge">
-                <div class="gauge-score" id="overallScore">--</div>
-                <div class="gauge-label" id="overallLabel">Analyzing comments...</div>
+                <div class="gauge-wrap">
+                    <svg viewBox="0 0 220 130" id="gaugeArc">
+                        <path d="M 20 120 A 90 90 0 0 1 200 120" fill="none" stroke="#E2E8F0" stroke-width="16" stroke-linecap="round"/>
+                        <path d="M 20 120 A 90 90 0 0 1 200 120" fill="none" stroke="#22C55E" stroke-width="16" stroke-linecap="round" id="gaugeArcFill" stroke-dasharray="0 283"/>
+                    </svg>
+                    <div class="gauge-center">
+                        <div class="gauge-score" id="overallScore">--</div>
+                        <div class="gauge-label" id="overallLabel">Analyzing...</div>
+                    </div>
+                </div>
+                <div class="gauge-bar-wrap">
+                    <div class="gauge-bar" id="gaugeSentBar"></div>
+                </div>
+                <div class="sentiment-dist-row" id="sentDistRow">
+                    <div class="sent-dist-item"><span class="sent-dist-dot pos"></span> Positive <span class="sent-dist-val" id="sentDistPos">0</span></div>
+                    <div class="sent-dist-item"><span class="sent-dist-dot neu"></span> Neutral <span class="sent-dist-val" id="sentDistNeu">0</span></div>
+                    <div class="sent-dist-item"><span class="sent-dist-dot neg"></span> Negative <span class="sent-dist-val" id="sentDistNeg">0</span></div>
+                </div>
             </div>
             <div class="platform-sentiments" id="platformSentiments">
-                <div class="plat-sent"><div class="plat-sent-name">Facebook</div><div class="plat-sent-score neutral" id="sentFB">--</div></div>
-                <div class="plat-sent"><div class="plat-sent-name">Instagram</div><div class="plat-sent-score neutral" id="sentIG">--</div></div>
-                <div class="plat-sent"><div class="plat-sent-name">LinkedIn</div><div class="plat-sent-score neutral" id="sentLI">--</div></div>
-                <div class="plat-sent"><div class="plat-sent-name">YouTube</div><div class="plat-sent-score neutral" id="sentYT">--</div></div>
+                <div class="plat-sent" id="sentBlockFB"><div class="plat-sent-name">Facebook</div><div class="plat-sent-score neutral" id="sentFB">--</div><div class="plat-sent-pct" id="sentPctFB"></div><div class="plat-sent-bar"><div class="plat-sent-bar-fill" id="sentBarFB"></div></div></div>
+                <div class="plat-sent" id="sentBlockIG"><div class="plat-sent-name">Instagram</div><div class="plat-sent-score neutral" id="sentIG">--</div><div class="plat-sent-pct" id="sentPctIG"></div><div class="plat-sent-bar"><div class="plat-sent-bar-fill" id="sentBarIG"></div></div></div>
+                <div class="plat-sent" id="sentBlockLI"><div class="plat-sent-name">LinkedIn</div><div class="plat-sent-score neutral" id="sentLI">--</div><div class="plat-sent-pct" id="sentPctLI"></div><div class="plat-sent-bar"><div class="plat-sent-bar-fill" id="sentBarLI"></div></div></div>
+                <div class="plat-sent" id="sentBlockYT"><div class="plat-sent-name">YouTube</div><div class="plat-sent-score neutral" id="sentYT">--</div><div class="plat-sent-pct" id="sentPctYT"></div><div class="plat-sent-bar"><div class="plat-sent-bar-fill" id="sentBarYT"></div></div></div>
             </div>
         </div>
 
@@ -302,16 +356,6 @@
                 <button class="filter-btn" data-filter="ig">Instagram</button>
                 <button class="filter-btn" data-filter="li">LinkedIn</button>
                 <button class="filter-btn" data-filter="yt">YouTube</button>
-            </div>
-
-            <!-- Sentiment distribution bar -->
-            <div class="sentiment-bar-wrap">
-                <div class="sentiment-bar" id="commentSentimentBar"></div>
-                <div class="sentiment-legend">
-                    <span><span class="dot pos"></span> Positive <strong id="sentPosCount">0</strong></span>
-                    <span><span class="dot neu"></span> Neutral <strong id="sentNeuCount">0</strong></span>
-                    <span><span class="dot neg"></span> Negative <strong id="sentNegCount">0</strong></span>
-                </div>
             </div>
 
             <div class="comment-feed" id="commentFeed">
@@ -385,7 +429,7 @@
         </div>
 
         <div class="card">
-            <div class="card-title">Sentiment Distribution</div>
+            <div class="card-title">Content Performance</div>
             <div class="chart-container" style="height:220px;">
                 <canvas id="sentimentChart"></canvas>
             </div>
@@ -504,7 +548,12 @@ function processData(raw) {
     const result = {
         comments: [],
         kpis: { reactions: 0, comments: 0, shares: 0, views: 0 },
-        platformEngagement: { fb: 0, ig: 0, li: 0, yt: 0 },
+        platformEngagement: {
+            fb: { likes: 0, comments: 0, shares: 0, views: 0 },
+            ig: { likes: 0, comments: 0, shares: 0, views: 0 },
+            li: { likes: 0, comments: 0, shares: 0, views: 0 },
+            yt: { likes: 0, comments: 0, shares: 0, views: 0 }
+        },
         platformComments: { fb: [], ig: [], li: [], yt: [] },
         postEngagement: []
     };
@@ -520,7 +569,9 @@ function processData(raw) {
             result.kpis.reactions += reactions;
             result.kpis.comments += comments;
             result.kpis.shares += shares;
-            result.platformEngagement.fb += reactions + comments + shares;
+            result.platformEngagement.fb.likes += reactions;
+            result.platformEngagement.fb.comments += comments;
+            result.platformEngagement.fb.shares += shares;
             result.postEngagement.push({ platform: 'Facebook', label: (p.message || 'Post').substring(0, 30), value: reactions + comments + shares });
         });
     }
@@ -540,6 +591,7 @@ function processData(raw) {
     }
     if (raw.facebook.insights && raw.facebook.insights.page_views_total) {
         result.kpis.views += raw.facebook.insights.page_views_total;
+        result.platformEngagement.fb.views += raw.facebook.insights.page_views_total;
     }
 
     // --- Instagram ---
@@ -551,7 +603,8 @@ function processData(raw) {
             const comments = m.comments_count || 0;
             result.kpis.reactions += likes;
             result.kpis.comments += comments;
-            result.platformEngagement.ig += likes + comments;
+            result.platformEngagement.ig.likes += likes;
+            result.platformEngagement.ig.comments += comments;
             result.postEngagement.push({ platform: 'Instagram', label: (m.caption || 'Post').substring(0, 30), value: likes + comments });
         });
     }
@@ -581,7 +634,9 @@ function processData(raw) {
             result.kpis.reactions += likes;
             result.kpis.comments += comments;
             result.kpis.shares += shares;
-            result.platformEngagement.li += likes + comments + shares;
+            result.platformEngagement.li.likes += likes;
+            result.platformEngagement.li.comments += comments;
+            result.platformEngagement.li.shares += shares;
             const txt = p.commentary || p.text || p.specificContent?.['com.linkedin.ugc.ShareContent']?.shareCommentary?.text || 'Post';
             result.postEngagement.push({ platform: 'LinkedIn', label: txt.substring(0, 30), value: likes + comments + shares });
         });
@@ -613,7 +668,9 @@ function processData(raw) {
             result.kpis.reactions += likes;
             result.kpis.comments += comments;
             result.kpis.views += views;
-            result.platformEngagement.yt += likes + comments + views;
+            result.platformEngagement.yt.likes += likes;
+            result.platformEngagement.yt.comments += comments;
+            result.platformEngagement.yt.views += views;
             const title = v.snippet?.title || 'Video';
             result.postEngagement.push({ platform: 'YouTube', label: title.substring(0, 30), value: likes + comments });
         });
@@ -681,10 +738,42 @@ function renderKPIs(data) {
     document.getElementById('kpiComments').textContent = fmt(data.kpis.comments);
     document.getElementById('kpiShares').textContent = fmt(data.kpis.shares);
     document.getElementById('kpiViews').textContent = fmt(data.kpis.views);
-    document.getElementById('engFB').textContent = fmt(data.platformEngagement.fb);
-    document.getElementById('engIG').textContent = fmt(data.platformEngagement.ig);
-    document.getElementById('engLI').textContent = fmt(data.platformEngagement.li);
-    document.getElementById('engYT').textContent = fmt(data.platformEngagement.yt);
+    renderPlatformEngagement(data);
+}
+
+function renderPlatformEngagement(data) {
+    const pe = data.platformEngagement;
+    const platforms = [
+        { key: 'fb', name: 'Facebook', cls: 'fb', icon: { likes: '\u2764', comments: '\uD83D\uDCAC', shares: '\uD83D\uDD01', views: '\uD83D\uDC41' } },
+        { key: 'ig', name: 'Instagram', cls: 'ig', icon: { likes: '\u2764', comments: '\uD83D\uDCAC', shares: '', views: '' } },
+        { key: 'li', name: 'LinkedIn', cls: 'li', icon: { likes: '\uD83D\uDC4D', comments: '\uD83D\uDCAC', shares: '\uD83D\uDD01', views: '' } },
+        { key: 'yt', name: 'YouTube', cls: 'yt', icon: { likes: '\uD83D\uDC4D', comments: '\uD83D\uDCAC', shares: '', views: '\u25B6' } }
+    ];
+    const container = document.getElementById('platformEngagement');
+    container.innerHTML = platforms.map(p => {
+        const dd = pe[p.key];
+        const total = dd.likes + dd.comments + dd.shares + dd.views;
+        const rows = [];
+        if (dd.likes > 0 || p.key === 'fb' || p.key === 'ig') rows.push({ label: p.key === 'fb' ? 'Reactions' : 'Likes', val: dd.likes, ic: p.icon.likes });
+        if (true) rows.push({ label: 'Comments', val: dd.comments, ic: p.icon.comments });
+        if (dd.shares > 0 && p.icon.shares) rows.push({ label: 'Shares', val: dd.shares, ic: p.icon.shares });
+        if (dd.views > 0 && p.icon.views) rows.push({ label: 'Views', val: dd.views, ic: p.icon.views });
+        return '<div class="plat-eng ' + p.cls + '">' +
+            '<div class="plat-eng-header">' +
+                '<div class="plat-eng-name">' + p.name + '</div>' +
+                '<div class="plat-eng-total">' + fmt(total) + '</div>' +
+                '<div class="plat-eng-label">total</div>' +
+            '</div>' +
+            '<div class="plat-eng-breakdown">' +
+                rows.map(r =>
+                    '<div class="plat-eng-row">' +
+                        '<span><span class="plat-eng-row-icon">' + r.ic + '</span> ' + r.label + '</span>' +
+                        '<span class="plat-eng-row-val">' + fmt(r.val) + '</span>' +
+                    '</div>'
+                ).join('') +
+            '</div>' +
+        '</div>';
+    }).join('');
 }
 
 function renderSentiment(data) {
@@ -692,19 +781,46 @@ function renderSentiment(data) {
     const overall = analyzeSentiment(allText);
     document.getElementById('overallScore').textContent = overall.score;
     document.getElementById('overallLabel').textContent = overall.label + ' Overall Sentiment';
-
+    const arcFill = document.getElementById('gaugeArcFill');
+    const arcTotal = 283;
+    const fillLen = (overall.score / 100) * arcTotal;
+    const color = overall.score >= 60 ? '#22C55E' : overall.score <= 40 ? '#EF4444' : '#EAB308';
+    arcFill.setAttribute('stroke', color);
+    arcFill.setAttribute('stroke-dasharray', fillLen + ' ' + arcTotal);
+    let pos = 0, neu = 0, neg = 0;
+    data.comments.forEach(c => {
+        const s = analyzeSentiment(c.text);
+        if (s.label === 'Positive') pos++;
+        else if (s.label === 'Negative') neg++;
+        else neu++;
+    });
+    const total = pos + neu + neg || 1;
+    document.getElementById('gaugeSentBar').innerHTML =
+        '<div class="seg-pos" style="width:' + (pos/total*100).toFixed(1) + '%"></div>' +
+        '<div class="seg-neu" style="width:' + (neu/total*100).toFixed(1) + '%"></div>' +
+        '<div class="seg-neg" style="width:' + (neg/total*100).toFixed(1) + '%"></div>';
+    document.getElementById('sentDistPos').textContent = pos + ' (' + Math.round(pos/total*100) + '%)';
+    document.getElementById('sentDistNeu').textContent = neu + ' (' + Math.round(neu/total*100) + '%)';
+    document.getElementById('sentDistNeg').textContent = neg + ' (' + Math.round(neg/total*100) + '%)';
     const platforms = [
-        { key: 'fb', el: 'sentFB' },
-        { key: 'ig', el: 'sentIG' },
-        { key: 'li', el: 'sentLI' },
-        { key: 'yt', el: 'sentYT' }
+        { key: 'fb', el: 'sentFB', bar: 'sentBarFB', pct: 'sentPctFB' },
+        { key: 'ig', el: 'sentIG', bar: 'sentBarIG', pct: 'sentPctIG' },
+        { key: 'li', el: 'sentLI', bar: 'sentBarLI', pct: 'sentPctLI' },
+        { key: 'yt', el: 'sentYT', bar: 'sentBarYT', pct: 'sentPctYT' }
     ];
     platforms.forEach(p => {
-        const texts = data.platformComments[p.key].map(c => c.text).join(' ');
+        const comments = data.platformComments[p.key];
+        const texts = comments.map(c => c.text).join(' ');
         const s = analyzeSentiment(texts);
         const el = document.getElementById(p.el);
-        el.textContent = data.platformComments[p.key].length > 0 ? s.score : '--';
+        const hasData = comments.length > 0;
+        el.textContent = hasData ? s.score + '%' : '--';
         el.className = 'plat-sent-score ' + s.label.toLowerCase();
+        document.getElementById(p.pct).textContent = hasData ? s.label : '';
+        const bar = document.getElementById(p.bar);
+        const barColor = s.score >= 60 ? '#22C55E' : s.score <= 40 ? '#EF4444' : '#EAB308';
+        bar.style.width = hasData ? s.score + '%' : '0%';
+        bar.style.background = barColor;
     });
 }
 
@@ -750,21 +866,8 @@ function setupFilters() {
 }
 
 function renderSentimentBar(comments) {
-    let pos = 0, neu = 0, neg = 0;
-    comments.forEach(c => {
-        const s = analyzeSentiment(c.text);
-        if (s.label === 'Positive') pos++;
-        else if (s.label === 'Negative') neg++;
-        else neu++;
-    });
-    const total = pos + neu + neg || 1;
-    document.getElementById('commentSentimentBar').innerHTML =
-        '<div class="seg-pos" style="width:' + (pos/total*100).toFixed(1) + '%"></div>' +
-        '<div class="seg-neu" style="width:' + (neu/total*100).toFixed(1) + '%"></div>' +
-        '<div class="seg-neg" style="width:' + (neg/total*100).toFixed(1) + '%"></div>';
-    document.getElementById('sentPosCount').textContent = pos;
-    document.getElementById('sentNeuCount').textContent = neu;
-    document.getElementById('sentNegCount').textContent = neg;
+    // Sentiment bar is now rendered in the gauge section by renderSentiment()
+    // This function is kept for filter-driven updates
 }
 
 function renderCommentFeed(comments) {
@@ -848,30 +951,39 @@ function renderCharts(data) {
         }
     });
 
-    const sentCounts = { positive: 0, neutral: 0, negative: 0 };
-    data.comments.forEach(c => {
-        const s = analyzeSentiment(c.text);
-        sentCounts[s.label.toLowerCase()]++;
+    // Sentiment by platform chart
+    const platSent = {};
+    ['fb', 'ig', 'li', 'yt'].forEach(k => {
+        const texts = data.platformComments[k].map(c => c.text).join(' ');
+        const s = analyzeSentiment(texts);
+        platSent[k] = data.platformComments[k].length > 0 ? s.score : 0;
     });
 
     if (sentimentChartInstance) sentimentChartInstance.destroy();
     const ctx2 = document.getElementById('sentimentChart').getContext('2d');
     sentimentChartInstance = new Chart(ctx2, {
-        type: 'doughnut',
+        type: 'bar',
         data: {
-            labels: ['Positive', 'Neutral', 'Negative'],
+            labels: ['Facebook', 'Instagram', 'LinkedIn', 'YouTube'],
             datasets: [{
-                data: [sentCounts.positive, sentCounts.neutral, sentCounts.negative],
-                backgroundColor: ['#22C55E', '#EAB308', '#EF4444'],
-                borderWidth: 0, hoverOffset: 6
+                label: 'Sentiment Score',
+                data: [platSent.fb, platSent.ig, platSent.li, platSent.yt],
+                backgroundColor: ['#1877F2', '#E1306C', '#0A66C2', '#FF0000'],
+                borderRadius: 6, barThickness: 36
             }]
         },
         options: {
-            responsive: true, maintainAspectRatio: false, cutout: '65%',
-            plugins: { legend: { position: 'bottom', labels: { padding: 16, font: { size: 12 } } } }
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { display: false } },
+                y: { beginAtZero: true, max: 100, grid: { color: '#F1F5F9' },
+                     ticks: { callback: v => v + '%' } }
+            }
         }
     });
 }
+
 
 // ============================================================
 // PLATFORM CHIPS
