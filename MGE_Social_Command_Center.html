@@ -690,10 +690,11 @@ function timeAgo(date) {
 }
 
 function renderKPIs(data) {
-    document.getElementById('kpiReactions').textContent = fmt(data.kpis.reactions);
-    document.getElementById('kpiComments').textContent = fmt(data.kpis.comments);
-    document.getElementById('kpiShares').textContent = fmt(data.kpis.shares);
-    document.getElementById('kpiViews').textContent = fmt(data.kpis.views);
+    const el = (id) => document.getElementById(id);
+    if (el('kpiReactions')) el('kpiReactions').textContent = fmt(data.kpis.reactions);
+    if (el('kpiComments')) el('kpiComments').textContent = fmt(data.kpis.comments);
+    if (el('kpiShares')) el('kpiShares').textContent = fmt(data.kpis.shares);
+    if (el('kpiViews')) el('kpiViews').textContent = fmt(data.kpis.views);
     renderPlatformEngagement(data);
 }
 
