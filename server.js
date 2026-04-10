@@ -300,7 +300,7 @@ app.get('/api/facebook/all-comments', async (req, res) => {
 
   // Get recent posts
   const postsData = await apiFetch(
-    `${META_BASE}/${pageId}/posts?fields=id,message,created_time,comments{message,created_time,from,like_count}&limit=10&access_token=${pageAccessToken}`
+    `${META_BASE}/${pageId}/posts?fields=id,message,created_time,full_picture,comments{message,created_time,from,like_count}&limit=10&access_token=${pageAccessToken}`
   );
   if (postsData.error) return res.json(postsData);
 
@@ -315,7 +315,8 @@ app.get('/api/facebook/all-comments', async (req, res) => {
         publishedAt: c.created_time,
         likeCount: c.like_count || 0,
         postId: post.id,
-        postMessage: post.message || ''
+        postMessage: post.message || '',
+        postImage: post.full_picture || ''
       });
     });
   });
@@ -373,7 +374,7 @@ app.get('/api/instagram/all-comments', async (req, res) => {
   if (!accessToken || !igUserId) return res.json({ error: true, message: 'Instagram not configured' });
 
   const mediaData = await apiFetch(
-    `${META_BASE}/${igUserId}/media?fields=id,caption,timestamp,comments{text,timestamp,username,like_count}&limit=10&access_token=${accessToken}`
+    `${META_BASE}/${igUserId}/media?fields=id,caption,media_url,thumbnail_url,timestamp,comments{text,timestamp,username,like_count}&limit=10&access_token=${accessToken}`
   );
   if (mediaData.error) return res.json(mediaData);
 
@@ -388,7 +389,8 @@ app.get('/api/instagram/all-comments', async (req, res) => {
         publishedAt: c.timestamp,
         likeCount: c.like_count || 0,
         postId: post.id,
-        postCaption: post.caption || ''
+        postCaption: post.caption || '',
+        postImage: post.media_url || post.thumbnail_url || ''
       });
     });
   });
