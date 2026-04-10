@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<\!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -22,8 +22,7 @@
         }
         .header-left { display: flex; align-items: center; gap: 18px; }
         .header-title { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
-        .header-title-sub { font-size: 11px; opacity: 0.8; margin-top: 2px; }
-        .live-indicator {
+        .header-title-sub { font-size: 11px; opacity: 0.8; margin-top: 2px; }        .live-indicator {
             display: flex; align-items: center; gap: 8px;
             background: rgba(255,255,255,0.1); padding: 8px 14px;
             border-radius: 50px; font-size: 12px; font-weight: 600;
@@ -109,55 +108,113 @@
         .plat-sent-score.neutral  { color: #CA8A04; }
         .plat-sent-score.negative { color: #DC2626; }
 
-        /* --- Comment feed --- */
-        .comment-feed { max-height: 520px; overflow-y: auto; }
+        /* --- Comment Controls --- */
+        .comment-controls {
+            display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+            margin-bottom: 14px;
+        }
+        .filter-btn {
+            padding: 6px 14px; border-radius: 20px; border: 1.5px solid #E2E8F0;
+            background: white; color: #64748B; font-size: 12px; font-weight: 600;
+            cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 5px;
+        }
+        .filter-btn:hover { border-color: #94A3B8; color: #334155; }
+        .filter-btn.active { background: #1B2559; color: white; border-color: #1B2559; }
+        .filter-count {
+            padding: 1px 6px; border-radius: 10px; font-size: 10px;
+        }
+        .filter-btn.active .filter-count { background: rgba(255,255,255,0.2); }
+        .filter-btn:not(.active) .filter-count { background: #F1F5F9; color: #64748B; }
+
+        /* --- Sentiment summary bar --- */
+        .senntiment-bar-wrap { margin-bottom: 14px; }
+        .sentiment-bar {
+            display: flex; height: 6px; border-radius: 3px; overflow: hidden;
+            width: 100%; background: #F1F5F9;
+        }
+        .sentiment-bar .seg-pos { background: #22C55E; }
+        .sentiment-bar .seg-neu { background: #EAB308; }
+        .sentiment-bar .seg-neg { background: #EF4444; }
+        .sentiment-legend {
+            display: flex; gap: 14px; font-size: 11px; color: #64748B; margin-top: 6px;
+        }
+        .sentiment-legend span { display: flex; align-items: center; gap: 4px; }
+        .sentiment-legend .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .sentiment-legend .dot.pos { background: #22C55E; }
+        .sentiment-legend .dot.neu { background: #EAB308; }
+        .sentiment-legend .dot.neg { background: #EF4444; }
+
+        /* --- Comment Feed --- */
+        .comment-feed { max-height: 700px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
         .comment-feed::-webkit-scrollbar { width: 5px; }
         .comment-feed::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
-        .comment-item {
-            padding: 12px 0; border-bottom: 1px solid #F1F5F9;
-            display: flex; gap: 10px; align-items: flex-start;
+
+        .comment-card {
+            background: #F8FAFC; border-radius: 12px; padding: 14px 16px;
+            border: 1px solid #E2E8F0; transition: all 0.2s;
         }
-        .comment-item:last-child { border-bottom: none; }
-        .comment-platform {
-            flex-shrink: 0; width: 32px; height: 32px;
+        .comment-card:hover { border-color: #CBD5E1; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+        .comment-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .comment-avatar {
+            flex-shrink: 0; width: 36px; height: 36px;
             border-radius: 50%; display: flex; align-items: center;
-            justify-content: center; color: white; font-size: 13px; font-weight: 700;
+            justify-content: center; color: white; font-size: 14px; font-weight: 700;
         }
-        .comment-platform.fb { background: #1877F2; }
-        .comment-platform.ig { background: #E1306C; }
-        .comment-platform.li { background: #0A66C2; }
-        .comment-platform.yt { background: #FF0000; }
-        .comment-body { flex: 1; min-width: 0; }
-        .comment-author { font-size: 13px; font-weight: 600; color: #1B2559; }
-        .comment-text { font-size: 13px; color: #475569; margin-top: 3px; line-height: 1.45; }
-        .comment-meta { font-size: 11px; color: #94A3B8; margin-top: 4px; display: flex; gap: 10px; }
-        .comment-sentiment {
-            display: inline-block; padding: 1px 8px; border-radius: 10px;
-            font-size: 10px; font-weight: 600;
+        .comment-avatar.fb { background: #1877F2; }
+        .comment-avatar.ig { background: linear-gradient(45deg, #F58529, #DD2A7B, #8134AF); }
+        .comment-avatar.li { background: #0A66C2; }
+        .comment-avatar.yt { background: #FF0000; }
+        .comment-header-info { flex: 1; min-width: 0; }
+        .comment-author-row { display: flex; align-items: center; gap: 8px; }
+        .comment-author { font-size: 13px; font-weight: 700; color: #1B2559; }
+        .comment-platform-tag {
+            font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px;
+            text-transform: uppercase; letter-spacing: 0.5px;
         }
-        .comment-sentiment.positive { background: #DCFCE7; color: #16A34A; }
-        .comment-sentiment.neutral  { background: #FEF9C3; color: #CA8A04; }
-        .comment-sentiment.negative { background: #FEE2E2; color: #DC2626; }
+        .comment-platform-tag.fb { background: #EBF5FF; color: #1877F2; }
+        .comment-platform-tag.ig { background: #FDF2F8; color: #DD2A7B; }
+        .comment-platform-tag.li { background: #EFF6FF; color: #0A66C2; }
+        .comment-platform-tag.yt { background: #FEF2F2; color: #FF0000; }
+        .comment-time { font-size: 11px; color: #94A3B8; margin-top: 1px; }
+        .comment-sentiment-badge {
+            margin-left: auto; flex-shrink: 0;
+            display: flex; flex-direction: column; align-items: center;
+            padding: 4px 10px; border-radius: 12px;
+            font-size: 10px; font-weight: 700; min-width: 52px;
+        }
+        .comment-sentiment-badge .score-num { font-size: 16px; line-height: 1.1; }
+        .comment-sentiment-badge .score-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.3px; }
+        .comment-sentiment-badge.positive { background: #DCFCE7; color: #16A34A; }
+        .comment-sentiment-badge.neutral  { background: #FEF9C3; color: #CA8A04; }
+        .comment-sentiment-badge.negative { background: #FEE2E2; color: #DC2626; }
+        .comment-context {
+            font-size: 11px; color: #94A3B8; padding: 6px 10px;
+            background: #F1F5F9; border-radius: 8px; margin-bottom: 8px;
+            border-left: 3px solid #CBD5E1; line-height: 1.4;
+        }
+        .comment-context strong { color: #64748B; }
+        .comment-text { font-size: 13px; color: #334155; line-height: 1.55; margin-bottom: 8px; word-wrap: break-word; }
+        .comment-footer { display: flex; align-items: center; gap: 14px; }
+        .comment-stat {
+            display: flex; align-items: center; gap: 4px;
+            font-size: 11px; color: #94A3B8; font-weight: 500;
+        }
+        .comment-stat svg { width: 14px; height: 14px; }
+        .comment-stat.likes svg { fill: #EF4444; }
+        .no-comments {
+            text-align: center; padding: 40px 20px; color: #94A3B8;
+        }
+        .no-comments .icon { font-size: 32px; margin-bottom: 8px; }
 
         /* --- KPI cards --- */
-        .kpi-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
-        }
-        .kpi-card {
-            background: #F8FAFC; border-radius: 12px; padding: 18px;
-            text-align: center;
-        }
+        .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .kpi-card { background: #F8FAFC; border-radius: 12px; padding: 18px; text-align: center; }
         .kpi-value { font-size: 32px; font-weight: 800; color: #003B71; }
         .kpi-label { font-size: 12px; font-weight: 600; color: #8F9BBA; margin-top: 4px; }
 
         /* --- Engagement by platform --- */
-        .platform-engagement {
-            display: grid; grid-template-columns: repeat(4, 1fr);
-            gap: 10px; margin-top: 14px;
-        }
-        .plat-eng {
-            text-align: center; padding: 14px 6px; border-radius: 10px;
-        }
+        .platform-engagement { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; }
+        .plat-eng { text-align: center; padding: 14px 6px; border-radius: 10px; }
         .plat-eng.fb { background: #EBF5FF; }
         .plat-eng.ig { background: #FDF2F8; }
         .plat-eng.li { background: #EFF6FF; }
@@ -168,12 +225,9 @@
 
         /* --- Charts --- */
         .chart-container { position: relative; height: 240px; margin-top: 8px; }
-        .chart-row { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; }
 
         /* --- Empty state --- */
-        .empty-state {
-            text-align: center; padding: 40px 20px; color: #94A3B8;
-        }
+        .empty-state { text-align: center; padding: 40px 20px; color: #94A3B8; }
         .empty-state-icon { font-size: 28px; margin-bottom: 8px; }
         .empty-state-text { font-size: 14px; }
     </style>
@@ -182,7 +236,7 @@
 
 <div class="loading-bar" id="loadingBar"></div>
 
-<!-- Header -->
+<\!-- Header -->
 <header>
     <div class="header-left">
         <div>
@@ -219,7 +273,7 @@
 <!-- Main two-column grid -->
 <div class="main-grid">
 
-    <!-- ==================== LEFT COLUMN: Comments + Sentiment ==================== -->
+    <!-- LEFT COLUMN: Comments + Sentiment -->
     <div class="left-col">
 
         <!-- Overall Sentiment -->
@@ -240,6 +294,26 @@
         <!-- Live Comment Feed -->
         <div class="card">
             <div class="card-title">Live Comment Feed <span id="commentCount" style="font-weight:400; text-transform:none; letter-spacing:0;"></span></div>
+
+            <!-- Filter buttons -->
+            <div class="comment-controls" id="commentControls">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="fb">Facebook</button>
+                <button class="filter-btn" data-filter="ig">Instagram</button>
+                <button class="filter-btn" data-filter="li">LinkedIn</button>
+                <button class="filter-btn" data-filter="yt">YouTube</button>
+            </div>
+
+            <!-- Sentiment distribution bar -->
+            <div class="sentiment-bar-wrap">
+                <div class="sentiment-bar" id="commentSentimentBar"></div>
+                <div class="sentiment-legend">
+                    <span><span class="dot pos"></span> Positive <strong id="sentPosCount">0</strong></span>
+                    <span><span class="dot neu"></span> Neutral <strong id="sentNeuCount">0</strong></span>
+                    <span><span class="dot neg"></span> Negative <strong id="sentNegCount">0</strong></span>
+                </div>
+            </div>
+
             <div class="comment-feed" id="commentFeed">
                 <div class="empty-state">
                     <div class="empty-state-icon">[ ]</div>
@@ -249,7 +323,7 @@
         </div>
     </div>
 
-    <!-- ==================== RIGHT COLUMN: KPIs + Charts ==================== -->
+    <!-- RIGHT COLUMN: KPIs + Charts -->
     <div class="right-col">
 
         <!-- Engagement KPIs -->
@@ -290,7 +364,7 @@
                     <div class="plat-eng-label">interactions</div>
                 </div>
                 <div class="plat-eng li">
-                    <div class="plat-eng-name">LinkedIn</div>
+                    <div        <div class="plat-eng-name">LinkedIn</div>
                     <div class="plat-eng-value" id="engLI">0</div>
                     <div class="plat-eng-label">interactions</div>
                 </div>
@@ -302,7 +376,7 @@
             </div>
         </div>
 
-        <!-- Charts -->
+        <\!-- Charts -->
         <div class="card" style="margin-bottom:24px;">
             <div class="card-title">Engagement Trend by Platform</div>
             <div class="chart-container">
@@ -324,7 +398,7 @@
 // CONFIG
 // ============================================================
 const API_BASE = window.location.origin;
-let refreshInterval = 3600; // seconds (1 hour default)
+let refreshInterval = 3600;
 let countdownSeconds = 0;
 let countdownTimer = null;
 let engagementChartInstance = null;
@@ -351,14 +425,13 @@ const AFINN = {
 };
 
 function analyzeSentiment(text) {
-    if (!text) return { score: 50, label: 'Neutral' };
+    if (\!text) return { score: 50, label: 'Neutral' };
     const words = text.toLowerCase().replace(/[^a-z\s]/g, '').split(/\s+/);
     let total = 0, count = 0;
     words.forEach(w => {
-        if (AFINN[w] !== undefined) { total += AFINN[w]; count++; }
+        if (AFINN[w] \!== undefined) { total += AFINN[w]; count++; }
     });
     if (count === 0) return { score: 50, label: 'Neutral' };
-    // Normalize from AFINN range (-5..5) to 0..100
     const avg = total / count;
     const score = Math.round(Math.min(100, Math.max(0, (avg + 5) * 10)));
     const label = score >= 60 ? 'Positive' : score <= 40 ? 'Negative' : 'Neutral';
@@ -371,7 +444,7 @@ function analyzeSentiment(text) {
 async function apiFetch(endpoint) {
     try {
         const r = await fetch(API_BASE + endpoint);
-        if (!r.ok) {
+        if (\!r.ok) {
             if (r.status === 403) {
                 const t = await r.text();
                 if (t.toLowerCase().includes('quota')) return { quotaExceeded: true };
@@ -388,12 +461,11 @@ async function apiFetch(endpoint) {
 async function fetchAllData() {
     showLoading();
     const status = await apiFetch('/api/status');
-    if (!status) { hideLoading(); return null; }
+    if (\!status) { hideLoading(); return null; }
 
     if (status.refreshInterval) refreshInterval = status.refreshInterval;
     updatePlatformChips(status);
 
-    // Fetch all enabled platforms in parallel
     const [fbPosts, fbComments, fbInsights,
            igMedia, igComments,
            liPosts, liComments,
@@ -409,7 +481,6 @@ async function fetchAllData() {
         status.youtube   ? apiFetch('/api/youtube/all-comments')   : null
     ]);
 
-    // Check for quota issues
     const quotaHit = [fbPosts,fbComments,igMedia,igComments,liPosts,liComments,ytVideos,ytComments]
         .some(r => r && r.quotaExceeded);
     document.getElementById('quotaBanner').classList.toggle('visible', quotaHit);
@@ -426,10 +497,10 @@ async function fetchAllData() {
 }
 
 // ============================================================
-// DATA PROCESSING
+// DATA PROCESSING â now passes through likes + post context
 // ============================================================
 function processData(raw) {
-    if (!raw) return null;
+    if (\!raw) return null;
     const result = {
         comments: [],
         kpis: { reactions: 0, comments: 0, shares: 0, views: 0 },
@@ -455,7 +526,14 @@ function processData(raw) {
     }
     if (fbCommentsArr.length) {
         fbCommentsArr.forEach(c => {
-            const item = { platform: 'fb', author: c.from?.name || 'Facebook User', text: c.message || '', time: c.created_time || '' };
+            const item = {
+                platform: 'fb',
+                author: c.from?.name || c.author || 'Facebook User',
+                text: c.message || c.text || '',
+                time: c.created_time || c.publishedAt || '',
+                likes: c.like_count || c.likeCount || 0,
+                postContext: c.postMessage || ''
+            };
             result.comments.push(item);
             result.platformComments.fb.push(item);
         });
@@ -479,7 +557,14 @@ function processData(raw) {
     }
     if (igCommentsArr.length) {
         igCommentsArr.forEach(c => {
-            const item = { platform: 'ig', author: c.username || 'Instagram User', text: c.text || '', time: c.timestamp || '' };
+            const item = {
+                platform: 'ig',
+                author: c.username || c.author || 'Instagram User',
+                text: c.text || '',
+                time: c.timestamp || c.publishedAt || '',
+                likes: c.like_count || c.likeCount || 0,
+                postContext: c.postCaption || ''
+            };
             result.comments.push(item);
             result.platformComments.ig.push(item);
         });
@@ -503,7 +588,14 @@ function processData(raw) {
     }
     if (liCommentsArr.length) {
         liCommentsArr.forEach(c => {
-            const item = { platform: 'li', author: c.authorName || c.actor || 'LinkedIn User', text: c.message || c.comment || '', time: c.created || '' };
+            const item = {
+                platform: 'li',
+                author: c.authorName || c.actor || 'LinkedIn User',
+                text: c.message || c.comment || '',
+                time: c.created || c.publishedAt || '',
+                likes: c.likeCount || 0,
+                postContext: c.postText || ''
+            };
             result.comments.push(item);
             result.platformComments.li.push(item);
         });
@@ -529,7 +621,14 @@ function processData(raw) {
     if (ytCommentsArr.length) {
         ytCommentsArr.forEach(c => {
             const s = c.snippet?.topLevelComment?.snippet || c.snippet || {};
-            const item = { platform: 'yt', author: s.authorDisplayName || 'YouTube User', text: s.textDisplay || s.textOriginal || '', time: s.publishedAt || '' };
+            const item = {
+                platform: 'yt',
+                author: s.authorDisplayName || c.author || 'YouTube User',
+                text: s.textDisplay || s.textOriginal || c.text || '',
+                time: s.publishedAt || c.publishedAt || '',
+                likes: s.likeCount || c.likeCount || 0,
+                postContext: c.videoTitle || ''
+            };
             result.comments.push(item);
             result.platformComments.yt.push(item);
         });
@@ -542,8 +641,8 @@ function processData(raw) {
         return tb - ta;
     });
 
-    // Keep only most recent 50
-    result.comments = result.comments.slice(0, 50);
+    // Keep most recent 100
+    result.comments = result.comments.slice(0, 100);
 
     // Sort post engagement for chart (top 10)
     result.postEngagement.sort((a, b) => b.value - a.value);
@@ -561,12 +660,27 @@ function fmt(n) {
     return n.toLocaleString();
 }
 
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str || '';
+    return div.innerHTML;
+}
+
+function timeAgo(date) {
+    const now = new Date();
+    const diff = Math.floor((now - date) / 1000);
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    if (diff < 604800) return Math.floor(diff / 86400) + 'd ago';
+    return Math.floor(diff / 604800) + 'w ago';
+}
+
 function renderKPIs(data) {
     document.getElementById('kpiReactions').textContent = fmt(data.kpis.reactions);
     document.getElementById('kpiComments').textContent = fmt(data.kpis.comments);
     document.getElementById('kpiShares').textContent = fmt(data.kpis.shares);
     document.getElementById('kpiViews').textContent = fmt(data.kpis.views);
-
     document.getElementById('engFB').textContent = fmt(data.platformEngagement.fb);
     document.getElementById('engIG').textContent = fmt(data.platformEngagement.ig);
     document.getElementById('engLI').textContent = fmt(data.platformEngagement.li);
@@ -574,13 +688,11 @@ function renderKPIs(data) {
 }
 
 function renderSentiment(data) {
-    // Overall
     const allText = data.comments.map(c => c.text).join(' ');
     const overall = analyzeSentiment(allText);
     document.getElementById('overallScore').textContent = overall.score;
     document.getElementById('overallLabel').textContent = overall.label + ' Overall Sentiment';
 
-    // Per platform
     const platforms = [
         { key: 'fb', el: 'sentFB' },
         { key: 'ig', el: 'sentIG' },
@@ -596,46 +708,120 @@ function renderSentiment(data) {
     });
 }
 
+// ============================================================
+// COMMENT FEED â enhanced with filters, detail, sentiment
+// ============================================================
+let _allComments = [];
+let _activeFilter = 'all';
+
 function renderComments(data) {
+    _allComments = data.comments;
+    _activeFilter = 'all';
+    setupFilters();
+    renderCommentFeed(_allComments);
+    renderSentimentBar(_allComments);
+}
+
+function setupFilters() {
+    const controls = document.getElementById('commentControls');
+    const counts = { all: _allComments.length, fb: 0, ig: 0, li: 0, yt: 0 };
+    _allComments.forEach(c => counts[c.platform] = (counts[c.platform] || 0) + 1);
+
+    controls.querySelectorAll('.filter-btn').forEach(btn => {
+        const f = btn.dataset.filter;
+        // Update count badge
+        const existing = btn.querySelector('.filter-count');
+        if (existing) existing.remove();
+        if (counts[f] \!== undefined) {
+            const span = document.createElement('span');
+            span.className = 'filter-count';
+            span.textContent = counts[f];
+            btn.appendChild(span);
+        }
+        btn.onclick = () => {
+            controls.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            _activeFilter = f;
+            const filtered = f === 'all' ? _allComments : _allComments.filter(c => c.platform === f);
+            renderCommentFeed(filtered);
+            renderSentimentBar(filtered);
+        };
+    });
+}
+
+function renderSentimentBar(comments) {
+    let pos = 0, neu = 0, neg = 0;
+    comments.forEach(c => {
+        const s = analyzeSentiment(c.text);
+        if (s.label === 'Positive') pos++;
+        else if (s.label === 'Negative') neg++;
+        else neu++;
+    });
+    const total = pos + neu + neg || 1;
+    document.getElementById('commentSentimentBar').innerHTML =
+        '<div class="seg-pos" style="width:' + (pos/total*100).toFixed(1) + '%"></div>' +
+        '<div class="seg-neu" style="width:' + (neu/total*100).toFixed(1) + '%"></div>' +
+        '<div class="seg-neg" style="width:' + (neg/total*100).toFixed(1) + '%"></div>';
+    document.getElementById('sentPosCount').textContent = pos;
+    document.getElementById('sentNeuCount').textContent = neu;
+    document.getElementById('sentNegCount').textContent = neg;
+}
+
+function renderCommentFeed(comments) {
     const feed = document.getElementById('commentFeed');
-    if (data.comments.length === 0) {
-        feed.innerHTML = '<div class="empty-state"><div class="empty-state-text">No comments found across connected platforms.</div></div>';
+    if (comments.length === 0) {
+        feed.innerHTML = '<div class="no-comments"><div class="icon">&#128172;</div><div>No comments found for this filter.</div></div>';
         document.getElementById('commentCount').textContent = '';
         return;
     }
-    document.getElementById('commentCount').textContent = '(' + data.comments.length + ')';
+    document.getElementById('commentCount').textContent = '(' + comments.length + ')';
 
-    feed.innerHTML = data.comments.map(c => {
+    const platMap = { fb: 'F', ig: 'I', li: 'L', yt: 'Y' };
+    const platLabel = { fb: 'Facebook', ig: 'Instagram', li: 'LinkedIn', yt: 'YouTube' };
+    const svgHeart = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/></svg>';
+
+    feed.innerHTML = comments.map(c => {
         const s = analyzeSentiment(c.text);
-        const initial = c.platform.toUpperCase().charAt(0);
-        // Platform abbreviation for the avatar
-        const platMap = { fb: 'F', ig: 'I', li: 'L', yt: 'Y' };
-        const timeStr = c.time ? new Date(c.time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
-        const platLabel = { fb: 'Facebook', ig: 'Instagram', li: 'LinkedIn', yt: 'YouTube' }[c.platform] || '';
+        const ago = c.time ? timeAgo(new Date(c.time)) : '';
+        const fullTime = c.time ? new Date(c.time).toLocaleDateString('en-US', {
+            month: 'short', day: 'numeric', year: 'numeric',
+            hour: 'numeric', minute: '2-digit'
+        }) : '';
+        const contextHtml = c.postContext
+            ? '<div class="comment-context"><strong>On:</strong> ' + escapeHtml(c.postContext.substring(0, 140)) + (c.postContext.length > 140 ? '...' : '') + '</div>'
+            : '';
+        const likesHtml = c.likes
+            ? '<div class="comment-stat likes">' + svgHeart + ' ' + c.likes + '</div>'
+            : '';
 
-        return `<div class="comment-item">
-            <div class="comment-platform ${c.platform}">${platMap[c.platform] || '?'}</div>
-            <div class="comment-body">
-                <div class="comment-author">${escapeHtml(c.author)}</div>
-                <div class="comment-text">${escapeHtml(c.text)}</div>
-                <div class="comment-meta">
-                    <span>${platLabel}</span>
-                    <span>${timeStr}</span>
-                    <span class="comment-sentiment ${s.label.toLowerCase()}">${s.label}</span>
-                </div>
-            </div>
-        </div>`;
+        return '<div class="comment-card" data-platform="' + c.platform + '">' +
+            '<div class="comment-card-header">' +
+                '<div class="comment-avatar ' + c.platform + '">' + (platMap[c.platform] || '?') + '</div>' +
+                '<div class="comment-header-info">' +
+                    '<div class="comment-author-row">' +
+                        '<span class="comment-author">' + escapeHtml(c.author) + '</span>' +
+                        '<span class="comment-platform-tag ' + c.platform + '">' + (platLabel[c.platform] || '') + '</span>' +
+                    '</div>' +
+                    '<div class="comment-time" title="' + escapeHtml(fullTime) + '">' + ago + (fullTime ? ' &middot; ' + fullTime : '') + '</div>' +
+                '</div>' +
+                '<div class="comment-sentiment-badge ' + s.label.toLowerCase() + '">' +
+                    '<span class="score-num">' + s.score + '</span>' +
+                    '<span class="score-label">' + s.label + '</span>' +
+                '</div>' +
+            '</div>' +
+            contextHtml +
+            '<div class="comment-text">' + escapeHtml(c.text || '(no text)') + '</div>' +
+            '<div class="comment-footer">' +
+                likesHtml +
+            '</div>' +
+        '</div>';
     }).join('');
 }
 
-function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-}
-
+// ============================================================
+// CHARTS
+// ============================================================
 function renderCharts(data) {
-    // --- Engagement by platform bar chart ---
     const platformColors = { Facebook: '#1877F2', Instagram: '#E1306C', LinkedIn: '#0A66C2', YouTube: '#FF0000' };
     const engData = data.postEngagement;
 
@@ -649,8 +835,7 @@ function renderCharts(data) {
                 label: 'Engagement',
                 data: engData.map(d => d.value),
                 backgroundColor: engData.map(d => platformColors[d.platform] || '#94A3B8'),
-                borderRadius: 6,
-                barThickness: 24
+                borderRadius: 6, barThickness: 24
             }]
         },
         options: {
@@ -663,7 +848,6 @@ function renderCharts(data) {
         }
     });
 
-    // --- Sentiment doughnut ---
     const sentCounts = { positive: 0, neutral: 0, negative: 0 };
     data.comments.forEach(c => {
         const s = analyzeSentiment(c.text);
@@ -683,11 +867,8 @@ function renderCharts(data) {
             }]
         },
         options: {
-            responsive: true, maintainAspectRatio: false,
-            cutout: '65%',
-            plugins: {
-                legend: { position: 'bottom', labels: { padding: 16, font: { size: 12 } } }
-            }
+            responsive: true, maintainAspectRatio: false, cutout: '65%',
+            plugins: { legend: { position: 'bottom', labels: { padding: 16, font: { size: 12 } } } }
         }
     });
 }
@@ -758,7 +939,6 @@ async function runDashboard() {
     startCountdown();
 }
 
-// Start on load
 window.addEventListener('DOMContentLoaded', runDashboard);
 </script>
 </body>
