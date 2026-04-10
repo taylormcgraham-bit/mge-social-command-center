@@ -439,8 +439,10 @@ function processData(raw) {
     };
 
     // --- Facebook ---
-    if (raw.facebook.posts && Array.isArray(raw.facebook.posts)) {
-        raw.facebook.posts.forEach(p => {
+    const fbPostsArr = raw.facebook.posts?.data || (Array.isArray(raw.facebook.posts) ? raw.facebook.posts : []);
+    const fbCommentsArr = raw.facebook.comments?.comments || raw.facebook.comments?.data || (Array.isArray(raw.facebook.comments) ? raw.facebook.comments : []);
+    if (fbPostsArr.length) {
+        fbPostsArr.forEach(p => {
             const reactions = p.reactions?.summary?.total_count || p.likes?.summary?.total_count || 0;
             const comments = p.comments?.summary?.total_count || 0;
             const shares = p.shares?.count || 0;
@@ -451,8 +453,8 @@ function processData(raw) {
             result.postEngagement.push({ platform: 'Facebook', label: (p.message || 'Post').substring(0, 30), value: reactions + comments + shares });
         });
     }
-    if (raw.facebook.comments && Array.isArray(raw.facebook.comments)) {
-        raw.facebook.comments.forEach(c => {
+    if (fbCommentsArr.length) {
+        fbCommentsArr.forEach(c => {
             const item = { platform: 'fb', author: c.from?.name || 'Facebook User', text: c.message || '', time: c.created_time || '' };
             result.comments.push(item);
             result.platformComments.fb.push(item);
@@ -463,8 +465,10 @@ function processData(raw) {
     }
 
     // --- Instagram ---
-    if (raw.instagram.media && Array.isArray(raw.instagram.media)) {
-        raw.instagram.media.forEach(m => {
+    const igMediaArr = raw.instagram.media?.data || (Array.isArray(raw.instagram.media) ? raw.instagram.media : []);
+    const igCommentsArr = raw.instagram.comments?.comments || raw.instagram.comments?.data || (Array.isArray(raw.instagram.comments) ? raw.instagram.comments : []);
+    if (igMediaArr.length) {
+        igMediaArr.forEach(m => {
             const likes = m.like_count || 0;
             const comments = m.comments_count || 0;
             result.kpis.reactions += likes;
@@ -473,8 +477,8 @@ function processData(raw) {
             result.postEngagement.push({ platform: 'Instagram', label: (m.caption || 'Post').substring(0, 30), value: likes + comments });
         });
     }
-    if (raw.instagram.comments && Array.isArray(raw.instagram.comments)) {
-        raw.instagram.comments.forEach(c => {
+    if (igCommentsArr.length) {
+        igCommentsArr.forEach(c => {
             const item = { platform: 'ig', author: c.username || 'Instagram User', text: c.text || '', time: c.timestamp || '' };
             result.comments.push(item);
             result.platformComments.ig.push(item);
@@ -482,8 +486,10 @@ function processData(raw) {
     }
 
     // --- LinkedIn ---
-    if (raw.linkedin.posts && Array.isArray(raw.linkedin.posts)) {
-        raw.linkedin.posts.forEach(p => {
+    const liPostsArr = raw.linkedin.posts?.elements || raw.linkedin.posts?.data || (Array.isArray(raw.linkedin.posts) ? raw.linkedin.posts : []);
+    const liCommentsArr = raw.linkedin.comments?.comments || raw.linkedin.comments?.elements || (Array.isArray(raw.linkedin.comments) ? raw.linkedin.comments : []);
+    if (liPostsArr.length) {
+        liPostsArr.forEach(p => {
             const likes = p.likeCount || p.numLikes || 0;
             const comments = p.commentCount || p.numComments || 0;
             const shares = p.shareCount || p.numShares || 0;
@@ -495,8 +501,8 @@ function processData(raw) {
             result.postEngagement.push({ platform: 'LinkedIn', label: txt.substring(0, 30), value: likes + comments + shares });
         });
     }
-    if (raw.linkedin.comments && Array.isArray(raw.linkedin.comments)) {
-        raw.linkedin.comments.forEach(c => {
+    if (liCommentsArr.length) {
+        liCommentsArr.forEach(c => {
             const item = { platform: 'li', author: c.authorName || c.actor || 'LinkedIn User', text: c.message || c.comment || '', time: c.created || '' };
             result.comments.push(item);
             result.platformComments.li.push(item);
@@ -504,8 +510,10 @@ function processData(raw) {
     }
 
     // --- YouTube ---
-    if (raw.youtube.videos && Array.isArray(raw.youtube.videos)) {
-        raw.youtube.videos.forEach(v => {
+    const ytVideosArr = raw.youtube.videos?.items || (Array.isArray(raw.youtube.videos) ? raw.youtube.videos : []);
+    const ytCommentsArr = raw.youtube.comments?.comments || raw.youtube.comments?.items || (Array.isArray(raw.youtube.comments) ? raw.youtube.comments : []);
+    if (ytVideosArr.length) {
+        ytVideosArr.forEach(v => {
             const stats = v.statistics || {};
             const likes = parseInt(stats.likeCount) || 0;
             const comments = parseInt(stats.commentCount) || 0;
@@ -518,8 +526,8 @@ function processData(raw) {
             result.postEngagement.push({ platform: 'YouTube', label: title.substring(0, 30), value: likes + comments });
         });
     }
-    if (raw.youtube.comments && Array.isArray(raw.youtube.comments)) {
-        raw.youtube.comments.forEach(c => {
+    if (ytCommentsArr.length) {
+        ytCommentsArr.forEach(c => {
             const s = c.snippet?.topLevelComment?.snippet || c.snippet || {};
             const item = { platform: 'yt', author: s.authorDisplayName || 'YouTube User', text: s.textDisplay || s.textOriginal || '', time: s.publishedAt || '' };
             result.comments.push(item);
