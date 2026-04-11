@@ -520,35 +520,169 @@ function updateDateRangeDisplay() {
 }
 
 // ============================================================
-// AFINN-based sentiment lexicon (condensed)
+// Enhanced sentiment analysis engine
 // ============================================================
-const AFINN = {
-    'good':3,'great':4,'excellent':5,'amazing':5,'awesome':4,'love':3,'wonderful':4,
-    'fantastic':4,'best':3,'happy':3,'thank':2,'thanks':2,'appreciate':3,'helpful':2,
-    'nice':2,'beautiful':3,'perfect':3,'outstanding':5,'brilliant':4,'superb':5,
-    'pleased':2,'enjoy':2,'impressive':3,'remarkable':4,'positive':2,'success':3,
-    'reliable':2,'efficient':2,'clean':1,'safe':1,'friendly':2,'improve':1,
-    'bad':-3,'terrible':-4,'awful':-4,'horrible':-4,'hate':-4,'worst':-5,'poor':-3,
-    'ugly':-3,'angry':-3,'disappointed':-3,'annoying':-2,'frustrating':-3,'expensive':-2,
-    'broken':-3,'fail':-3,'failed':-3,'failure':-3,'wrong':-2,'problem':-2,'issue':-2,
-    'complaint':-2,'slow':-1,'difficult':-1,'confusing':-2,'unreliable':-3,'waste':-3,
-    'ridiculous':-3,'outage':-3,'outages':-3,'down':-1,'increase':-1,'high':-1,
-    'overcharge':-3,'scam':-4,'rip':-3,'gouge':-3,'monopoly':-3,
-    'okay':1,'ok':1,'fine':1,'decent':1,'alright':1,'average':0,'meh':-1,
-    'renewable':2,'solar':1,'wind':1,'green':1,'sustainable':2,'energy':0,
-    'power':0,'electric':0,'gas':0,'bill':-1,'rate':-1,'rates':-1,'price':-1
+// 1. Single-word lexicon (expanded with profanity, utility complaints, strong signals)
+const SENT_WORDS = {
+    // Strong positive
+    'love':4,'amazing':5,'awesome':4,'wonderful':4,'fantastic':4,'excellent':5,
+    'outstanding':5,'brilliant':4,'superb':5,'incredible':4,'remarkable':4,
+    'beautiful':3,'gorgeous':3,'stunning':3,'magnificent':4,
+    // Moderate positive
+    'good':3,'great':4,'best':3,'happy':3,'pleased':2,'enjoy':2,'enjoying':2,
+    'thank':2,'thanks':2,'thankful':3,'grateful':3,'appreciate':3,'appreciated':3,
+    'helpful':2,'nice':2,'perfect':3,'impressive':3,'cool':2,'exciting':3,
+    'proud':3,'congrats':3,'congratulations':3,'kudos':3,'bravo':3,
+    'reliable':2,'efficient':2,'friendly':2,'innovative':3,'forward':1,
+    'progress':2,'success':3,'successful':2,'wins':2,'winning':2,
+    'safe':1,'clean':1,'smart':2,'committed':2,'dedicated':2,
+    'privilege':2,'honored':3,'thrilled':4,'thriving':3,'flourishing':3,
+    // Mild positive
+    'okay':1,'ok':1,'fine':1,'decent':1,'alright':1,'interesting':1,
+    'solid':1,'respectable':1,'fair':1,'reasonable':1,
+    // Mild negative
+    'meh':-1,'concerned':-1,'concerning':-1,'unclear':-1,'doubt':-1,
+    'skeptical':-1,'questionable':-1,'mediocre':-1,
+    // Moderate negative â complaints / frustration
+    'bad':-3,'poor':-3,'ugly':-3,'disappointed':-3,'disappointing':-3,
+    'annoying':-2,'annoyed':-2,'frustrating':-3,'frustrated':-3,'frustration':-3,
+    'expensive':-3,'overpriced':-3,'costly':-2,'unaffordable':-4,
+    'broken':-3,'fail':-3,'failed':-3,'failing':-3,'failure':-3,
+    'wrong':-2,'problem':-2,'problems':-2,'issue':-2,'issues':-2,
+    'complaint':-2,'complaining':-2,'slow':-1,'difficult':-1,'confusing':-2,
+    'unreliable':-3,'waste':-3,'wasted':-3,'wasting':-3,'wasteful':-3,
+    'ridiculous':-3,'absurd':-3,'laughable':-3,'joke':-2,
+    'outage':-3,'outages':-3,'overcharge':-4,'overcharging':-4,
+    'gouge':-3,'gouging':-3,'monopoly':-3,
+    'lie':-4,'lies':-4,'liar':-4,'lying':-4,'dishonest':-4,'misleading':-3,
+    'gaslighting':-4,'propaganda':-3,'sham':-4,'hoax':-4,'fraud':-4,'scam':-4,
+    'corrupt':-4,'corruption':-3,'greedy':-4,'greed':-4,
+    'destroying':-4,'destroy':-4,'destruction':-4,'damage':-3,'damaging':-3,
+    'suppress':-3,'suppresses':-3,
+    // Strong negative
+    'terrible':-4,'awful':-4,'horrible':-4,'hate':-4,'hated':-4,
+    'worst':-5,'pathetic':-4,'disgrace':-4,'disgusting':-4,'appalling':-5,
+    'unacceptable':-4,'outrageous':-4,'inexcusable':-4,'atrocious':-5,
+    // Profanity (strong negative signal)
+    'fuck':-5,'fucking':-5,'fucked':-5,'shit':-4,'shitty':-4,'bullshit':-5,
+    'damn':-2,'damned':-2,'crap':-3,'crappy':-3,'sucks':-3,'suck':-3,
+    'ass':-2,'stupid':-3,'idiots':-4,'idiot':-4,'clowns':-3,'clown':-3,
+    'morons':-4,'moron':-4,'incompetent':-4,'useless':-4,
+    // Utility/energy-specific complaint language
+    'afford':-2,'afford':-2,'struggle':-2,'struggling':-3,
+    'inflate':-2,'inflation':-2,'risen':-2,'skyrocket':-3,'spike':-2,
+    'inefficient':-3,'ineffective':-3,'unrealistic':-2,
+    // Utility-specific neutral/positive (don't let these dilute)
+    'renewable':0,'solar':0,'wind':0,'green':0,'sustainable':0,'energy':0,
+    'power':0,'electric':0,'gas':0,'nuclear':0,'turbine':0,'turbines':0,
+    'panels':0,'battery':0,'grid':0,'infrastructure':0,
+    'bill':-1,'bills':-2,'rate':-1,'rates':-2,'price':-1,'prices':-2,'cost':-1,'costs':-2
 };
+
+// 2. Multi-word phrases (checked before single words)
+const SENT_PHRASES = [
+    // Negative phrases
+    ['too expensive', -4], ['rip off', -4], ['ripoff', -4], ['ripped off', -4],
+    ['going up', -2], ['keep going up', -3], ['keeps going up', -3], ['went up', -2],
+    ['cant afford', -4], ["can't afford", -4], ['cannot afford', -4],
+    ['way too', -2], ['far too', -2],
+    ['pay more', -2], ['paying more', -2], ['costs more', -2], ['cost more', -2],
+    ['not worth', -3], ['not true', -2], ['not fair', -3],
+    ['give up', -1], ['shut up', -3], ['fed up', -3],
+    ['run us out', -3], ['force us', -3], ['drives up', -3],
+    ['raise our', -2], ['raising our', -2],
+    ['no one asked', -2], ['nobody asked', -2],
+    ['dont care', -2], ["don't care", -2], ['doesnt care', -2], ["doesn't care", -2],
+    ['get rid of', -2], ['step down', -2],
+    ['end all', -2], ['stop all', -2],
+    ['what a joke', -4], ['such a joke', -4],
+    ['never again', -3], ['no thanks', -2],
+    ['top notch', 4], ['well done', 3], ['good job', 3], ['great job', 4],
+    ['keep up', 2], ['keep it up', 3], ['way to go', 3],
+    ['so proud', 4], ['so cool', 3], ['so beautiful', 4],
+    ['thank you', 3], ['thanks for', 2], ['appreciate it', 3],
+    ['love this', 4], ['love it', 4], ['love that', 3],
+    ['how cool', 3], ['thats awesome', 4], ["that's awesome", 4]
+];
+
+// 3. Emoji sentiment
+const SENT_EMOJI = {
+    'ð¡':-4, 'ð¤¬':-5, 'ð¤':-3, 'ð':-3, 'ð©':-3, 'ð':-2, 'ð':-2,
+    'ð ':-3, 'ð¢':-2, 'ð':-2, 'ð':-2, 'ð¤®':-4, 'ð¾':-3, 'ð':-3,
+    'â¤ï¸':3, 'â¤':3, 'â¥ï¸':3, 'ð':4, 'ð¥°':4, 'ð':3, 'ð':3, 'ð':3,
+    'ð':3, 'ð':3, 'ð':2, 'ð':3, 'ð¥':2, 'ðª':2, 'â¨':2, 'â­':2,
+    'ð':2, 'ð¤£':1, 'ð':1, 'ð¯':3, 'ð':3, 'ð':2, 'ð':1, 'ð¦':1
+};
+
+// 4. Negation words that flip the next sentiment word
+const NEGATORS = new Set([
+    'not','no','never','neither','nobody','nothing','nowhere',
+    'nor','none','dont',"don't",'doesnt',"doesn't",'didnt',"didn't",
+    'wont',"won't",'cant',"can't",'cannot','shouldnt',"shouldn't",
+    'wouldnt',"wouldn't",'hardly','barely','scarcely'
+]);
 
 function analyzeSentiment(text) {
     if (!text) return { score: 50, label: 'Neutral' };
-    const words = text.toLowerCase().replace(/[^a-z\s]/g, '').split(/\s+/);
     let total = 0, count = 0;
-    words.forEach(w => {
-        if (AFINN[w] !== undefined) { total += AFINN[w]; count++; }
+    const lower = text.toLowerCase();
+
+    // A. Emoji pass
+    for (const [emoji, val] of Object.entries(SENT_EMOJI)) {
+        const emojiRegex = new RegExp(emoji.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g');
+        const matches = text.match(emojiRegex);
+        if (matches) { total += val * matches.length; count += matches.length; }
+    }
+
+    // B. Multi-word phrase pass
+    SENT_PHRASES.forEach(([phrase, val]) => {
+        if (lower.includes(phrase)) { total += val; count++; }
     });
+
+    // C. Single-word pass with negation handling
+    const words = lower.replace(/[^a-z'\s]/g, '').split(/\s+/).filter(Boolean);
+    let negateNext = false;
+    words.forEach((w, i) => {
+        if (NEGATORS.has(w)) { negateNext = true; return; }
+        if (SENT_WORDS[w] !== undefined && SENT_WORDS[w] !== 0) {
+            let val = SENT_WORDS[w];
+            if (negateNext) { val = -val * 0.75; } // flip & slightly dampen
+            total += val; count++;
+        }
+        negateNext = false; // only negates the very next sentiment word
+    });
+
+    // D. Rhetorical question detection (negative signal)
+    // "why does/do/is/are ... ?" patterns often express frustration
+    if (/\b(why\s+(does|do|is|are|did|would|should|can|won't|don't))\b/i.test(text) && text.includes('?')) {
+        total -= 2; count++;
+    }
+    // "how (much|many|long) ... ?" as complaint
+    if (/\bhow\s+(much|many|long)\b/i.test(text) && text.includes('?') && !/\bhow\s+(much|many|long)\b.*\b(love|great|awesome|cool)\b/i.test(text)) {
+        total -= 1; count++;
+    }
+
+    // E. ALL CAPS detection (shouting = amplifier)
+    const capsWords = text.match(/\b[A-Z]{3,}\b/g) || [];
+    const nonHashCaps = capsWords.filter(w => !text.includes('#' + w));
+    if (nonHashCaps.length >= 2) {
+        // Amplify existing sentiment direction
+        total *= 1.2;
+    }
+
+    // F. Exclamation marks (amplifier for existing direction)
+    const exclamations = (text.match(/!/g) || []).length;
+    if (exclamations >= 2 && count > 0) {
+        total *= 1 + (exclamations * 0.05);
+    }
+
+    // Score calculation â use weighted sum, not pure average
     if (count === 0) return { score: 50, label: 'Neutral' };
+    // Blend: 60% sum-based (captures volume of complaints) + 40% average-based (captures intensity)
     const avg = total / count;
-    const score = Math.round(Math.min(100, Math.max(0, (avg + 5) * 10)));
+    const sumNorm = Math.max(-5, Math.min(5, total / 3)); // normalize sum to -5..5 range
+    const blended = (sumNorm * 0.6) + (avg * 0.4);
+    const score = Math.round(Math.min(100, Math.max(0, (blended + 5) * 10)));
     const label = score >= 60 ? 'Positive' : score <= 40 ? 'Negative' : 'Neutral';
     return { score, label };
 }
