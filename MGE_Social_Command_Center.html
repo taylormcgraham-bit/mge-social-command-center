@@ -280,22 +280,35 @@
         .plat-eng-row.bold-row { font-weight: 600; color: #1B2559; border-bottom: 1px solid #F1F5F9; padding-bottom: 3px; margin-bottom: 1px; }
 
         /* --- Our Posts horizontal feed --- */
+        .posts-feed-section { position: relative; }
+        .posts-scroll-btn {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            width: 36px; height: 36px; border-radius: 50%;
+            background: rgba(0,59,113,0.85); color: white; border: none;
+            font-size: 18px; cursor: pointer; z-index: 5;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            transition: background 0.15s, opacity 0.15s; opacity: 0.9;
+        }
+        .posts-scroll-btn:hover { background: rgba(0,59,113,1); opacity: 1; }
+        .posts-scroll-btn.left { left: -4px; }
+        .posts-scroll-btn.right { right: -4px; }
+        .posts-count { font-size: 12px; color: #8F9BBA; font-weight: 400; text-transform: none; letter-spacing: 0; }
         .posts-feed-wrap {
-            overflow-x: auto;
-            overflow-y: hidden;
+            overflow-x: auto; overflow-y: hidden;
             -webkit-overflow-scrolling: touch;
             scroll-snap-type: x mandatory;
+            scroll-behavior: smooth;
             padding-bottom: 8px;
         }
         .posts-feed-wrap::-webkit-scrollbar { height: 6px; }
         .posts-feed-wrap::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
         .posts-feed {
-            display: flex;
-            gap: 16px;
-            padding: 4px;
+            display: flex; gap: 14px; padding: 4px;
+            width: max-content;
         }
         .post-card {
-            flex: 0 0 280px;
+            flex: 0 0 240px;
             scroll-snap-align: start;
             background: white;
             border-radius: 12px;
@@ -328,7 +341,7 @@
         }
         .post-card-rank.top3 { background: #00A651; }
         .post-card-image {
-            width: 100%; height: 180px; object-fit: cover;
+            width: 100%; height: 150px; object-fit: cover;
             background: #F1F5F9;
         }
         .post-card-image.no-img {
@@ -545,11 +558,16 @@
 
         <!-- Our Posts feed -->
         <div class="card" style="margin-bottom:24px;">
-            <div class="card-title">Our Posts</div>
+            <div class="card-title">Our Posts <span class="posts-count" id="postsCount"></span></div>
             <div class="posts-feed-wrap">
-                <div class="posts-feed" id="postsFeed">
+                <div class="posts-feed-section">
+                <button class="posts-scroll-btn left" id="postsScrollLeft" onclick="document.getElementById('postsWrap').scrollLeft -= 520">&#8249;</button>
+                <div class="posts-feed-wrap" id="postsWrap">
+                    <div class="posts-feed" id="postsFeed">
                     <div class="empty-state" style="width:100%;text-align:center;padding:40px;">Loading posts...</div>
+                    </div>
                 </div>
+                <button class="posts-scroll-btn right" id="postsScrollRight" onclick="document.getElementById('postsWrap').scrollLeft += 520">&#8250;</button>
             </div>
         </div>
 
@@ -1401,32 +1419,29 @@ function renderCommentFeed(comments) {
 // ============================================================
 function renderPostsFeed(data) {
     const container = document.getElementById('postsFeed');
+    const countEl = document.getElementById('postsCount');
     if (!data.allPosts || data.allPosts.length === 0) {
         container.innerHTML = '<div style="padding:40px;text-align:center;color:#8F9BBA;">No posts found in this date range.</div>';
+        if (countEl) countEl.textContent = '';
         return;
     }
-
-    const platNames = { fb: 'Facebook', ig: 'Instagram', li: 'LinkedIn', yt: 'YouTube' };
-    const platLetters = { fb: 'f', ig: 'IG', li: 'in', yt: 'â¶' };
-
-    container.innerHTML = data.allPosts.map(p => {
-        const dateStr = p.date ? new Date(p.date).toLocaleDateString('en-US', {
+    if (countEl) countEl.textContent = '(' + data.allPosts.length + ')';
+    var platLetters = { fb: 'f', ig: 'IG', li: 'in', yt: String.fromCharCode(9654) };
+    container.innerHTML = data.allPosts.map(function(p) {
+        var dateStr = p.date ? new Date(p.date).toLocaleDateString('en-US', {
             month: 'short', day: 'numeric', year: 'numeric'
-        }) + ' Â· ' + new Date(p.date).toLocaleTimeString('en-US', {
+        }) + ' \u00B7 ' + new Date(p.date).toLocaleTimeString('en-US', {
             hour: 'numeric', minute: '2-digit'
         }) : '';
-
-        const imageHtml = p.image
-            ? '<img class="post-card-image" src="' + escapeHtml(p.image) + '" alt="" onerror="this.outerHTML=\'<div class=post-card-image no-img>ð</div>\'">'
-            : '<div class="post-card-image no-img">ð</div>';
-
-        const rankClass = p.rank <= 3 ? ' top3' : '';
-
+        var imageHtml = p.image
+            ? '<img class="post-card-image" src="' + escapeHtml(p.image) + '" alt="" onerror="this.style.display=\'none\'">'
+            : '<div class="post-card-image no-img">&#128221;</div>';
+        var rankClass = p.rank <= 3 ? ' top3' : '';
         return '<div class="post-card">' +
             '<div class="post-card-header">' +
                 '<div class="post-card-plat-icon ' + p.platform + '">' + platLetters[p.platform] + '</div>' +
                 '<div class="post-card-meta">' +
-                    '<div class="post-card-author">Madison Gas & Electric</div>' +
+                    '<div class="post-card-author">Madison Gas &amp; Electric</div>' +
                     '<div class="post-card-time">' + escapeHtml(dateStr) + '</div>' +
                 '</div>' +
                 '<div class="post-card-rank' + rankClass + '">#' + p.rank + '</div>' +
@@ -1436,10 +1451,10 @@ function renderPostsFeed(data) {
                 '<div class="post-card-text">' + escapeHtml(p.text) + '</div>' +
             '</div>' +
             '<div class="post-card-stats">' +
-                '<div class="stat"><span class="stat-icon">â¤</span> ' + fmt(p.reactions) + '</div>' +
-                '<div class="stat"><span class="stat-icon">ð¬</span> ' + fmt(p.comments) + '</div>' +
-                (p.shares > 0 ? '<div class="stat"><span class="stat-icon">ð</span> ' + fmt(p.shares) + '</div>' : '') +
-                (p.views > 0 ? '<div class="stat"><span class="stat-icon">â¶</span> ' + fmt(p.views) + '</div>' : '') +
+                '<div class="stat"><span class="stat-icon">&#10084;</span> ' + fmt(p.reactions) + '</div>' +
+                '<div class="stat"><span class="stat-icon">&#128172;</span> ' + fmt(p.comments) + '</div>' +
+                (p.shares > 0 ? '<div class="stat"><span class="stat-icon">&#128257;</span> ' + fmt(p.shares) + '</div>' : '') +
+                (p.views > 0 ? '<div class="stat"><span class="stat-icon">&#9654;</span> ' + fmt(p.views) + '</div>' : '') +
             '</div>' +
         '</div>';
     }).join('');
