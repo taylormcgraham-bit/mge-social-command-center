@@ -158,6 +158,18 @@ app.get('/api/status', (req, res) => {
 });
 
 // ======================================================================
+// HELPER: Build date-range query suffix for upstream APIs
+// ======================================================================
+function dateRangeParams(req) {
+  const since = req.query.since;
+  const until = req.query.until;
+  let qs = '';
+  if (since) qs += '&since=' + encodeURIComponent(since);
+  if (until) qs += '&until=' + encodeURIComponent(until);
+  return qs;
+}
+
+// ======================================================================
 //  YOUTUBE API ROUTES
 // ======================================================================
 const YT_BASE = 'https://www.googleapis.com/youtube/v3';
@@ -187,7 +199,7 @@ app.get('/api/youtube/videos', async (req, res) => {
 
   // Get recent videos from playlist
   const playlist = await apiFetch(
-    `${YT_BASE}/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=20&key=${apiKey}`
+    `${YT_BASE}/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=50&key=${apiKey}`
   );
   if (playlist.error) return res.json(playlist);
 
@@ -224,7 +236,7 @@ app.get('/api/youtube/all-comments', async (req, res) => {
 
   const uploadsId = channelData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
   const playlist = await apiFetch(
-    `${YT_BASE}/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=5&key=${apiKey}`
+    `${YT_BASE}/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=20&key=${apiKey}`
   );
   if (playlist.error) return res.json(playlist);
 
@@ -232,7 +244,7 @@ app.get('/api/youtube/all-comments', async (req, res) => {
 
   // Fetch comments for each video in parallel
   const commentPromises = videoIds.map(vid =>
-    apiFetch(`${YT_BASE}/commentThreads?part=snippet&videoId=${vid}&maxResults=20&order=time&key=${apiKey}`)
+    apiFetch(`${YT_BASE}/commentThreads?part=snippet&videoId=${vid}&maxResults=50&order=time&key=${apiKey}`)
   );
   const results = await Promise.all(commentPromises);
 
@@ -277,10 +289,9 @@ app.get('/api/facebook/page', async (req, res) => {
 app.get('/api/facebook/posts', async (req, res) => {
   const { pageAccessToken, pageId } = config.facebook || {};
   if (!pageAccessToken || !pageId) return res.json({ error: true, message: 'Facebook not configured' });
-
-  const data = await apiFetch(
-    `${META_BASE}/${pageId}/posts?fields=id,message,created_time,full_picture,permalink_url,shares,reactions.summary(true),comments.summary(true),likes.summary(true)&limit=20&access_token=${pageAccessToken}`
-  );
+  let url = `${META_BASE}/${pageId}/posts?fields=id,message,created_time,full_picture,permalink_url,shares,reactions.summary(true),comments.summary(true),likes.summary(true)&limit=50&access_token=${pageAccessToken}`;
+  url += dateRangeParams(req);
+  const data = await apiFetch(url);
   res.json(data);
 });
 
@@ -297,13 +308,11 @@ app.get('/api/facebook/comments/:postId', async (req, res) => {
 app.get('/api/facebook/all-comments', async (req, res) => {
   const { pageAccessToken, pageId } = config.facebook || {};
   if (!pageAccessToken || !pageId) return res.json({ error: true, message: 'Facebook not configured' });
-
-  // Get recent posts
-  const postsData = await apiFetch(
-    `${META_BASE}/${pageId}/posts?fields=id,message,created_time,full_picture,comments{message,created_time,from,like_count}&limit=10&access_token=${pageAccessToken}`
-  );
+  // Get posts with embedded comments - increase limit and pass date range
+  let url = `${META_BASE}/${pageId}/posts?fields=id,message,created_time,full_picture,comments{message,created_time,from,like_count}&limit=50&access_token=${pageAccessToken}`;
+  url += dateRangeParams(req);
+  const postsData = await apiFetch(url);
   if (postsData.error) return res.json(postsData);
-
   const allComments = [];
   (postsData.data || []).forEach(post => {
     const comments = post.comments?.data || [];
@@ -320,7 +329,6 @@ app.get('/api/facebook/all-comments', async (req, res) => {
       });
     });
   });
-
   allComments.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
   res.json({ comments: allComments });
 });
@@ -352,10 +360,16 @@ app.get('/api/instagram/profile', async (req, res) => {
 app.get('/api/instagram/media', async (req, res) => {
   const { accessToken, igUserId } = config.instagram || {};
   if (!accessToken || !igUserId) return res.json({ error: true, message: 'Instagram not configured' });
-
-  const data = await apiFetch(
-    `${META_BASE}/${igUserId}/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count&limit=20&access_token=${accessToken}`
-  );
+  let url = `${META_BASE}/${igUserId}/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count&limit=50&access_token=${accessToken}`;
+  if (req.query.since) {
+    const sinceUnix = Math.floor(new Date(req.query.since).getTime() / 1000);
+    url += '&since=' + sinceUnix;
+  }
+  if (req.query.until) {
+    const untilUnix = Math.floor(new Date(req.query.until).getTime() / 1000);
+    url += '&until=' + untilUnix;
+  }
+  const data = await apiFetch(url);
   res.json(data);
 });
 
@@ -372,12 +386,13 @@ app.get('/api/instagram/comments/:mediaId', async (req, res) => {
 app.get('/api/instagram/all-comments', async (req, res) => {
   const { accessToken, igUserId } = config.instagram || {};
   if (!accessToken || !igUserId) return res.json({ error: true, message: 'Instagram not configured' });
-
-  const mediaData = await apiFetch(
-    `${META_BASE}/${igUserId}/media?fields=id,caption,media_url,thumbnail_url,timestamp,comments{text,timestamp,username,like_count}&limit=10&access_token=${accessToken}`
-  );
+  let url = `${META_BASE}/${igUserId}/media?fields=id,caption,media_url,thumbnail_url,timestamp,comments{text,timestamp,username,like_count}&limit=50&access_token=${accessToken}`;
+  if (req.query.since) {
+    const sinceUnix = Math.floor(new Date(req.query.since).getTime() / 1000);
+    url += '&since=' + sinceUnix;
+  }
+  const mediaData = await apiFetch(url);
   if (mediaData.error) return res.json(mediaData);
-
   const allComments = [];
   (mediaData.data || []).forEach(post => {
     const comments = post.comments?.data || [];
@@ -394,7 +409,6 @@ app.get('/api/instagram/all-comments', async (req, res) => {
       });
     });
   });
-
   allComments.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
   res.json({ comments: allComments });
 });
@@ -442,7 +456,7 @@ app.get('/api/linkedin/posts', async (req, res) => {
   if (!accessToken || !organizationId) return res.json({ error: true, message: 'LinkedIn not configured' });
 
   const data = await apiFetch(
-    `${LI_REST}/posts?author=urn:li:organization:${organizationId}&q=author&count=20&sortBy=LAST_MODIFIED`, {
+    `${LI_REST}/posts?author=urn:li:organization:${organizationId}&q=author&count=50&sortBy=LAST_MODIFIED`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'LinkedIn-Version': '202503'
@@ -474,7 +488,7 @@ app.get('/api/linkedin/all-comments', async (req, res) => {
 
   // Get recent posts
   const postsData = await apiFetch(
-    `${LI_REST}/posts?author=urn:li:organization:${organizationId}&q=author&count=10&sortBy=LAST_MODIFIED`, {
+    `${LI_REST}/posts?author=urn:li:organization:${organizationId}&q=author&count=50&sortBy=LAST_MODIFIED`, {
       headers: { 'Authorization': `Bearer ${accessToken}`, 'LinkedIn-Version': '202503' }
     }
   );
@@ -482,7 +496,7 @@ app.get('/api/linkedin/all-comments', async (req, res) => {
 
   const posts = postsData.elements || [];
   const commentPromises = posts.map(p =>
-    apiFetch(`${LI_REST}/socialActions/${encodeURIComponent(p.id)}/comments?count=20`, {
+    apiFetch(`${LI_REST}/socialActions/${encodeURIComponent(p.id)}/comments?count=50`, {
       headers: { 'Authorization': `Bearer ${accessToken}`, 'LinkedIn-Version': '202503' }
     })
   );
