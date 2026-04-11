@@ -273,6 +273,11 @@
         }
         .plat-eng-row-val { font-weight: 700; color: #1B2559; }
         .plat-eng-row-icon { width: 14px; text-align: center; flex-shrink: 0; }
+        .plat-eng-row.sub-row { padding-left: 18px; font-size: 10px; color: #94A3B8; }
+        .plat-eng-row.sub-row .plat-eng-row-val { font-weight: 600; color: #64748B; font-size: 10px; }
+        .plat-eng-row.neg-row { color: #DC2626; }
+        .plat-eng-row.neg-row .plat-eng-row-val { color: #DC2626; }
+        .plat-eng-row.bold-row { font-weight: 600; color: #1B2559; border-bottom: 1px solid #F1F5F9; padding-bottom: 3px; margin-bottom: 1px; }
 
         /* --- Charts --- */
         .chart-container { position: relative; height: 240px; margin-top: 8px; }
@@ -339,7 +344,7 @@
     <div class="header-right">
         <div class="refresh-info">
             <div>Next refresh in <span class="refresh-countdown" id="countdown">--:--</span></div>
-            <div id="lastUpdated" style="opacity:0.7; margin-top:2px;">--</div>
+            <div id="lastUpdated" style="opacity:0.7; margin-tor:2px;">--</div>
         </div>
     </div>
 </header>
@@ -525,8 +530,7 @@ function updateDateRangeDisplay() {
 // 1. Single-word lexicon (expanded with profanity, utility complaints, strong signals)
 const SENT_WORDS = {
     // Strong positive
-    'love':4,'amazing':5,'awesome':4,'wonderful':4,'fantastic':4,'excellent':5,
-    'outstanding':5,'brilliant':4,'superb':5,'incredible':4,'remarkable':4,
+    'love':4,'amazing':5,'awesome':4,'wonderful':4,'fantastic':4,'excellent':5,     'outstanding':5,'brilliant':4,'superb':5,'incredible':4,'remarkable':4,
     'beautiful':3,'gorgeous':3,'stunning':3,'magnificent':4,
     // Moderate positive
     'good':3,'great':4,'best':3,'happy':3,'pleased':2,'enjoy':2,'enjoying':2,
@@ -760,11 +764,12 @@ function processData(raw) {
         comments: [],
         kpis: { reactions: 0, comments: 0, shares: 0, views: 0 },
         platformEngagement: {
-            fb: { likes: 0, comments: 0, shares: 0, views: 0 },
+            fb: { like: 0, love: 0, wow: 0, haha: 0, sad: 0, angry: 0, care: 0, comments: 0, shares: 0, views: 0 },
             ig: { likes: 0, comments: 0, shares: 0, views: 0 },
             li: { likes: 0, comments: 0, shares: 0, views: 0 },
-            yt: { likes: 0, comments: 0, shares: 0, views: 0 }
+            yt: { likes: 0, dislikes: 0, comments: 0, shares: 0, views: 0 }
         },
+        reactionSentiment: { fb: 0, ig: 0, li: 0, yt: 0, count: 0 },
         platformComments: { fb: [], ig: [], li: [], yt: [] },
         postEngagement: []
     };
@@ -784,15 +789,33 @@ function processData(raw) {
     const fbCommentsArr = fbCommentsRaw.filter(c => isInRange(c.created_time || c.publishedAt));
     if (fbPostsArr.length) {
         fbPostsArr.forEach(p => {
-            const reactions = p.reactions?.summary?.total_count || p.likes?.summary?.total_count || 0;
+            const reactions = p.reactions?.summary?.total_count || 0;
             const comments = p.comments?.summary?.total_count || 0;
             const shares = p.shares?.count || 0;
+            // Extract typed reactions from aliased Graph API fields
+            const rJike  = p.reactions_like?.summary?.total_count  || 0;
+            const rLove  = p.reactions_love?.summary?.total_count  || 0;
+            const rWow   = p.reactions_wow?.summary?.total_count   || 0;
+            const rHaha  = p.reactions_haha?.summary?.total_count  || 0;
+            const rSad   = p.reactions_sad?.summary?.total_count   || 0;
+            const rAngry = p.reactions_angry?.summary?.total_count || 0;
+            const rCare  = p.reactions_care?.summary?.total_count  || 0;
+            const hasTyped = rLike + rLove + rWow + rHaha + rSad + rAngry + rCare > 0;
             result.kpis.reactions += reactions;
             result.kpis.comments += comments;
             result.kpis.shares += shares;
-            result.platformEngagement.fb.likes += reactions;
+            result.platformEngagement.fb.like += hasTyped ? rLike : reactions;
+            result.platformEngagement.fb.love += rLove;
+            result.platformEngagement.fb.wow += rWow;
+            result.platformEngagement.fb.haha += rHaha;
+            result.platformEngagement.fb.sad += rSad;
+            result.platformEngagement.fb.angry += rAngry;
+            result.platformEngagement.fb.care += rCare;
             result.platformEngagement.fb.comments += comments;
             result.platformEngagement.fb.shares += shares;
+            // Reaction sentiment: positive reactions lift, negative reactions lower
+            result.reactionSentiment.fb += (rLove * 2) + (rCare * 1.5) + (rLike * 1) + (rHaha * 0.5) - (rSad * 1.5) - (rAngry * 2.5);
+            result.reactionSentiment.count += reactions;
             result.postEngagement.push({ platform: 'Facebook', label: (p.message || 'Post').substring(0, 30), value: reactions + comments + shares });
         });
     }
@@ -830,6 +853,9 @@ function processData(raw) {
             result.kpis.comments += comments;
             result.platformEngagement.ig.likes += likes;
             result.platformEngagement.ig.comments += comments;
+            // IG likes are implicitly positive
+            result.reactionSentiment.ig += likes * 1;
+            result.reactionSentiment.count += likes;
             result.postEngagement.push({ platform: 'Instagram', label: (m.caption || 'Post').substring(0, 30), value: likes + comments });
         });
     }
@@ -866,6 +892,9 @@ function processData(raw) {
             result.platformEngagement.li.likes += likes;
             result.platformEngagement.li.comments += comments;
             result.platformEngagement.li.shares += shares;
+            // LinkedIn likes are implicitly positive
+            result.reactionSentiment.li += likes * 1;
+            result.reactionSentiment.count += likes;
             const txt = p.commentary || p.text || p.specificContent?.['com.linkedin.ugc.ShareContent']?.shareCommentary?.text || 'Post';
             result.postEngagement.push({ platform: 'LinkedIn', label: txt.substring(0, 30), value: likes + comments + shares });
         });
@@ -896,14 +925,19 @@ function processData(raw) {
         ytVideosArr.forEach(v => {
             const stats = v.statistics || {};
             const likes = parseInt(stats.likeCount) || 0;
+            const dislikes = parseInt(stats.dislikeCount) || 0;
             const comments = parseInt(stats.commentCount) || 0;
             const views = parseInt(stats.viewCount) || 0;
             result.kpis.reactions += likes;
             result.kpis.comments += comments;
             result.kpis.views += views;
             result.platformEngagement.yt.likes += likes;
+            result.platformEngagement.yt.dislikes += dislikes;
             result.platformEngagement.yt.comments += comments;
             result.platformEngagement.yt.views += views;
+            // YouTube reaction sentiment
+            result.reactionSentiment.yt += (likes * 1) - (dislikes * 2);
+            result.reactionSentiment.count += likes + dislikes;
             const title = v.snippet?.title || 'Video';
             result.postEngagement.push({ platform: 'YouTube', label: title.substring(0, 30), value: likes + comments });
         });
@@ -980,23 +1014,63 @@ function renderKPIs(data) {
 
 function renderPlatformEngagement(data) {
     const pe = data.platformEngagement;
+    const container = document.getElementById('platformEngagement');
+
+    // Build detailed rows per platform
+    function buildFB(d) {
+        const totalReactions = d.like + d.love + d.wow + d.haha + d.sad + d.angry + d.care;
+        const total = totalReactions + d.comments + d.shares + d.views;
+        const rows = [];
+        rows.push({ label: 'Reactions', val: totalReactions, ic: '\u2764', bold: true });
+        if (d.like > 0)  rows.push({ label: 'Like', val: d.like, ic: '\uD83D\uDC4D', sub: true });
+        if (d.love > 0)  rows.push({ label: 'Love', val: d.love, ic: '\u2764\uFE0F', sub: true });
+        if (d.care > 0)  rows.push({ label: 'Care', val: d.care, ic: '\uD83E\uDD17', sub: true });
+        if (d.haha > 0)  rows.push({ label: 'Haha', val: d.haha, ic: '\uD83D\uDE06', sub: true });
+        if (d.wow > 0)   rows.push({ label: 'Wow', val: d.wow, ic: '\uD83D\uDE2E', sub: true });
+        if (d.sad > 0)   rows.push({ label: 'Sad', val: d.sad, ic: '\uD83D\uDE22', sub: true, neg: true });
+        if (d.angry > 0) rows.push({ label: 'Angry', val: d.angry, ic: '\uD83D\uDE21', sub: true, neg: true });
+        rows.push({ label: 'Comments', val: d.comments, ic: '\uD83D\uDCAC' });
+        if (d.shares > 0) rows.push({ label: 'Shares', val: d.shares, ic: '\uD83D\uDD01' });
+        if (d.views > 0) rows.push({ label: 'Views', val: d.views, ic: '\uD83D\uDC41' });
+        return { total, rows };
+    }
+    function buildIG(d) {
+        const total = d.likes + d.comments;
+        const rows = [
+            { label: 'Likes', val: d.likes, ic: '\u2764' },
+            { label: 'Comments', val: d.comments, ic: '\uD83D\uDCAC' }
+        ];
+        return { total, rows };
+    }
+    function buildLI(d) {
+        const total = d.likes + d.comments + d.shares;
+        const rows = [
+            { label: 'Likes', val: d.likes, ic: '\uD83D\uDC4D' },
+            { label: 'Comments', val: d.comments, ic: '\uD83D\uDCAC' }
+        ];
+        if (d.shares > 0) rows.push({ label: 'Shares', val: d.shares, ic: '\uD83D\uDD01' });
+        return { total, rows };
+    }
+    function buildYT(d) {
+        const total = d.likes + d.dislikes + d.comments + d.views;
+        const rows = [
+            { label: 'Likes', val: d.likes, ic: '\uD83D\uDC4D' }
+        ];
+        if (d.dislikes > 0) rows.push({ label: 'Dislikes', val: d.dislikes, ic: '\uD83D\uDC4E', neg: true });
+        rows.push({ label: 'Comments', val: d.comments, ic: '\uD83D\uDCAC' });
+        if (d.views > 0) rows.push({ label: 'Views', val: d.views, ic: '\u25B6' });
+        return { total, rows };
+    }
+
     const platforms = [
-        { key: 'fb', name: 'Facebook', cls: 'fb', icon: { likes: '\u2764', comments: '\uD83D\uDCAC', shares: '\uD83D\uDD01', views: '\uD83D\uDC41' } },
-        { key: 'ig', name: 'Instagram', cls: 'ig', icon: { likes: '\u2764', comments: '\uD83D\uDCAC', shares: '', views: '' } },
-        { key: 'li', name: 'LinkedIn', cls: 'li', icon: { likes: '\uD83D\uDC4D', comments: '\uD83D\uDCAC', shares: '\uD83D\uDD01', views: '' } },
-        { key: 'yt', name: 'YouTube', cls: 'yt', icon: { likes: '\uD83D\uDC4D', comments: '\uD83D\uDCAC', shares: '', views: '\u25B6' } }
+        { key: 'fb', name: 'Facebook', cls: 'fb', build: buildFB },
+        { key: 'ig', name: 'Instagram', cls: 'ig', build: buildIG },
+        { key: 'li', name: 'LinkedIn', cls: 'li', build: buildLI },
+        { key: 'yt', name: 'YouTube', cls: 'yt', build: buildYT }
     ];
 
-    const container = document.getElementById('platformEngagement');
     container.innerHTML = platforms.map(p => {
-        const d = pe[p.key];
-        const total = d.likes + d.comments + d.shares + d.views;
-        const rows = [];
-        if (d.likes > 0 || p.key === 'fb' || p.key === 'ig') rows.push({ label: p.key === 'fb' ? 'Reactions' : 'Likes', val: d.likes, ic: p.icon.likes });
-        if (d.comments > 0 || true) rows.push({ label: 'Comments', val: d.comments, ic: p.icon.comments });
-        if (d.shares > 0 && p.icon.shares) rows.push({ label: 'Shares', val: d.shares, ic: p.icon.shares });
-        if (d.views > 0 && p.icon.views) rows.push({ label: 'Views', val: d.views, ic: p.icon.views });
-
+        const { total, rows } = p.build(pe[p.key]);
         return '<div class="plat-eng ' + p.cls + '">' +
             '<div class="plat-eng-header">' +
                 '<div class="plat-eng-name">' + p.name + '</div>' +
@@ -1005,7 +1079,7 @@ function renderPlatformEngagement(data) {
             '</div>' +
             '<div class="plat-eng-breakdown">' +
                 rows.map(r =>
-                    '<div class="plat-eng-row">' +
+                    '<div class="plat-eng-row' + (r.sub ? ' sub-row' : '') + (r.neg ? ' neg-row' : '') + (r.bold ? ' bold-row' : '') + '">' +
                         '<span><span class="plat-eng-row-icon">' + r.ic + '</span> ' + r.label + '</span>' +
                         '<span class="plat-eng-row-val">' + fmt(r.val) + '</span>' +
                     '</div>'
@@ -1017,7 +1091,20 @@ function renderPlatformEngagement(data) {
 
 function renderSentiment(data) {
     const allText = data.comments.map(c => c.text).join(' ');
-    const overall = analyzeSentiment(allText);
+    const commentSent = analyzeSentiment(allText);
+    // Blend reaction sentiment into overall score (20% weight)
+    let overall = commentSent;
+    if (data.reactionSentiment && data.reactionSentiment.count > 0) {
+        const rs = data.reactionSentiment;
+        const totalRxn = rs.fb + rs.ig + rs.li + rs.yt;
+        // Normalize reaction sentiment to 0-100 scale
+        const avgRxn = totalRxn / rs.count; // typically -2.5 to +2 range
+        const rxnScore = Math.round(Math.min(100, Math.max(0, (avgRxn + 2.5) * 20)));
+        // Blend: 80% comment-based + 20% reaction-based
+        const blendedScore = Math.round(commentSent.score * 0.8 + rxnScore * 0.2);
+        const blendedLabel = blendedScore >= 60 ? 'Positive' : blendedScore <= 40 ? 'Negative' : 'Neutral';
+        overall = { score: blendedScore, label: blendedLabel };
+    }
     document.getElementById('overallScore').textContent = overall.score;
     document.getElementById('overallLabel').textContent = overall.label + ' Overall Sentiment';
 
@@ -1054,7 +1141,7 @@ function renderSentiment(data) {
         { key: 'yt', el: 'sentYT', bar: 'sentBarYT', pct: 'sentPctYT' }
     ];
     platforms.forEach(p => {
-        const comments = data.platformComments[p.key];
+        const comments = data.platformComments[p$»ey];
         const texts = comments.map(c => c.text).join(' ');
         const s = analyzeSentiment(texts);
         const el = document.getElementById(p.el);
