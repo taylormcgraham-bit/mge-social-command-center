@@ -256,7 +256,7 @@
         .kpi-label { font-size: 12px; font-weight: 600; color: #8F9BBA; margin-top: 4px; }
 
         /* --- Engagement by platform (detailed) --- */
-        .platform-engagement { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 14px; }
+        .platform-engagement { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
         .plat-eng { padding: 14px 10px; border-radius: 12px; }
         .plat-eng.fb { background: #EBF5FF; }
         .plat-eng.ig { background: #FDF2F8; }
@@ -278,6 +278,77 @@
         .plat-eng-row.neg-row { color: #DC2626; }
         .plat-eng-row.neg-row .plat-eng-row-val { color: #DC2626; }
         .plat-eng-row.bold-row { font-weight: 600; color: #1B2559; border-bottom: 1px solid #F1F5F9; padding-bottom: 3px; margin-bottom: 1px; }
+
+        /* --- Our Posts horizontal feed --- */
+        .posts-feed-wrap {
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            scroll-snap-type: x mandatory;
+            padding-bottom: 8px;
+        }
+        .posts-feed-wrap::-webkit-scrollbar { height: 6px; }
+        .posts-feed-wrap::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+        .posts-feed {
+            display: flex;
+            gap: 16px;
+            padding: 4px;
+        }
+        .post-card {
+            flex: 0 0 280px;
+            scroll-snap-align: start;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #E2E8F0;
+            overflow: hidden;
+            transition: box-shadow 0.15s;
+        }
+        .post-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .post-card-header {
+            display: flex; align-items: center; gap: 10px;
+            padding: 12px 14px 8px;
+        }
+        .post-card-plat-icon {
+            width: 36px; height: 36px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: 700; font-size: 14px;
+        }
+        .post-card-plat-icon.fb { background: #1877F2; }
+        .post-card-plat-icon.ig { background: #E1306C; }
+        .post-card-plat-icon.li { background: #0A66C2; }
+        .post-card-plat-icon.yt { background: #FF0000; }
+        .post-card-meta { flex: 1; }
+        .post-card-author { font-weight: 600; font-size: 13px; color: #1B2559; }
+        .post-card-time { font-size: 11px; color: #8F9BBA; }
+        .post-card-rank {
+            background: #003B71; color: white;
+            width: 32px; height: 32px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: 700;
+        }
+        .post-card-rank.top3 { background: #00A651; }
+        .post-card-image {
+            width: 100%; height: 180px; object-fit: cover;
+            background: #F1F5F9;
+        }
+        .post-card-image.no-img {
+            display: flex; align-items: center; justify-content: center;
+            font-size: 48px; color: #CBD5E1;
+        }
+        .post-card-body { padding: 12px 14px; }
+        .post-card-text {
+            font-size: 13px; color: #334155; line-height: 1.45;
+            display: -webkit-box; -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical; overflow: hidden;
+            min-height: 40px;
+        }
+        .post-card-stats {
+            display: flex; gap: 12px; padding: 10px 14px;
+            border-top: 1px solid #F1F5F9;
+            font-size: 12px; color: #64748B;
+        }
+        .post-card-stats .stat { display: flex; align-items: center; gap: 4px; }
+        .post-card-stats .stat-icon { font-size: 14px; }
 
         /* --- Charts --- */
         .chart-container { position: relative; height: 240px; margin-top: 8px; }
@@ -344,7 +415,7 @@
     <div class="header-right">
         <div class="refresh-info">
             <div>Next refresh in <span class="refresh-countdown" id="countdown">--:--</span></div>
-            <div id="lastUpdated" style="opacity:0.7; margin-tor:2px;">--</div>
+            <div id="lastUpdated" style="opacity:0.7; margin-top:2px;">--</div>
         </div>
     </div>
 </header>
@@ -472,11 +543,13 @@
             <div class="platform-engagement" id="platformEngagement"></div>
         </div>
 
-        <!-- Charts -->
+        <!-- Our Posts feed -->
         <div class="card" style="margin-bottom:24px;">
-            <div class="card-title">Engagement Trend by Platform</div>
-            <div class="chart-container">
-                <canvas id="engagementChart"></canvas>
+            <div class="card-title">Our Posts</div>
+            <div class="posts-feed-wrap">
+                <div class="posts-feed" id="postsFeed">
+                    <div class="empty-state" style="width:100%;text-align:center;padding:40px;">Loading posts...</div>
+                </div>
             </div>
         </div>
 
@@ -497,7 +570,6 @@ const API_BASE = window.location.origin;
 let refreshInterval = 3600;
 let countdownSeconds = 0;
 let countdownTimer = null;
-let engagementChartInstance = null;
 let sentimentChartInstance = null;
 
 // Date range state â default 28 days
@@ -530,7 +602,8 @@ function updateDateRangeDisplay() {
 // 1. Single-word lexicon (expanded with profanity, utility complaints, strong signals)
 const SENT_WORDS = {
     // Strong positive
-    'love':4,'amazing':5,'awesome':4,'wonderful':4,'fantastic':4,'excellent':5,     'outstanding':5,'brilliant':4,'superb':5,'incredible':4,'remarkable':4,
+    'love':4,'amazing':5,'awesome':4,'wonderful':4,'fantastic':4,'excellent':5,
+    'outstanding':5,'brilliant':4,'superb':5,'incredible':4,'remarkable':4,
     'beautiful':3,'gorgeous':3,'stunning':3,'magnificent':4,
     // Moderate positive
     'good':3,'great':4,'best':3,'happy':3,'pleased':2,'enjoy':2,'enjoying':2,
@@ -771,7 +844,8 @@ function processData(raw) {
         },
         reactionSentiment: { fb: 0, ig: 0, li: 0, yt: 0, count: 0 },
         platformComments: { fb: [], ig: [], li: [], yt: [] },
-        postEngagement: []
+        postEngagement: [],
+        allPosts: []
     };
 
     // Date range filter helper
@@ -816,7 +890,21 @@ function processData(raw) {
             // Reaction sentiment: positive reactions lift, negative reactions lower
             result.reactionSentiment.fb += (rLove * 2) + (rCare * 1.5) + (rLike * 1) + (rHaha * 0.5) - (rSad * 1.5) - (rAngry * 2.5);
             result.reactionSentiment.count += reactions;
+            result.reactionSentiment.fb += shares * 1.5; // shares imply positive sentiment
+            result.reactionSentiment.count += shares;
             result.postEngagement.push({ platform: 'Facebook', label: (p.message || 'Post').substring(0, 30), value: reactions + comments + shares });
+            result.allPosts.push({
+                platform: 'fb',
+                text: p.message || '',
+                image: p.full_picture || '',
+                date: p.created_time || '',
+                permalink: p.permalink_url || '',
+                reactions: reactions,
+                comments: comments,
+                shares: shares,
+                views: 0,
+                totalEngagement: reactions + comments + shares
+            });
         });
     }
     if (fbCommentsArr.length) {
@@ -857,6 +945,18 @@ function processData(raw) {
             result.reactionSentiment.ig += likes * 1;
             result.reactionSentiment.count += likes;
             result.postEngagement.push({ platform: 'Instagram', label: (m.caption || 'Post').substring(0, 30), value: likes + comments });
+            result.allPosts.push({
+                platform: 'ig',
+                text: m.caption || '',
+                image: m.media_url || m.thumbnail_url || '',
+                date: m.timestamp || '',
+                permalink: m.permalink || '',
+                reactions: likes,
+                comments: comments,
+                shares: 0,
+                views: 0,
+                totalEngagement: likes + comments
+            });
         });
     }
     if (igCommentsArr.length) {
@@ -895,8 +995,22 @@ function processData(raw) {
             // LinkedIn likes are implicitly positive
             result.reactionSentiment.li += likes * 1;
             result.reactionSentiment.count += likes;
+            result.reactionSentiment.li += shares * 1.5; // shares imply positive sentiment
+            result.reactionSentiment.count += shares;
             const txt = p.commentary || p.text || p.specificContent?.['com.linkedin.ugc.ShareContent']?.shareCommentary?.text || 'Post';
             result.postEngagement.push({ platform: 'LinkedIn', label: txt.substring(0, 30), value: likes + comments + shares });
+            result.allPosts.push({
+                platform: 'li',
+                text: txt,
+                image: '',
+                date: p.created?.time ? new Date(p.created.time).toISOString() : (p.publishedAt || ''),
+                permalink: '',
+                reactions: likes,
+                comments: comments,
+                shares: shares,
+                views: 0,
+                totalEngagement: likes + comments + shares
+            });
         });
     }
     if (liCommentsArr.length) {
@@ -940,6 +1054,18 @@ function processData(raw) {
             result.reactionSentiment.count += likes + dislikes;
             const title = v.snippet?.title || 'Video';
             result.postEngagement.push({ platform: 'YouTube', label: title.substring(0, 30), value: likes + comments });
+            result.allPosts.push({
+                platform: 'yt',
+                text: title,
+                image: v.snippet?.thumbnails?.high?.url || v.snippet?.thumbnails?.medium?.url || '',
+                date: v.snippet?.publishedAt || '',
+                permalink: 'https://youtube.com/watch?v=' + (v.id || ''),
+                reactions: likes,
+                comments: comments,
+                shares: 0,
+                views: views,
+                totalEngagement: likes + comments + views
+            });
         });
     }
     if (ytCommentsArr.length) {
@@ -974,6 +1100,12 @@ function processData(raw) {
     // Sort post engagement for chart (top 10)
     result.postEngagement.sort((a, b) => b.value - a.value);
     result.postEngagement = result.postEngagement.slice(0, 10);
+
+    // Sort allPosts by date descending
+    result.allPosts.sort((a, b) => new Date(b.date) - new Date(a.date));
+    // Assign engagement rank
+    const ranked = [...result.allPosts].sort((a, b) => b.totalEngagement - a.totalEngagement);
+    ranked.forEach((p, i) => p.rank = i + 1);
 
     return result;
 }
@@ -1265,35 +1397,58 @@ function renderCommentFeed(comments) {
 }
 
 // ============================================================
+// POSTS FEED
+// ============================================================
+function renderPostsFeed(data) {
+    const container = document.getElementById('postsFeed');
+    if (!data.allPosts || data.allPosts.length === 0) {
+        container.innerHTML = '<div style="padding:40px;text-align:center;color:#8F9BBA;">No posts found in this date range.</div>';
+        return;
+    }
+
+    const platNames = { fb: 'Facebook', ig: 'Instagram', li: 'LinkedIn', yt: 'YouTube' };
+    const platLetters = { fb: 'f', ig: 'IG', li: 'in', yt: 'â¶' };
+
+    container.innerHTML = data.allPosts.map(p => {
+        const dateStr = p.date ? new Date(p.date).toLocaleDateString('en-US', {
+            month: 'short', day: 'numeric', year: 'numeric'
+        }) + ' Â· ' + new Date(p.date).toLocaleTimeString('en-US', {
+            hour: 'numeric', minute: '2-digit'
+        }) : '';
+
+        const imageHtml = p.image
+            ? '<img class="post-card-image" src="' + escapeHtml(p.image) + '" alt="" onerror="this.outerHTML=\'<div class=post-card-image no-img>ð</div>\'">'
+            : '<div class="post-card-image no-img">ð</div>';
+
+        const rankClass = p.rank <= 3 ? ' top3' : '';
+
+        return '<div class="post-card">' +
+            '<div class="post-card-header">' +
+                '<div class="post-card-plat-icon ' + p.platform + '">' + platLetters[p.platform] + '</div>' +
+                '<div class="post-card-meta">' +
+                    '<div class="post-card-author">Madison Gas & Electric</div>' +
+                    '<div class="post-card-time">' + escapeHtml(dateStr) + '</div>' +
+                '</div>' +
+                '<div class="post-card-rank' + rankClass + '">#' + p.rank + '</div>' +
+            '</div>' +
+            imageHtml +
+            '<div class="post-card-body">' +
+                '<div class="post-card-text">' + escapeHtml(p.text) + '</div>' +
+            '</div>' +
+            '<div class="post-card-stats">' +
+                '<div class="stat"><span class="stat-icon">â¤</span> ' + fmt(p.reactions) + '</div>' +
+                '<div class="stat"><span class="stat-icon">ð¬</span> ' + fmt(p.comments) + '</div>' +
+                (p.shares > 0 ? '<div class="stat"><span class="stat-icon">ð</span> ' + fmt(p.shares) + '</div>' : '') +
+                (p.views > 0 ? '<div class="stat"><span class="stat-icon">â¶</span> ' + fmt(p.views) + '</div>' : '') +
+            '</div>' +
+        '</div>';
+    }).join('');
+}
+
+// ============================================================
 // CHARTS
 // ============================================================
 function renderCharts(data) {
-    const platformColors = { Facebook: '#1877F2', Instagram: '#E1306C', LinkedIn: '#0A66C2', YouTube: '#FF0000' };
-    const engData = data.postEngagement;
-
-    if (engagementChartInstance) engagementChartInstance.destroy();
-    const ctx1 = document.getElementById('engagementChart').getContext('2d');
-    engagementChartInstance = new Chart(ctx1, {
-        type: 'bar',
-        data: {
-            labels: engData.map(d => d.label),
-            datasets: [{
-                label: 'Engagement',
-                data: engData.map(d => d.value),
-                backgroundColor: engData.map(d => platformColors[d.platform] || '#94A3B8'),
-                borderRadius: 6, barThickness: 24
-            }]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                x: { ticks: { maxRotation: 45, font: { size: 10 } }, grid: { display: false } },
-                y: { beginAtZero: true, grid: { color: '#F1F5F9' } }
-            }
-        }
-    });
-
     // Sentiment by platform chart
     const platSent = {};
     ['fb', 'ig', 'li', 'yt'].forEach(k => {
@@ -1386,6 +1541,7 @@ async function runDashboard() {
         renderKPIs(data);
         renderSentiment(data);
         renderComments(data);
+        renderPostsFeed(data);
         renderCharts(data);
     }
     document.getElementById('lastUpdated').textContent =
