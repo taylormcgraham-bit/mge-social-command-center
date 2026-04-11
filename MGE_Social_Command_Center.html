@@ -793,7 +793,7 @@ function processData(raw) {
             const comments = p.comments?.summary?.total_count || 0;
             const shares = p.shares?.count || 0;
             // Extract typed reactions from aliased Graph API fields
-            const rJike  = p.reactions_like?.summary?.total_count  || 0;
+            const rLike  = p.reactions_like?.summary?.total_count  || 0;
             const rLove  = p.reactions_love?.summary?.total_count  || 0;
             const rWow   = p.reactions_wow?.summary?.total_count   || 0;
             const rHaha  = p.reactions_haha?.summary?.total_count  || 0;
