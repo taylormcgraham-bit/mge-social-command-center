@@ -1141,7 +1141,7 @@ function renderSentiment(data) {
         { key: 'yt', el: 'sentYT', bar: 'sentBarYT', pct: 'sentPctYT' }
     ];
     platforms.forEach(p => {
-        const comments = data.platformComments[p$»ey];
+        const comments = data.platformComments[p.key];
         const texts = comments.map(c => c.text).join(' ');
         const s = analyzeSentiment(texts);
         const el = document.getElementById(p.el);
