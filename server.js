@@ -289,7 +289,7 @@ app.get('/api/facebook/page', async (req, res) => {
 app.get('/api/facebook/posts', async (req, res) => {
   const { pageAccessToken, pageId } = config.facebook || {};
   if (!pageAccessToken || !pageId) return res.json({ error: true, message: 'Facebook not configured' });
-  let url = `${META_BASE}/${pageId}/posts?fields=id,message,created_time,full_picture,permalink_url,shares,reactions.summary(true),reactions.type(LIKE).limit(0).summary(total_count).as(reactions_like),reactions.type(LOVE).limit(0).summary(total_count).as(reactions_love),reactions.type(WOW).limit(0).summary(total_count).as(reactions_wow),reactions.type(HAHA).limit(0).summary(total_count).as(reactions_haha),reactions.type(SAD).limit(0).summary(total_count).as(reactions_sad),reactions.type(ANGRY).limit(0).summary(total_count).as(reactions_angry),reactions.type(CARE).limit(0).summary(total_count).as(reactions_care),comments.summary(true)&limit=50&access_token=${pageAccessToken}`;
+  let url = `${META_BASE}/${pageId}/posts?fields=id,message,created_time,full_picture,permalink_url,status_type,shares,reactions.summary(true),reactions.type(LIKE).limit(0).summary(total_count).as(reactions_like),reactions.type(LOVE).limit(0).summary(total_count).as(reactions_love),reactions.type(WOW).limit(0).summary(total_count).as(reactions_wow),reactions.type(HAHA).limit(0).summary(total_count).as(reactions_haha),reactions.type(SAD).limit(0).summary(total_count).as(reactions_sad),reactions.type(ANGRY).limit(0).summary(total_count).as(reactions_angry),reactions.type(CARE).limit(0).summary(total_count).as(reactions_care),comments.summary(true)&limit=50&access_token=${pageAccessToken}`;
   url += dateRangeParams(req);
   const data = await apiFetch(url);
   res.json(data);
