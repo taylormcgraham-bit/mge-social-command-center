@@ -581,10 +581,10 @@
     </div>
 </div>
 
-<\!-- Full-width charts section -->
+<!-- Full-width charts section -->
 <div style="max-width: 1600px; margin: 0 auto; padding: 0 36px 28px;">
 
-    <\!-- Sentiment Timeline -->
+    <!-- Sentiment Timeline -->
     <div class="card" style="margin-bottom: 24px;">
         <div class="card-title">Sentiment Over Time</div>
         <div class="chart-container" style="height: 260px;">
@@ -592,7 +592,7 @@
         </div>
     </div>
 
-    <\!-- Content Themes Performance -->
+    <!-- Content Themes Performance -->
     <div class="card">
         <div class="card-title">Content Themes &mdash; Engagement by Topic</div>
         <div class="chart-container" style="height: 320px;">
@@ -1578,23 +1578,23 @@ function startCountdown() {
 // ============================================================
 var sentimentTimelineInstance = null;
 function renderSentimentTimeline(data) {
-    if (\!data.comments || data.comments.length === 0) return;
+    if (!data.comments || data.comments.length === 0) return;
     // Group comments by month
     var monthMap = {};
     data.comments.forEach(function(c) {
-        if (\!c.time) return;
+        if (!c.time) return;
         var d = new Date(c.time);
         var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-        if (\!monthMap[key]) monthMap[key] = [];
+        if (!monthMap[key]) monthMap[key] = [];
         monthMap[key].push(c.text);
     });
     // Also include posts by month for volume
     var postMonthMap = {};
     data.allPosts.forEach(function(p) {
-        if (\!p.date) return;
+        if (!p.date) return;
         var d = new Date(p.date);
         var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-        if (\!postMonthMap[key]) postMonthMap[key] = 0;
+        if (!postMonthMap[key]) postMonthMap[key] = 0;
         postMonthMap[key]++;
     });
     var months = Object.keys(monthMap).sort();
@@ -1610,7 +1610,7 @@ function renderSentimentTimeline(data) {
     });
     var postCounts = months.map(function(m) { return postMonthMap[m] || 0; });
     var canvas = document.getElementById('sentimentTimelineChart');
-    if (\!canvas) return;
+    if (!canvas) return;
     if (sentimentTimelineInstance) sentimentTimelineInstance.destroy();
     sentimentTimelineInstance = new Chart(canvas.getContext('2d'), {
         type: 'line',
@@ -1666,7 +1666,7 @@ function renderSentimentTimeline(data) {
 // ============================================================
 var contentThemesInstance = null;
 function renderContentThemes(data) {
-    if (\!data.allPosts || data.allPosts.length === 0) return;
+    if (!data.allPosts || data.allPosts.length === 0) return;
     // Define utility-relevant content themes with keywords
     var themes = {
         'Energy Efficiency': ['energy', 'efficiency', 'efficient', 'saving', 'save', 'conservation', 'conserve', 'weatheriz', 'insulation', 'thermostat', 'hvac', 'led', 'appliance', 'audit', 'usage', 'consumption', 'reduce', 'lower bill', 'utility bill'],
@@ -1700,7 +1700,7 @@ function renderContentThemes(data) {
                 }
             }
         });
-        if (\!matched) {
+        if (!matched) {
             themeData['Other'].posts++;
             themeData['Other'].reactions += p.reactions || 0;
             themeData['Other'].comments += p.comments || 0;
@@ -1724,7 +1724,7 @@ function renderContentThemes(data) {
     var postCounts = activeThemes.map(function(t) { return themeData[t].posts; });
 
     var canvas = document.getElementById('contentThemesChart');
-    if (\!canvas) return;
+    if (!canvas) return;
     if (contentThemesInstance) contentThemesInstance.destroy();
     contentThemesInstance = new Chart(canvas.getContext('2d'), {
         type: 'bar',
