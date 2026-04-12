@@ -1269,7 +1269,7 @@ function renderPlatformEngagement(data) {
             '<div class="plat-eng-breakdown">' +
                 rows.map(function(r) {
                     var prevVal = prevRowMap[r.label] || 0;
-                    var badge = prevPE ? ' ' + trendBadge(r.val, prevVal) : '';
+                    var badge = (prevPE && !r.isText) ? ' ' + trendBadge(r.val, prevVal) : '';
                     return '<div class="plat-eng-row' + (r.sub ? ' sub-row' : '') + (r.neg ? ' neg-row' : '') + (r.bold ? ' bold-row' : '') + '">' +
                         '<span><span class="plat-eng-row-icon">' + r.ic + '</span> ' + r.label + '</span>' +
                         '<span class="plat-eng-row-val">' + (r.isText ? r.val : fmt(r.val)) + badge + '</span>' +
