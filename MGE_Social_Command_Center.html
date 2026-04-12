@@ -48,18 +48,18 @@
 
         /* --- Combined Platform & Date Strip --- */
         .platform-strip {
-            display: flex; gap: 10px; padding: 10px 36px;
+            display: flex; gap: 10px; padding: 8px 20px;
             background: white; border-bottom: 1px solid #E5E7EB;
-            flex-wrap: wrap; align-items: center;
+            flex-wrap: nowrap; align-items: center; justify-content: space-between;
         }
-        .strip-left { display: flex; gap: 8px; align-items: center; }
-        .strip-divider { width: 1px; height: 24px; background: #E2E8F0; margin: 0 8px; }
-        .strip-right { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-        .platform-strip-label, .date-range-label { font-size: 12px; font-weight: 600; color: #8F9BBA; margin-right: 4px; }
+        .strip-left { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+        .strip-divider { display: none; }
+        .strip-right { display: flex; gap: 5px; align-items: center; flex-wrap: nowrap; margin-left: auto; }
+        .platform-strip-label, .date-range-label { display: none; }
         .platform-chip {
             display: inline-flex; align-items: center; gap: 6px;
-            padding: 5px 14px; border-radius: 20px;
-            font-size: 12px; font-weight: 600; color: white;
+            padding: 4px 10px; border-radius: 20px;
+            font-size: 11px; font-weight: 600; color: white;
         }
         .platform-chip.fb  { background: #1877F2; }
         .platform-chip.ig  { background: #E1306C; }
@@ -382,8 +382,8 @@
 
 
         .date-preset-btn {
-            padding: 5px 14px; border-radius: 20px; border: 1.5px solid #E2E8F0;
-            background: white; color: #64748B; font-size: 12px; font-weight: 600;
+            padding: 4px 10px; border-radius: 20px; border: 1.5px solid #E2E8F0;
+            background: white; color: #64748B; font-size: 11px; font-weight: 600;
             cursor: pointer; transition: all 0.15s;
         }
         .date-preset-btn:hover { border-color: #94A3B8; color: #334155; }
@@ -393,8 +393,8 @@
         }
         .date-custom-wrap label { font-size: 11px; color: #8F9BBA; font-weight: 600; }
         .date-input {
-            padding: 4px 8px; border-radius: 8px; border: 1.5px solid #E2E8F0;
-            font-size: 12px; color: #334155; font-family: inherit;
+            padding: 3px 6px; border-radius: 8px; border: 1.5px solid #E2E8F0;
+            font-size: 11px; color: #334155; font-family: inherit;
             background: white; cursor: pointer;
         }
         .date-input:focus { outline: none; border-color: #003B71; }
@@ -405,7 +405,7 @@
         }
         .date-apply-btn:hover { background: #008c44; }
         .date-range-display {
-            margin-left: auto; font-size: 12px; color: #64748B; font-weight: 500;
+            display: none;
         }
         .date-range-display strong { color: #1B2559; }
     </style>
