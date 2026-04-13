@@ -193,13 +193,16 @@
         .comment-feed::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
 
         .comment-card {
-            background: #F8FAFC; border-radius: 12px; padding: 14px 16px;
-            border: 1px solid #E2E8F0; transition: all 0.2s;
+            background: #FFFFFF; border-radius: 12px; padding: 0;
+            border: 1px solid #E2E8F0; transition: all 0.2s; overflow: hidden;
         }
-        .comment-card:hover { border-color: #CBD5E1; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
-        .comment-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .comment-card:hover { border-color: #CBD5E1; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+        .comment-card-header {
+            display: flex; align-items: center; gap: 10px;
+            padding: 12px 14px; border-bottom: 1px solid #F1F5F9;
+        }
         .comment-avatar {
-            flex-shrink: 0; width: 36px; height: 36px;
+            flex-shrink: 0; width: 38px; height: 38px;
             border-radius: 50%; display: flex; align-items: center;
             justify-content: center; color: white; font-size: 14px; font-weight: 700;
         }
@@ -208,11 +211,6 @@
         .comment-avatar.li { background: #0A66C2; }
         .comment-avatar.yt { background: #FF0000; }
         .comment-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-        .comment-thumb {
-            width: 56px; height: 42px; border-radius: 6px; overflow: hidden;
-            flex-shrink: 0; background: #E2E8F0;
-        }
-        .comment-thumb img { width: 100%; height: 100%; object-fit: cover; }
         .comment-header-info { flex: 1; min-width: 0; }
         .comment-author-row { display: flex; align-items: center; gap: 8px; }
         .comment-author { font-size: 13px; font-weight: 700; color: #1B2559; }
@@ -225,25 +223,39 @@
         .comment-platform-tag.li { background: #EFF6FF; color: #0A66C2; }
         .comment-platform-tag.yt { background: #FEF2F2; color: #FF0000; }
         .comment-time { font-size: 11px; color: #94A3B8; margin-top: 1px; }
+        .comment-post-preview {
+            display: flex; gap: 12px; padding: 10px 14px;
+            background: #F8FAFC; border-bottom: 1px solid #F1F5F9;
+        }
+        .comment-thumb {
+            width: 80px; height: 60px; border-radius: 8px; overflow: hidden;
+            flex-shrink: 0; background: #E2E8F0;
+        }
+        .comment-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .comment-post-copy {
+            flex: 1; font-size: 12px; color: #64748B; line-height: 1.45;
+            overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+        }
+        .comment-body { padding: 12px 14px; }
+        .comment-text {
+            font-size: 14px; color: #1E293B; line-height: 1.6; margin-bottom: 10px;
+            word-wrap: break-word; font-weight: 500;
+        }
+        .comment-footer {
+            display: flex; align-items: center; gap: 14px;
+            padding-top: 8px; border-top: 1px solid #F1F5F9;
+        }
         .comment-sentiment-badge {
             margin-left: auto; flex-shrink: 0;
-            display: flex; flex-direction: column; align-items: center;
-            padding: 4px 10px; border-radius: 12px;
-            font-size: 10px; font-weight: 700; min-width: 52px;
+            display: flex; align-items: center; gap: 6px;
+            padding: 5px 12px; border-radius: 20px;
+            font-size: 11px; font-weight: 700;
         }
-        .comment-sentiment-badge .score-num { font-size: 16px; line-height: 1.1; }
-        .comment-sentiment-badge .score-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.3px; }
+        .comment-sentiment-badge .score-num { font-size: 18px; line-height: 1; }
+        .comment-sentiment-badge .score-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; }
         .comment-sentiment-badge.positive { background: #DCFCE7; color: #16A34A; }
         .comment-sentiment-badge.neutral  { background: #FEF9C3; color: #CA8A04; }
         .comment-sentiment-badge.negative { background: #FEE2E2; color: #DC2626; }
-        .comment-context {
-            font-size: 11px; color: #94A3B8; padding: 6px 10px;
-            background: #F1F5F9; border-radius: 8px; margin-bottom: 8px;
-            border-left: 3px solid #CBD5E1; line-height: 1.4;
-        }
-        .comment-context strong { color: #64748B; }
-        .comment-text { font-size: 13px; color: #334155; line-height: 1.55; margin-bottom: 8px; word-wrap: break-word; }
-        .comment-footer { display: flex; align-items: center; gap: 14px; }
         .comment-stat {
             display: flex; align-items: center; gap: 4px;
             font-size: 11px; color: #94A3B8; font-weight: 500;
@@ -582,12 +594,12 @@
 </div>
 
 <!-- Full-width charts section -->
-<div style="max-width: 1600px; margin: 0 auto; padding: 0 36px 28px;">
+<div style="max-width: 100%; margin: 0 auto; padding: 0 36px 28px;">
 
     <!-- Sentiment Timeline -->
     <div class="card" style="margin-bottom: 24px;">
         <div class="card-title">Sentiment Over Time</div>
-        <div class="chart-container" style="height: 260px;">
+        <div class="chart-container" style="height: 280px; position: relative;">
             <canvas id="sentimentTimelineChart"></canvas>
         </div>
     </div>
@@ -595,7 +607,7 @@
     <!-- Content Themes Performance -->
     <div class="card">
         <div class="card-title">Content Themes &mdash; Engagement by Topic</div>
-        <div class="chart-container" style="height: 320px;">
+        <div class="chart-container" style="height: 340px; position: relative;">
             <canvas id="contentThemesChart"></canvas>
         </div>
     </div>
@@ -611,7 +623,7 @@ let refreshInterval = 3600;
 let countdownSeconds = 0;
 let countdownTimer = null;
 
-// Date range state Ã¢ÂÂ default 28 days
+// Date range state â default 28 days
 let dateRangeDays = 28;
 let dateFrom = null;
 let dateTo = null;
@@ -679,7 +691,7 @@ const SENT_WORDS = {
     // Mild negative
     'meh':-1,'concerned':-1,'concerning':-1,'unclear':-1,'doubt':-1,
     'skeptical':-1,'questionable':-1,'mediocre':-1,
-    // Moderate negative Ã¢ÂÂ complaints / frustration
+    // Moderate negative â complaints / frustration
     'bad':-3,'poor':-3,'ugly':-3,'disappointed':-3,'disappointing':-3,
     'annoying':-2,'annoyed':-2,'frustrating':-3,'frustrated':-3,'frustration':-3,
     'expensive':-3,'overpriced':-3,'costly':-2,'unaffordable':-4,
@@ -743,11 +755,11 @@ const SENT_PHRASES = [
 
 // 3. Emoji sentiment
 const SENT_EMOJI = {
-    'Ã°ÂÂÂ¡':-4, 'Ã°ÂÂ¤Â¬':-5, 'Ã°ÂÂÂ¤':-3, 'Ã°ÂÂÂ':-3, 'Ã°ÂÂÂ©':-3, 'Ã°ÂÂÂ':-2, 'Ã°ÂÂÂ':-2,
-    'Ã°ÂÂÂ ':-3, 'Ã°ÂÂÂ¢':-2, 'Ã°ÂÂÂ':-2, 'Ã°ÂÂÂ':-2, 'Ã°ÂÂ¤Â®':-4, 'Ã°ÂÂÂ¾':-3, 'Ã°ÂÂÂ':-3,
-    'Ã¢ÂÂ¤Ã¯Â¸Â':3, 'Ã¢ÂÂ¤':3, 'Ã¢ÂÂ¥Ã¯Â¸Â':3, 'Ã°ÂÂÂ':4, 'Ã°ÂÂ¥Â°':4, 'Ã°ÂÂÂ':3, 'Ã°ÂÂÂ':3, 'Ã°ÂÂÂ':3,
-    'Ã°ÂÂÂ':3, 'Ã°ÂÂÂ':3, 'Ã°ÂÂÂ':2, 'Ã°ÂÂÂ':3, 'Ã°ÂÂÂ¥':2, 'Ã°ÂÂÂª':2, 'Ã¢ÂÂ¨':2, 'Ã¢Â­Â':2,
-    'Ã°ÂÂÂ':2, 'Ã°ÂÂ¤Â£':1, 'Ã°ÂÂÂ':1, 'Ã°ÂÂÂ¯':3, 'Ã°ÂÂÂ':3, 'Ã°ÂÂÂ':2, 'Ã°ÂÂÂ':1, 'Ã°ÂÂ¦Â':1
+    'ð¡':-4, 'ð¤¬':-5, 'ð¤':-3, 'ð':-3, 'ð©':-3, 'ð':-2, 'ð':-2,
+    'ð ':-3, 'ð¢':-2, 'ð':-2, 'ð':-2, 'ð¤®':-4, 'ð¾':-3, 'ð':-3,
+    'â¤ï¸':3, 'â¤':3, 'â¥ï¸':3, 'ð':4, 'ð¥°':4, 'ð':3, 'ð':3, 'ð':3,
+    'ð':3, 'ð':3, 'ð':2, 'ð':3, 'ð¥':2, 'ðª':2, 'â¨':2, 'â­':2,
+    'ð':2, 'ð¤£':1, 'ð':1, 'ð¯':3, 'ð':3, 'ð':2, 'ð':1, 'ð¦':1
 };
 
 // 4. Negation words that flip the next sentiment word
@@ -812,7 +824,7 @@ function analyzeSentiment(text) {
         total *= 1 + (exclamations * 0.05);
     }
 
-    // Score calculation Ã¢ÂÂ use weighted sum, not pure average
+    // Score calculation â use weighted sum, not pure average
     if (count === 0) return { score: 50, label: 'Neutral' };
     // Blend: 60% sum-based (captures volume of complaints) + 40% average-based (captures intensity)
     const avg = total / count;
@@ -888,7 +900,7 @@ async function fetchAllData() {
 }
 
 // ============================================================
-// DATA PROCESSING Ã¢ÂÂ now passes through likes + post context
+// DATA PROCESSING â now passes through likes + post context
 // ============================================================
 function processData(raw, dateRangeOverride) {
     if (!raw) return null;
@@ -1369,7 +1381,7 @@ function renderSentiment(data) {
 }
 
 // ============================================================
-// COMMENT FEED Ã¢ÂÂ enhanced with filters, detail, sentiment
+// COMMENT FEED â enhanced with filters, detail, sentiment
 // ============================================================
 let _allComments = [];
 let _activeFilter = 'all';
@@ -1434,9 +1446,6 @@ function renderCommentFeed(comments) {
             month: 'short', day: 'numeric', year: 'numeric',
             hour: 'numeric', minute: '2-digit'
         }) : '';
-        const contextHtml = c.postContext
-            ? '<div class="comment-context"><strong>On:</strong> ' + escapeHtml(c.postContext.substring(0, 140)) + (c.postContext.length > 140 ? '...' : '') + '</div>'
-            : '';
         const likesHtml = c.likes
             ? '<div class="comment-stat likes">' + svgHeart + ' ' + c.likes + '</div>'
             : '';
@@ -1444,9 +1453,12 @@ function renderCommentFeed(comments) {
         const avatarHtml = c.authorImage
             ? '<div class="comment-avatar ' + c.platform + '"><img src="' + escapeHtml(c.authorImage) + '" alt="" onerror="this.parentElement.innerHTML=\'' + (platMap[c.platform] || '?') + '\'"></div>'
             : '<div class="comment-avatar ' + c.platform + '">' + (platMap[c.platform] || '?') + '</div>';
-        // Post thumbnail
-        const thumbHtml = c.postImage
-            ? '<div class="comment-thumb"><img src="' + escapeHtml(c.postImage) + '" alt="" onerror="this.parentElement.style.display=\'none\'"></div>'
+        // Post preview section with thumbnail + post copy
+        const postPreviewHtml = (c.postImage || c.postContext)
+            ? '<div class="comment-post-preview">' +
+                (c.postImage ? '<div class="comment-thumb"><img src="' + escapeHtml(c.postImage) + '" alt="" onerror="this.parentElement.style.display=\'none\'"></div>' : '') +
+                (c.postContext ? '<div class="comment-post-copy">' + escapeHtml(c.postContext.substring(0, 200)) + (c.postContext.length > 200 ? '...' : '') + '</div>' : '') +
+              '</div>'
             : '';
 
         return '<div class="comment-card" data-platform="' + c.platform + '">' +
@@ -1459,16 +1471,17 @@ function renderCommentFeed(comments) {
                     '</div>' +
                     '<div class="comment-time" title="' + escapeHtml(fullTime) + '">' + ago + (fullTime ? ' &middot; ' + fullTime : '') + '</div>' +
                 '</div>' +
-                thumbHtml +
-                '<div class="comment-sentiment-badge ' + s.label.toLowerCase() + '">' +
-                    '<span class="score-num">' + s.score + '</span>' +
-                    '<span class="score-label">' + s.label + '</span>' +
-                '</div>' +
             '</div>' +
-            contextHtml +
-            '<div class="comment-text">' + escapeHtml(c.text || '(no text)') + '</div>' +
-            '<div class="comment-footer">' +
-                likesHtml +
+            postPreviewHtml +
+            '<div class="comment-body">' +
+                '<div class="comment-text">' + escapeHtml(c.text || '(no text)') + '</div>' +
+                '<div class="comment-footer">' +
+                    likesHtml +
+                    '<div class="comment-sentiment-badge ' + s.label.toLowerCase() + '">' +
+                        '<span class="score-num">' + s.score + '</span>' +
+                        '<span class="score-label">' + s.label + '</span>' +
+                    '</div>' +
+                '</div>' +
             '</div>' +
         '</div>';
     }).join('');
@@ -1794,6 +1807,8 @@ async function runDashboard() {
         renderSentiment(data);
         renderComments(data);
         renderPostsFeed(data);
+        renderSentimentTimeline(data);
+        renderContentThemes(data);
     }
     document.getElementById('lastUpdated').textContent =
         'Updated: ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
