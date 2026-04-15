@@ -83,8 +83,10 @@
             gap: 24px; padding: 28px 36px; max-width: 1600px; margin: 0 auto;
         }
         .main-grid > * { min-width: 0; overflow: hidden; }
-        .main-grid .left-col, .main-grid .right-col { display: flex; flex-direction: column; }
-        .main-grid .left-col > .card:last-child, .main-grid .right-col > .card:last-child { flex: 0 0 auto; }
+        .main-grid .left-col, .main-grid .right-col { display: flex; flex-direction: column; gap: 24px; }
+        .main-grid .left-col > .card:last-child { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+        .main-grid .left-col > .card:last-child .comment-feed { flex: 1 1 auto; max-height: none; min-height: 0; }
+        .main-grid .right-col > .card:last-child { flex: 0 0 auto; }
         @media (max-width: 960px) { .main-grid { grid-template-columns: 1fr; } }
 
         /* --- Cards --- */
@@ -274,6 +276,8 @@
         .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
         .kpi-card { background: #F8FAFC; border-radius: 12px; padding: 18px; text-align: center; }
         .kpi-value { font-size: 32px; font-weight: 800; color: #003B71; display: flex; align-items: baseline; justify-content: center; gap: 6px; }
+        .kpi-change { margin-top: 6px; min-height: 18px; display: flex; align-items: center; justify-content: center; }
+        .kpi-change .trend-badge { margin-left: 0; }
         .kpi-label { font-size: 12px; font-weight: 600; color: #8F9BBA; margin-top: 4px; }
         .trend-badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 10px; margin-left: 6px; vertical-align: middle; }
         .trend-badge.up { background: #DCFCE7; color: #166534; }
@@ -554,18 +558,22 @@
             <div class="kpi-grid">
                 <div class="kpi-card">
                     <div class="kpi-value" id="kpiReactions">0</div>
+                    <div class="kpi-change" id="kpiReactionsChange"></div>
                     <div class="kpi-label">Total Reactions</div>
                 </div>
                 <div class="kpi-card">
                     <div class="kpi-value" id="kpiComments">0</div>
+                    <div class="kpi-change" id="kpiCommentsChange"></div>
                     <div class="kpi-label">Total Comments</div>
                 </div>
                 <div class="kpi-card">
                     <div class="kpi-value" id="kpiShares">0</div>
+                    <div class="kpi-change" id="kpiSharesChange"></div>
                     <div class="kpi-label">Total Shares</div>
                 </div>
                 <div class="kpi-card">
                     <div class="kpi-value" id="kpiViews">0</div>
+                    <div class="kpi-change" id="kpiViewsChange"></div>
                     <div class="kpi-label">Total Views</div>
                 </div>
             </div>
@@ -985,15 +993,22 @@ function processData(raw, dateRangeOverride) {
     }
     if (fbCommentsArr.length) {
         fbCommentsArr.forEach(c => {
+            const rawAuthor = c.from?.name || c.author || '';
+            // FB returns the literal string "Facebook User" when the commenter hasn't authorized our app.
+            // Surface it as "Facebook commenter" + a click-through to the comment so Taylor can identify them on FB.
+            const isAnon = !rawAuthor || rawAuthor === 'Facebook User';
             const item = {
                 platform: 'fb',
-                author: c.from?.name || c.author || 'Facebook User',
+                author: isAnon ? 'Facebook commenter' : rawAuthor,
                 authorImage: c.from?.picture?.data?.url || c.authorImage || '',
                 text: c.message || c.text || '',
                 time: c.created_time || c.publishedAt || '',
                 likes: c.like_count || c.likeCount || 0,
                 postContext: c.postMessage || '',
-                postImage: c.postImage || ''
+                postImage: c.postImage || '',
+                commentId: c.commentId || c.id || '',
+                postId: c.postId || '',
+                authorIsAnon: isAnon
             };
             result.comments.push(item);
             result.platformComments.fb.push(item);
@@ -1219,10 +1234,14 @@ function timeAgo(date) {
 function renderKPIs(data) {
     var el = function(id) { return document.getElementById(id); };
     var prev = previousPeriodData ? previousPeriodData.kpis : null;
-    if (el('kpiReactions')) el('kpiReactions').innerHTML = fmt(data.kpis.reactions) + (prev ? trendBadge(data.kpis.reactions, prev.reactions) : '');
-    if (el('kpiComments')) el('kpiComments').innerHTML = fmt(data.kpis.comments) + (prev ? trendBadge(data.kpis.comments, prev.comments) : '');
-    if (el('kpiShares')) el('kpiShares').innerHTML = fmt(data.kpis.shares) + (prev ? trendBadge(data.kpis.shares, prev.shares) : '');
-    if (el('kpiViews')) el('kpiViews').innerHTML = fmt(data.kpis.views) + (prev ? trendBadge(data.kpis.views, prev.views) : '');
+    if (el('kpiReactions')) el('kpiReactions').textContent = fmt(data.kpis.reactions);
+    if (el('kpiComments')) el('kpiComments').textContent = fmt(data.kpis.comments);
+    if (el('kpiShares')) el('kpiShares').textContent = fmt(data.kpis.shares);
+    if (el('kpiViews')) el('kpiViews').textContent = fmt(data.kpis.views);
+    if (el('kpiReactionsChange')) el('kpiReactionsChange').innerHTML = prev ? trendBadge(data.kpis.reactions, prev.reactions) : '';
+    if (el('kpiCommentsChange')) el('kpiCommentsChange').innerHTML = prev ? trendBadge(data.kpis.comments, prev.comments) : '';
+    if (el('kpiSharesChange')) el('kpiSharesChange').innerHTML = prev ? trendBadge(data.kpis.shares, prev.shares) : '';
+    if (el('kpiViewsChange')) el('kpiViewsChange').innerHTML = prev ? trendBadge(data.kpis.views, prev.views) : '';
     renderPlatformEngagement(data);
 }
 
@@ -1470,7 +1489,23 @@ function renderCommentFeed(comments) {
                 avatarHtml +
                 '<div class="comment-header-info">' +
                     '<div class="comment-author-row">' +
-                        '<span class="comment-author">' + escapeHtml(c.author) + '</span>' +
+                        (function(){
+                            // Build a click-through to the actual content on the platform when we have an ID.
+                            // For FB anonymous commenters this lets Taylor identify them manually on Facebook.
+                            var url = '';
+                            if (c.platform === 'fb' && c.commentId) {
+                                url = 'https://www.facebook.com/' + encodeURIComponent(c.commentId);
+                            } else if (c.platform === 'fb' && c.postId) {
+                                url = 'https://www.facebook.com/' + encodeURIComponent(c.postId);
+                            }
+                            var nameHtml = escapeHtml(c.author);
+                            if (c.platform === 'fb' && c.authorIsAnon) {
+                                nameHtml += ' <span style="font-weight:400; color:#94A3B8; font-size:11px;" title="Facebook hides commenter identity unless they\u2019ve authorized this app. Click to view the comment on Facebook.">(identity hidden)</span>';
+                            }
+                            return url
+                                ? '<a class="comment-author" href="' + url + '" target="_blank" rel="noopener" style="text-decoration:none; color:inherit;">' + nameHtml + '</a>'
+                                : '<span class="comment-author">' + nameHtml + '</span>';
+                        })() +
                         '<span class="comment-platform-tag ' + c.platform + '">' + (platLabel[c.platform] || '') + '</span>' +
                     '</div>' +
                     '<div class="comment-time" title="' + escapeHtml(fullTime) + '">' + ago + (fullTime ? ' &middot; ' + fullTime : '') + '</div>' +
@@ -1594,26 +1629,74 @@ function startCountdown() {
 // SENTIMENT TIMELINE (month-to-month)
 // ============================================================
 var sentimentTimelineInstance = null;
-function renderSentimentTimeline(data) {
-    if (!data.comments || data.comments.length === 0) return;
-    // Group comments by month
+// Pull every comment out of `raw` regardless of the dashboard date filter so the
+// Sentiment Over Time chart can show a fixed rolling 12-month window.
+function extractAllRawComments(raw) {
+    var out = [];
+    if (!raw) return out;
+    try {
+        var fb = raw.facebook && raw.facebook.comments;
+        var fbArr = (fb && (fb.comments || fb.data)) || (Array.isArray(fb) ? fb : []);
+        fbArr.forEach(function(c) { out.push({ time: c.created_time || c.publishedAt, text: c.message || c.text || '' }); });
+    } catch(e) {}
+    try {
+        var ig = raw.instagram && raw.instagram.comments;
+        var igArr = (ig && (ig.comments || ig.data)) || (Array.isArray(ig) ? ig : []);
+        igArr.forEach(function(c) { out.push({ time: c.timestamp || c.publishedAt, text: c.text || '' }); });
+    } catch(e) {}
+    try {
+        var li = raw.linkedin && raw.linkedin.comments;
+        var liArr = (li && (li.comments || li.elements)) || (Array.isArray(li) ? li : []);
+        liArr.forEach(function(c) {
+            var t = c.created && c.created.time ? new Date(c.created.time).toISOString() : (c.publishedAt || '');
+            out.push({ time: t, text: (c.message && c.message.text) || c.text || '' });
+        });
+    } catch(e) {}
+    try {
+        var yt = raw.youtube && raw.youtube.comments;
+        var ytArr = (yt && (yt.comments || yt.items)) || (Array.isArray(yt) ? yt : []);
+        ytArr.forEach(function(c) {
+            var s = c.snippet && c.snippet.topLevelComment && c.snippet.topLevelComment.snippet;
+            out.push({ time: (s && s.publishedAt) || c.publishedAt || '', text: (s && s.textDisplay) || c.text || '' });
+        });
+    } catch(e) {}
+    return out;
+}
+
+function renderSentimentTimeline(rawOrData) {
+    // Build the rolling 12-month window ending at the current month, regardless of the date filter.
+    var rolling = [];
+    var now = new Date();
+    for (var i = 11; i >= 0; i--) {
+        var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        rolling.push({
+            key: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'),
+            label: d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+        });
+    }
+
+    // Prefer raw (un-filtered) comments. If a processed `data` was passed, fall back to data.comments.
+    var allComments = [];
+    if (rawOrData && (rawOrData.facebook || rawOrData.instagram || rawOrData.linkedin || rawOrData.youtube)) {
+        allComments = extractAllRawComments(rawOrData);
+    } else if (rawOrData && Array.isArray(rawOrData.comments)) {
+        allComments = rawOrData.comments;
+    }
+
     var monthMap = {};
-    data.comments.forEach(function(c) {
+    rolling.forEach(function(m) { monthMap[m.key] = []; });
+    allComments.forEach(function(c) {
         if (!c.time) return;
         var d = new Date(c.time);
+        if (isNaN(d.getTime())) return;
         var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-        if (!monthMap[key]) monthMap[key] = [];
-        monthMap[key].push(c.text);
+        if (monthMap[key]) monthMap[key].push(c.text || '');
     });
-    var months = Object.keys(monthMap).sort();
-    if (months.length === 0) return;
-    var labels = months.map(function(m) {
-        var parts = m.split('-');
-        var d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1);
-        return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-    });
-    var scores = months.map(function(m) {
-        var texts = monthMap[m].join(' ');
+
+    var labels = rolling.map(function(m) { return m.label; });
+    var scores = rolling.map(function(m) {
+        var texts = monthMap[m.key].join(' ');
+        if (!texts.trim()) return null; // gap when no data for that month
         return analyzeSentiment(texts).score;
     });
     var canvas = document.getElementById('sentimentTimelineChart');
@@ -1633,7 +1716,8 @@ function renderSentimentTimeline(data) {
                     tension: 0.35,
                     borderWidth: 2.5,
                     pointRadius: 5,
-                    pointBackgroundColor: scores.map(function(s) { return s >= 60 ? '#22C55E' : s <= 40 ? '#EF4444' : '#EAB308'; }),
+                    spanGaps: true,
+                    pointBackgroundColor: scores.map(function(s) { return s == null ? '#CBD5E1' : s >= 60 ? '#22C55E' : s <= 40 ? '#EF4444' : '#EAB308'; }),
                     pointBorderColor: '#fff',
                     pointBorderWidth: 2
                 }
@@ -1645,7 +1729,7 @@ function renderSentimentTimeline(data) {
             plugins: {
                 legend: { display: false },
                 tooltip: { callbacks: { label: function(ctx) {
-                    return 'Sentiment: ' + ctx.parsed.y + '/100';
+                    return ctx.parsed.y == null ? 'No comments this month' : 'Sentiment: ' + ctx.parsed.y + '/100';
                 }}}
             },
             scales: {
@@ -1789,7 +1873,8 @@ async function runDashboard() {
         renderSentiment(data);
         renderComments(data);
         renderPostsFeed(data);
-        renderSentimentTimeline(data);
+        // Sentiment Over Time runs against raw (unfiltered) comments so it always shows a rolling 12-month window
+        renderSentimentTimeline(raw);
         renderContentThemes(data);
     }
     document.getElementById('lastUpdated').textContent =
