@@ -643,9 +643,153 @@
             display: none;
         }
         .date-range-display strong { color: #1B2559; }
+
+        /* =================================================================== */
+        /* Media Monitoring & Mentions — View switcher + feed UI               */
+        /* =================================================================== */
+        .view-nav {
+            display: flex;
+            gap: 4px;
+            padding: 8px 24px;
+            background: #0f1729;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .view-nav-btn {
+            background: transparent;
+            color: rgba(255,255,255,0.6);
+            border: none;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 6px 6px 0 0;
+            transition: background 0.15s, color 0.15s;
+        }
+        .view-nav-btn:hover { color: #fff; background: rgba(255,255,255,0.05); }
+        .view-nav-btn.active {
+            background: #f5f5f7;
+            color: #1B2559;
+        }
+        .view-panel { display: none; }
+        .view-panel.active { display: block; }
+
+        /* Mentions view layout */
+        .mentions-wrap { padding: 24px 32px 80px; max-width: 1400px; margin: 0 auto; }
+        .mentions-header {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 16px; margin-bottom: 20px;
+        }
+        .mentions-title {
+            font-size: 24px; font-weight: 700; color: #1B2559;
+        }
+        .mentions-subtitle {
+            font-size: 13px; color: #6b7280; margin-top: 4px;
+        }
+        .mentions-refresh-btn {
+            background: #00a84f; color: #fff; border: none;
+            padding: 10px 18px; border-radius: 8px; font-size: 14px;
+            font-weight: 600; cursor: pointer;
+        }
+        .mentions-refresh-btn:hover { background: #008c44; }
+        .mentions-refresh-btn:disabled { background: #9ca3af; cursor: not-allowed; }
+
+        .mentions-filters {
+            background: #fff; padding: 14px 16px; border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06); margin-bottom: 16px;
+            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+        }
+        .mentions-source-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+        .mentions-chip {
+            padding: 6px 14px; border-radius: 999px; background: #f3f4f6;
+            color: #4b5563; font-size: 13px; font-weight: 500; cursor: pointer;
+            border: 1px solid transparent; transition: all 0.15s;
+        }
+        .mentions-chip:hover { background: #e5e7eb; }
+        .mentions-chip.active {
+            background: #1B2559; color: #fff; border-color: #1B2559;
+        }
+        .mentions-search-input {
+            flex: 1; min-width: 180px; padding: 8px 12px;
+            border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;
+        }
+
+        .mentions-summary {
+            display: flex; gap: 24px; padding: 12px 16px;
+            background: #f8fafc; border-radius: 8px; margin-bottom: 16px;
+            font-size: 13px; color: #4b5563;
+        }
+        .mentions-summary strong { color: #1B2559; }
+
+        .mentions-feed { display: flex; flex-direction: column; gap: 12px; }
+        .mention-card {
+            background: #fff; border-radius: 10px; padding: 18px 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            border-left: 4px solid #00a84f;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .mention-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .mention-card.source-reddit { border-left-color: #ff4500; }
+        .mention-card.source-google_alerts { border-left-color: #4285f4; }
+        .mention-card.source-gdelt { border-left-color: #9333ea; }
+        .mention-card.source-youtube_search { border-left-color: #ff0000; }
+        .mention-card.source-local_news { border-left-color: #0ea5e9; }
+
+        .mention-top {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 12px; margin-bottom: 8px; flex-wrap: wrap;
+        }
+        .mention-source-badge {
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.5px; color: #6b7280; padding: 3px 8px;
+            background: #f3f4f6; border-radius: 4px;
+        }
+        .mention-time { font-size: 12px; color: #9ca3af; }
+        .mention-title {
+            font-size: 16px; font-weight: 600; color: #1B2559;
+            margin-bottom: 6px; line-height: 1.4;
+        }
+        .mention-title a { color: inherit; text-decoration: none; }
+        .mention-title a:hover { color: #00a84f; text-decoration: underline; }
+        .mention-snippet {
+            font-size: 14px; color: #4b5563; line-height: 1.5;
+            margin-bottom: 8px;
+        }
+        .mention-meta {
+            display: flex; gap: 14px; flex-wrap: wrap;
+            font-size: 12px; color: #6b7280;
+        }
+        .mention-meta .keyword-tag {
+            background: #fef3c7; color: #92400e; padding: 2px 8px;
+            border-radius: 4px; font-weight: 600;
+        }
+        .mention-meta .confidence-medium {
+            background: #fef3c7; color: #92400e;
+        }
+        .mention-meta .confidence-high {
+            background: #d1fae5; color: #065f46;
+        }
+
+        .mentions-empty {
+            text-align: center; padding: 60px 20px; color: #6b7280;
+            background: #fff; border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        .mentions-empty .big { font-size: 18px; font-weight: 600; color: #1B2559; margin-bottom: 8px; }
+        .mentions-empty .small { font-size: 14px; }
+
     </style>
 </head>
 <body>
+
+<div class="view-nav">
+    <button class="view-nav-btn active" data-view="dashboard" onclick="switchView('dashboard')">Dashboard</button>
+    <button class="view-nav-btn" data-view="mentions" onclick="switchView('mentions')">Media Monitoring &amp; Mentions</button>
+</div>
+
+<div id="dashboardView" class="view-panel active">
 
 <div class="loading-bar" id="loadingBar"></div>
 
@@ -896,6 +1040,46 @@
         </div>
     </div>
 </div>
+
+
+</div><!-- /#dashboardView -->
+
+<div id="mentionsView" class="view-panel">
+    <div class="mentions-wrap">
+        <div class="mentions-header">
+            <div>
+                <div class="mentions-title">Media Monitoring &amp; Mentions</div>
+                <div class="mentions-subtitle">Brand mentions across Reddit, Google Alerts, GDELT, YouTube, and local news</div>
+            </div>
+            <button class="mentions-refresh-btn" id="mentionsRefreshBtn" onclick="refreshMentions()">Refresh</button>
+        </div>
+
+        <div class="mentions-filters">
+            <div class="mentions-source-chips" id="mentionsSourceChips">
+                <button class="mentions-chip active" data-source="all" onclick="filterMentionsSource('all', this)">All</button>
+                <button class="mentions-chip" data-source="reddit" onclick="filterMentionsSource('reddit', this)">Reddit</button>
+                <button class="mentions-chip" data-source="google_alerts" onclick="filterMentionsSource('google_alerts', this)">Google Alerts</button>
+                <button class="mentions-chip" data-source="gdelt" onclick="filterMentionsSource('gdelt', this)">GDELT</button>
+                <button class="mentions-chip" data-source="youtube_search" onclick="filterMentionsSource('youtube_search', this)">YouTube</button>
+                <button class="mentions-chip" data-source="local_news" onclick="filterMentionsSource('local_news', this)">Local News</button>
+            </div>
+            <input type="text" class="mentions-search-input" id="mentionsSearchInput" placeholder="Filter by keyword..." oninput="filterMentionsKeyword()">
+        </div>
+
+        <div class="mentions-summary" id="mentionsSummary">
+            <div>Total cached: <strong id="mentionsStatTotal">--</strong></div>
+            <div>Showing: <strong id="mentionsStatShowing">--</strong></div>
+            <div>Last updated: <strong id="mentionsStatUpdated">--</strong></div>
+        </div>
+
+        <div class="mentions-feed" id="mentionsFeed">
+            <div class="mentions-empty">
+                <div class="big">Loading mentions...</div>
+                <div class="small">First poll takes up to 90 seconds after the dashboard wakes up.</div>
+            </div>
+        </div>
+    </div>
+</div><!-- /#mentionsView -->
 
 <script>
 // ============================================================
@@ -2945,5 +3129,113 @@ window.addEventListener('DOMContentLoaded', () => {
     runDashboard();
 });
 </script>
+
+<script>
+// =================================================================
+// Media Monitoring & Mentions — Tab switching + feed rendering
+// =================================================================
+(function() {
+    let _mentionsState = { source: 'all', keyword: '', data: null };
+
+    window.switchView = function(view) {
+        document.querySelectorAll('.view-nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+        document.getElementById('dashboardView').classList.toggle('active', view === 'dashboard');
+        document.getElementById('mentionsView').classList.toggle('active', view === 'mentions');
+        if (view === 'mentions' && \!_mentionsState.data) loadMentions();
+    };
+
+    window.filterMentionsSource = function(source, el) {
+        _mentionsState.source = source;
+        document.querySelectorAll('#mentionsSourceChips .mentions-chip').forEach(c => c.classList.remove('active'));
+        if (el) el.classList.add('active');
+        renderMentions();
+    };
+
+    window.filterMentionsKeyword = function() {
+        _mentionsState.keyword = (document.getElementById('mentionsSearchInput').value || '').toLowerCase().trim();
+        renderMentions();
+    };
+
+    window.refreshMentions = async function() {
+        const btn = document.getElementById('mentionsRefreshBtn');
+        btn.disabled = true; btn.textContent = 'Refreshing...';
+        try { await fetch('/api/mentions/refresh', { method: 'POST' }); } catch (e) {}
+        setTimeout(async () => { await loadMentions(); btn.disabled = false; btn.textContent = 'Refresh'; }, 8000);
+    };
+
+    async function loadMentions() {
+        try {
+            const resp = await fetch('/api/mentions');
+            const data = await resp.json();
+            _mentionsState.data = data;
+            renderMentions();
+        } catch (err) {
+            document.getElementById('mentionsFeed').innerHTML = '<div class="mentions-empty"><div class="big">Failed to load</div><div class="small">' + (err.message || 'Unknown error') + '</div></div>';
+        }
+    }
+
+    function renderMentions() {
+        const data = _mentionsState.data;
+        if (\!data) return;
+        const feed = document.getElementById('mentionsFeed');
+
+        let items = data.items.slice();
+        if (_mentionsState.source \!== 'all') items = items.filter(m => m.source === _mentionsState.source);
+        if (_mentionsState.keyword) {
+            const kw = _mentionsState.keyword;
+            items = items.filter(m => (m.title || '').toLowerCase().includes(kw) || (m.snippet || '').toLowerCase().includes(kw));
+        }
+
+        document.getElementById('mentionsStatTotal').textContent = data.total;
+        document.getElementById('mentionsStatShowing').textContent = items.length;
+        const latestPoll = Object.values(data.lastPoll || {}).sort().reverse()[0];
+        document.getElementById('mentionsStatUpdated').textContent = latestPoll ? timeAgo(latestPoll) : 'Never';
+
+        if (items.length === 0) {
+            feed.innerHTML = '<div class="mentions-empty"><div class="big">No mentions yet</div><div class="small">' + (data.total === 0 ? 'Pollers are still populating the cache. Check back in a few minutes.' : 'Try clearing the filters above.') + '</div></div>';
+            return;
+        }
+
+        feed.innerHTML = items.map(m => {
+            const conf = (m.confidence || 'medium').toLowerCase();
+            return '' +
+                '<div class="mention-card source-' + escapeHtml(m.source) + '">' +
+                '    <div class="mention-top">' +
+                '        <span class="mention-source-badge">' + escapeHtml(m.sourceDisplay || m.source) + '</span>' +
+                '        <span class="mention-time">' + timeAgo(m.publishedAt) + '</span>' +
+                '    </div>' +
+                '    <div class="mention-title"><a href="' + escapeAttr(m.url) + '" target="_blank" rel="noopener">' + escapeHtml(m.title || '(no title)') + '</a></div>' +
+                (m.snippet ? '    <div class="mention-snippet">' + escapeHtml(m.snippet) + '</div>' : '') +
+                '    <div class="mention-meta">' +
+                '        <span>By ' + escapeHtml(m.author || 'Unknown') + '</span>' +
+                '        <span class="keyword-tag confidence-' + conf + '">' + escapeHtml(m.matchedKeyword) + ' · ' + conf + '</span>' +
+                (m.engagement ? '        <span>' + (m.engagement.score || 0) + ' score · ' + (m.engagement.comments || 0) + ' comments</span>' : '') +
+                '    </div>' +
+                '</div>';
+        }).join('');
+    }
+
+    function timeAgo(isoString) {
+        if (\!isoString) return 'unknown';
+        const diff = Date.now() - new Date(isoString).getTime();
+        const mins = Math.floor(diff / 60000);
+        if (mins < 1) return 'just now';
+        if (mins < 60) return mins + 'm ago';
+        const hours = Math.floor(mins / 60);
+        if (hours < 24) return hours + 'h ago';
+        const days = Math.floor(hours / 24);
+        return days + 'd ago';
+    }
+
+    function escapeHtml(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+    }
+    function escapeAttr(s) { return escapeHtml(s); }
+
+    // Auto-refresh feed every 5 min (reads from our own cache, no external API calls)
+    setInterval(() => { if (document.getElementById('mentionsView').classList.contains('active')) loadMentions(); }, 5 * 60 * 1000);
+})();
+</script>
+
 </body>
 </html>
