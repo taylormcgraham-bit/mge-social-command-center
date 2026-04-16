@@ -102,13 +102,18 @@
 
         /* --- AHS methodology note --- */
         .ahs-methodology-footer {
-            font-size: 11px; color: #94A3B8; line-height: 1.6;
-            padding: 16px 36px;
+            font-size: 11px; color: #94A3B8; line-height: 1.7;
+            padding: 20px 36px;
             background: #F8FAFC; border-top: 1px solid #E2E8F0;
             max-width: 1600px; margin: 0 auto;
         }
         .ahs-methodology-footer em { font-style: italic; }
         .ahs-methodology-footer strong { color: #64748B; font-weight: 600; font-style: normal; }
+        .ahs-method-title { font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: #64748B; margin-bottom: 8px; }
+        .ahs-method-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 10px; }
+        .ahs-method-col h4 { font-size: 11px; font-weight: 700; color: #475569; margin: 0 0 4px; }
+        .ahs-method-col p { margin: 0 0 6px; }
+        @media (max-width: 800px) { .ahs-method-grid { grid-template-columns: 1fr; } }
 
         /* --- Audience & Reach card --- */
         .audience-reach-grid {
@@ -138,44 +143,59 @@
         .ar-trend-down { color: #DC2626; font-weight: 700; }
         .ar-trend-flat { color: #64748B; font-weight: 700; }
 
-        /* --- Hero Gauge (flashy, glowing) --- */
-        .sentiment-gauge { text-align: center; padding: 20px 0 10px; position: relative; }
+        /* --- Hero Gauge (next-level) --- */
+        .sentiment-gauge { text-align: center; padding: 24px 0 10px; position: relative; }
+        .gauge-hero-bg {
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            width: 340px; height: 200px; border-radius: 50%;
+            background: radial-gradient(ellipse at center, rgba(34,197,94,0.08) 0%, rgba(0,59,113,0.04) 50%, transparent 70%);
+            pointer-events: none; z-index: 0;
+        }
         .gauge-wrap {
-            position: relative; width: 280px; height: 160px; margin: 0 auto;
-            filter: drop-shadow(0 0 20px rgba(34, 197, 94, 0.15));
+            position: relative; width: 320px; height: 180px; margin: 0 auto; z-index: 1;
+            filter: drop-shadow(0 0 24px rgba(34, 197, 94, 0.2));
             transition: filter 0.6s ease;
         }
-        .gauge-wrap:hover { filter: drop-shadow(0 0 30px rgba(34, 197, 94, 0.3)); }
-        .gauge-wrap svg { width: 280px; height: 160px; }
+        .gauge-wrap:hover { filter: drop-shadow(0 0 40px rgba(34, 197, 94, 0.35)); }
+        .gauge-wrap svg { width: 320px; height: 180px; }
         .gauge-center {
-            position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+            position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
             text-align: center;
         }
         .gauge-score {
-            font-size: 56px; font-weight: 900; line-height: 1;
-            background: linear-gradient(135deg, #003B71 0%, #0066CC 100%);
+            font-size: 68px; font-weight: 900; line-height: 1;
+            background: linear-gradient(135deg, #003B71 0%, #0066CC 50%, #22C55E 100%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             background-clip: text;
+            filter: drop-shadow(0 2px 8px rgba(0,59,113,0.15));
+        }
+        .gauge-score-ring {
+            position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+            width: 110px; height: 55px; border-radius: 110px 110px 0 0;
+            background: linear-gradient(180deg, rgba(34,197,94,0.06) 0%, transparent 100%);
+            border: 1px solid rgba(34,197,94,0.1); border-bottom: none;
+            pointer-events: none; z-index: -1;
         }
         .gauge-label {
-            font-size: 13px; font-weight: 700; letter-spacing: 0.5px;
-            text-transform: uppercase; color: #64748B; margin-top: 4px;
+            font-size: 12px; font-weight: 800; letter-spacing: 1px;
+            text-transform: uppercase; color: #64748B; margin-top: 6px;
         }
         .gauge-pillar-row {
-            display: flex; justify-content: center; gap: 8px; margin-top: 16px;
+            display: flex; justify-content: center; gap: 8px; margin-top: 18px;
         }
         .gauge-pillar-chip {
-            font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 20px;
-            background: #F1F5F9; color: #475569; letter-spacing: 0.3px;
+            font-size: 10px; font-weight: 700; padding: 4px 12px; border-radius: 20px;
+            background: linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 100%);
+            color: #475569; letter-spacing: 0.3px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
         }
-        .gauge-pillar-chip .chip-val { color: #0F172A; margin-left: 3px; }
+        .gauge-pillar-chip .chip-val { color: #0F172A; margin-left: 3px; font-weight: 900; }
         @keyframes gaugeArcPulse {
-            0%, 100% { filter: drop-shadow(0 0 6px rgba(34,197,94,0.3)); }
-            50% { filter: drop-shadow(0 0 14px rgba(34,197,94,0.5)); }
+            0%, 100% { filter: drop-shadow(0 0 8px rgba(34,197,94,0.3)); }
+            50% { filter: drop-shadow(0 0 20px rgba(34,197,94,0.5)); }
         }
         .gauge-wrap.animated { animation: gaugeArcPulse 3s ease-in-out infinite; }
-        @keyframes gaugeScoreCountUp { from { opacity: 0; transform: translateX(-50%) scale(0.7); } to { opacity: 1; transform: translateX(-50%) scale(1); } }
-        .gauge-center.animate-in { animation: gaugeScoreCountUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        @keyframes gaugeScoreCountUp { from { opacity: 0; transform: translateX(-50%) scale(0.6); } to { opacity: 1; transform: translateX(-50%) scale(1); } }
+        .gauge-center.animate-in { animation: gaugeScoreCountUp 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
 
         /* Sentiment distribution merged into gauge card */
         .sentiment-dist-row {
@@ -257,7 +277,7 @@
         .sentiment-legend .dot.neg { background: #EF4444; }
 
         /* --- Comment Feed --- */
-        .comment-feed { max-height: 700px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; }
+        .comment-feed { overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; }
         .comment-feed::-webkit-scrollbar { width: 5px; }
         .comment-feed::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
 
@@ -340,29 +360,43 @@
         .no-comments .icon { font-size: 32px; margin-bottom: 8px; }
 
         /* --- KPI cards --- */
-        .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-        @media (max-width: 1100px) { .kpi-grid { grid-template-columns: 1fr 1fr; } }
+        .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .kpi-card { background: #F8FAFC; border-radius: 12px; padding: 16px; text-align: center; }
-        .kpi-followers-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px solid #E2E8F0; }
+        .followers-section { margin-top: 18px; padding-top: 18px; border-top: 1px solid #E2E8F0; }
+        .followers-section-title {
+            font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase;
+            color: #003B71; margin-bottom: 12px; text-align: center;
+            background: linear-gradient(135deg, #003B71 0%, #0066CC 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .kpi-followers-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
         .foll-badge {
-            position: relative; overflow: hidden; border-radius: 12px; padding: 14px 14px 12px;
-            text-align: center; display: flex; flex-direction: column; align-items: center; gap: 3px;
-            color: #fff; transition: transform 0.2s ease, box-shadow 0.2s ease;
+            position: relative; overflow: hidden; border-radius: 16px; padding: 18px 14px 14px;
+            text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px;
+            color: #fff; transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.12);
         }
-        .foll-badge:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+        .foll-badge:hover { transform: translateY(-4px) scale(1.03); box-shadow: 0 12px 32px rgba(0,0,0,0.2); }
+        /* Animated shine sweep */
         .foll-badge::before {
-            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.2) 0%, transparent 60%);
-            pointer-events: none;
+            content: ''; position: absolute; top: -50%; left: -150%; width: 200%; height: 200%;
+            background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.3) 45%, rgba(255,255,255,0.1) 50%, transparent 55%);
+            pointer-events: none; animation: badgeShine 4s ease-in-out infinite;
         }
-        .foll-badge.fb { background: linear-gradient(135deg, #1877F2 0%, #0D47A1 100%); }
-        .foll-badge.ig { background: linear-gradient(135deg, #E4405F 0%, #C13584 50%, #F77737 100%); }
-        .foll-badge.li { background: linear-gradient(135deg, #0A66C2 0%, #004182 100%); }
-        .foll-badge.yt { background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%); }
-        .foll-badge-icon { font-size: 18px; margin-bottom: 2px; }
-        .foll-badge-val { font-size: 22px; font-weight: 900; letter-spacing: -0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-        .foll-badge-label { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; opacity: 0.85; }
-        .foll-badge-mom { font-size: 10px; font-weight: 700; background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 10px; margin-top: 2px; }
+        @keyframes badgeShine { 0%, 80%, 100% { left: -150%; } 60% { left: 150%; } }
+        /* Inner glow ring */
+        .foll-badge::after {
+            content: ''; position: absolute; inset: 2px; border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.15); pointer-events: none;
+        }
+        .foll-badge.fb { background: linear-gradient(135deg, #1877F2 0%, #0D47A1 70%, #082F6A 100%); }
+        .foll-badge.ig { background: linear-gradient(135deg, #F58529 0%, #DD2A7B 35%, #8134AF 70%, #515BD4 100%); }
+        .foll-badge.li { background: linear-gradient(135deg, #0A66C2 0%, #004182 70%, #002D5E 100%); }
+        .foll-badge.yt { background: linear-gradient(135deg, #FF0000 0%, #CC0000 70%, #8B0000 100%); }
+        .foll-badge-icon { font-size: 22px; margin-bottom: 4px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+        .foll-badge-val { font-size: 26px; font-weight: 900; letter-spacing: -0.5px; text-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+        .foll-badge-label { font-size: 9px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; opacity: 0.9; }
+        .foll-badge-mom { font-size: 10px; font-weight: 700; background: rgba(255,255,255,0.25); padding: 2px 10px; border-radius: 12px; margin-top: 3px; backdrop-filter: blur(4px); }
         @media (max-width: 700px) { .kpi-followers-row { grid-template-columns: 1fr 1fr; } }
         .kpi-value { font-size: 32px; font-weight: 800; color: #003B71; display: flex; align-items: baseline; justify-content: center; gap: 6px; }
         .kpi-label { font-size: 12px; font-weight: 600; color: #8F9BBA; margin-top: 4px; }
@@ -676,23 +710,37 @@
         <div class="card" style="margin-bottom:24px; border: 1px solid #E2E8F0; background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);">
             <div class="card-title" style="text-align:center; font-size: 13px;">Audience Health Score</div>
             <div class="sentiment-gauge">
+                <div class="gauge-hero-bg"></div>
                 <div class="gauge-wrap animated" id="gaugeWrap">
-                    <svg viewBox="0 0 280 160" id="gaugeArc">
+                    <svg viewBox="0 0 320 180" id="gaugeArc">
                         <defs>
                             <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                                 <stop offset="0%" style="stop-color:#EF4444"/>
-                                <stop offset="35%" style="stop-color:#EAB308"/>
+                                <stop offset="25%" style="stop-color:#F97316"/>
+                                <stop offset="45%" style="stop-color:#EAB308"/>
                                 <stop offset="65%" style="stop-color:#22C55E"/>
                                 <stop offset="100%" style="stop-color:#16A34A"/>
                             </linearGradient>
                             <filter id="gaugeGlow">
-                                <feGaussianBlur stdDeviation="3" result="blur"/>
+                                <feGaussianBlur stdDeviation="4" result="blur"/>
+                                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                            </filter>
+                            <!-- Tick marks filter -->
+                            <filter id="tickGlow">
+                                <feGaussianBlur stdDeviation="1" result="blur"/>
                                 <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
                             </filter>
                         </defs>
-                        <path d="M 25 145 A 115 115 0 0 1 255 145" fill="none" stroke="#E2E8F0" stroke-width="18" stroke-linecap="round"/>
-                        <path d="M 25 145 A 115 115 0 0 1 255 145" fill="none" stroke="url(#gaugeGrad)" stroke-width="18" stroke-linecap="round" id="gaugeArcFill" stroke-dasharray="0 362" filter="url(#gaugeGlow)" style="transition: stroke-dasharray 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);"/>
+                        <!-- Track -->
+                        <path d="M 30 160 A 130 130 0 0 1 290 160" fill="none" stroke="#E2E8F0" stroke-width="20" stroke-linecap="round"/>
+                        <!-- Colored fill -->
+                        <path d="M 30 160 A 130 130 0 0 1 290 160" fill="none" stroke="url(#gaugeGrad)" stroke-width="20" stroke-linecap="round" id="gaugeArcFill" stroke-dasharray="0 410" filter="url(#gaugeGlow)" style="transition: stroke-dasharray 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);"/>
+                        <!-- Scale labels -->
+                        <text x="22" y="175" fill="#94A3B8" font-size="10" font-weight="700" text-anchor="middle">0</text>
+                        <text x="160" y="22" fill="#94A3B8" font-size="10" font-weight="700" text-anchor="middle">50</text>
+                        <text x="298" y="175" fill="#94A3B8" font-size="10" font-weight="700" text-anchor="middle">100</text>
                     </svg>
+                    <div class="gauge-score-ring"></div>
                     <div class="gauge-center animate-in">
                         <div class="gauge-score" id="overallScore">--</div>
                         <div class="gauge-label" id="overallLabel">Analyzing...</div>
@@ -766,18 +814,11 @@
                     <div class="kpi-label">Total Views</div>
                     <div class="kpi-change" id="kpiViewsChange"></div>
                 </div>
-                <div class="kpi-card">
-                    <div class="kpi-value" id="kpiReach">0</div>
-                    <div class="kpi-label">Total Reach</div>
-                    <div class="kpi-change" id="kpiReachChange"></div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-value" id="kpiImpressions">0</div>
-                    <div class="kpi-label">Total Impressions</div>
-                    <div class="kpi-change" id="kpiImpressionsChange"></div>
-                </div>
             </div>
-            <div class="kpi-followers-row" id="kpiFollowersRow"></div>
+            <div class="followers-section">
+                <div class="followers-section-title">Followers by Platform</div>
+                <div class="kpi-followers-row" id="kpiFollowersRow"></div>
+            </div>
         </div>
 
         <!-- Engagement by Platform -->
@@ -830,7 +871,26 @@
 
 <!-- Methodology footer -->
 <div class="ahs-methodology-footer">
-    <em>Audience Health Score methodology &mdash; A composite 0&ndash;100 score blending four weighted pillars: <strong>Engagement Quality</strong> (40%) &mdash; tiered weighting of comments, shares, reactions, and views normalized to reach; <strong>Comment Sentiment</strong> (40%) &mdash; tone of audience conversations, confidence-weighted by comment volume; <strong>Reach &amp; Awareness</strong> (10%) &mdash; period reach vs. trailing baseline; <strong>Audience Growth</strong> (10%) &mdash; month-over-month follower change. Each pillar is normalized against its platform baseline; missing pillars drop and remaining weights rescale to 100%. The overall gauge is a reach-weighted average of per-platform scores.</em>
+    <div class="ahs-method-title">Audience Health Score &mdash; Methodology</div>
+    <em>A composite 0&ndash;100 score blending two equally weighted pillars (50/50). Each pillar is computed per platform, then the overall gauge is a follower-weighted average of per-platform scores, giving larger audiences proportional influence.</em>
+    <div class="ahs-method-grid">
+        <div class="ahs-method-col">
+            <h4>Engagement Quality (50%)</h4>
+            <p><em>Interactions are scored on a tiered weighting system that values depth of engagement:</em></p>
+            <p><strong>Tier 1 &mdash; Highest Value:</strong> <em>Comments (weighted 5x) &mdash; indicate real conversation and audience investment.</em></p>
+            <p><strong>Tier 2 &mdash; High Value:</strong> <em>Shares/Retweets (weighted 3x) &mdash; audience actively amplifying your content to their own network.</em></p>
+            <p><strong>Tier 3 &mdash; Moderate Value:</strong> <em>Reactions/Likes (weighted 1x) &mdash; positive signal but low-effort interaction.</em></p>
+            <p><strong>Tier 4 &mdash; Baseline:</strong> <em>Views (weighted 0.2x) &mdash; passive consumption, valued as reach awareness.</em></p>
+            <p><em>The ratio of weighted interactions to total engagement determines the pillar score. Higher-tier engagement pushes the score toward 100.</em></p>
+        </div>
+        <div class="ahs-method-col">
+            <h4>Comment Sentiment (50%)</h4>
+            <p><em>Analyzes the tone of audience conversations using keyword-based sentiment scoring.</em></p>
+            <p><strong>Confidence Weighting:</strong> <em>The sentiment score is confidence-weighted by comment volume. With fewer than 15 comments, the score pulls toward neutral (50) to avoid over-reacting to small samples. With 0 comments, sentiment returns null and the algorithm gracefully degrades to engagement-only scoring.</em></p>
+            <p><strong>Formula:</strong> <em>final = (raw_sentiment &times; confidence) + (50 &times; (1 &minus; confidence)), where confidence = min(1, comment_count / 15).</em></p>
+            <p><strong>Null-safe rescaling:</strong> <em>If a platform has no comments, the sentiment pillar drops entirely and the remaining engagement pillar rescales to 100% weight for that platform, keeping the score meaningful rather than penalizing silence.</em></p>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -1566,14 +1626,10 @@ function renderKPIs(data) {
     if (el('kpiComments')) el('kpiComments').textContent = fmt(data.kpis.comments);
     if (el('kpiShares')) el('kpiShares').textContent = fmt(data.kpis.shares);
     if (el('kpiViews')) el('kpiViews').textContent = fmt(data.kpis.views);
-    if (el('kpiReach')) el('kpiReach').textContent = fmt(data.kpis.reach);
-    if (el('kpiImpressions')) el('kpiImpressions').textContent = fmt(data.kpis.impressions);
     if (el('kpiReactionsChange')) el('kpiReactionsChange').innerHTML = prev ? trendBadge(data.kpis.reactions, prev.reactions) : '';
     if (el('kpiCommentsChange')) el('kpiCommentsChange').innerHTML = prev ? trendBadge(data.kpis.comments, prev.comments) : '';
     if (el('kpiSharesChange')) el('kpiSharesChange').innerHTML = prev ? trendBadge(data.kpis.shares, prev.shares) : '';
     if (el('kpiViewsChange')) el('kpiViewsChange').innerHTML = prev ? trendBadge(data.kpis.views, prev.views) : '';
-    if (el('kpiReachChange')) el('kpiReachChange').innerHTML = prev ? trendBadge(data.kpis.reach || 0, prev.reach || 0) : '';
-    if (el('kpiImpressionsChange')) el('kpiImpressionsChange').innerHTML = prev ? trendBadge(data.kpis.impressions || 0, prev.impressions || 0) : '';
     // Flashy follower badges by platform
     const followersRow = el('kpiFollowersRow');
     if (followersRow && data.audience) {
@@ -1603,12 +1659,6 @@ function renderPlatformEngagement(data) {
     const aud = data.audience || { fb:{}, ig:{}, li:{}, yt:{} };
     const container = document.getElementById('platformEngagement');
 
-    // Append reach/impressions rows from audience data so they show on every platform
-    function appendReachRows(rows, a) {
-        if (a && a.reach > 0)       rows.push({ label: 'Reach',       val: a.reach,       ic: '\uD83D\uDCE1' });
-        if (a && a.impressions > 0) rows.push({ label: 'Impressions', val: a.impressions, ic: '\uD83D\uDC42' });
-    }
-
     // Build detailed rows per platform
     function buildFB(d) {
         const totalReactions = d.like + d.love + d.wow + d.haha + d.sad + d.angry + d.care;
@@ -1625,7 +1675,6 @@ function renderPlatformEngagement(data) {
         rows.push({ label: 'Comments', val: d.comments, ic: '\uD83D\uDCAC' });
         if (d.shares > 0) rows.push({ label: 'Shares', val: d.shares, ic: '\uD83D\uDD01' });
         if (d.views > 0) rows.push({ label: 'Views', val: d.views, ic: '\uD83D\uDC41' });
-        appendReachRows(rows, aud.fb);
         return { total, rows };
     }
     function buildIG(d) {
@@ -1635,7 +1684,6 @@ function renderPlatformEngagement(data) {
             { label: 'Comments', val: d.comments, ic: '\uD83D\uDCAC' },
             { label: 'Saves', val: d.saves, ic: '\uD83D\uDD16' }
         ];
-        appendReachRows(rows, aud.ig);
         return { total, rows };
     }
     function buildLI(d) {
@@ -1645,7 +1693,6 @@ function renderPlatformEngagement(data) {
             { label: 'Comments', val: d.comments, ic: '\uD83D\uDCAC' }
         ];
         if (d.shares > 0) rows.push({ label: 'Shares', val: d.shares, ic: '\uD83D\uDD01' });
-        appendReachRows(rows, aud.li);
         return { total, rows };
     }
     function buildYT(d) {
@@ -1656,7 +1703,6 @@ function renderPlatformEngagement(data) {
         if (d.dislikes > 0) rows.push({ label: 'Dislikes', val: d.dislikes, ic: '\uD83D\uDC4E', neg: true });
         rows.push({ label: 'Comments', val: d.comments, ic: '\uD83D\uDCAC' });
         if (d.views > 0) rows.push({ label: 'Views', val: d.views, ic: '\u25B6' });
-        appendReachRows(rows, aud.yt);
         return { total, rows };
     }
 
@@ -1732,8 +1778,8 @@ function ahsPillarGrowth(platformKey, followers) {
     return Math.max(0, Math.min(100, score));
 }
 function ahsComposite(pillars) {
-    // pillars: { engagement, sentiment, reach, growth } with possible nulls
-    const W = { engagement: 40, sentiment: 40, reach: 10, growth: 10 };
+    // 50/50 Engagement Quality + Comment Sentiment
+    const W = { engagement: 50, sentiment: 50 };
     let num = 0, den = 0;
     Object.keys(W).forEach(k => {
         if (pillars[k] !== null && pillars[k] !== undefined) {
@@ -1826,9 +1872,7 @@ function renderSentiment(data) {
     platformKeys.forEach(k => {
         const pillars = {
             engagement: ahsPillarEngagement(data.platformEngagement[k]),
-            sentiment:  ahsPillarSentiment(data.platformComments[k]),
-            reach:      ahsPillarReach(data.audience[k]),
-            growth:     ahsPillarGrowth(k, data.audience[k].followers)
+            sentiment:  ahsPillarSentiment(data.platformComments[k])
         };
         perPlatform[k] = { pillars, score: ahsComposite(pillars) };
     });
@@ -1851,25 +1895,24 @@ function renderSentiment(data) {
 
     // Animate arc gauge (larger hero arc, gradient stroke)
     const arcFill = document.getElementById('gaugeArcFill');
-    const arcTotal = 362; // arc length for 280x160 SVG
+    const arcTotal = 410; // arc length for 320x180 SVG
     const fillLen = (overall.score / 100) * arcTotal;
     arcFill.setAttribute('stroke-dasharray', fillLen + ' ' + arcTotal);
 
-    // Render pillar chips below gauge
+    // Render pillar chips below gauge (weighted average across all active platforms)
     const pillarRow = document.getElementById('gaugePillarRow');
     if (pillarRow) {
-        const firstActive = platformKeys.find(k => perPlatform[k].score !== null);
-        const pillarsToShow = firstActive ? perPlatform[firstActive].pillars : {};
-        const chipData = [
-            { label: 'Engagement', val: pillarsToShow.engagement },
-            { label: 'Sentiment', val: pillarsToShow.sentiment },
-            { label: 'Reach', val: pillarsToShow.reach },
-            { label: 'Growth', val: pillarsToShow.growth }
-        ];
-        pillarRow.innerHTML = chipData.map(c => {
-            const v = c.val !== null && c.val !== undefined ? Math.round(c.val) : '--';
-            return '<span class="gauge-pillar-chip">' + c.label + ' <span class="chip-val">' + v + '</span></span>';
-        }).join('');
+        let engSum = 0, engCount = 0, sentSum = 0, sentCount = 0;
+        platformKeys.forEach(k => {
+            const p = perPlatform[k].pillars;
+            if (p.engagement !== null && p.engagement !== undefined) { engSum += p.engagement; engCount++; }
+            if (p.sentiment !== null && p.sentiment !== undefined) { sentSum += p.sentiment; sentCount++; }
+        });
+        const avgEng = engCount ? Math.round(engSum / engCount) : '--';
+        const avgSent = sentCount ? Math.round(sentSum / sentCount) : '--';
+        pillarRow.innerHTML =
+            '<span class="gauge-pillar-chip">Engagement (50%) <span class="chip-val">' + avgEng + '</span></span>' +
+            '<span class="gauge-pillar-chip">Sentiment (50%) <span class="chip-val">' + avgSent + '</span></span>';
     }
 
     // Render distribution bar & counts in gauge section
