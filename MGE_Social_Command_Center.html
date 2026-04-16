@@ -84,8 +84,11 @@
         }
         .main-grid > * { min-width: 0; overflow: hidden; }
         .main-grid .left-col, .main-grid .right-col { display: flex; flex-direction: column; gap: 24px; }
-        .main-grid .left-col > .card:last-child { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
-        .main-grid .left-col > .card:last-child .comment-feed { flex: 1 1 auto; max-height: none; min-height: 0; }
+        /* Left col last card (Comments) no longer stretches to fill the column.
+           Its inner comment-feed has its own max-height, keeping the card height
+           comparable to the Posts card on the right. */
+        .main-grid .left-col > .card:last-child { display: flex; flex-direction: column; min-height: 0; }
+        .main-grid .left-col > .card:last-child .comment-feed { max-height: 520px; min-height: 0; }
         .main-grid .right-col > .card:last-child { flex: 0 0 auto; }
         @media (max-width: 960px) { .main-grid { grid-template-columns: 1fr; } }
 
@@ -190,7 +193,7 @@
         .sentiment-legend .dot.neg { background: #EF4444; }
 
         /* --- Comment Feed --- */
-        .comment-feed { max-height: 700px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .comment-feed { max-height: 700px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; }
         .comment-feed::-webkit-scrollbar { width: 5px; }
         .comment-feed::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
 
@@ -276,9 +279,9 @@
         .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
         .kpi-card { background: #F8FAFC; border-radius: 12px; padding: 18px; text-align: center; }
         .kpi-value { font-size: 32px; font-weight: 800; color: #003B71; display: flex; align-items: baseline; justify-content: center; gap: 6px; }
-        .kpi-change { margin-top: 6px; min-height: 18px; display: flex; align-items: center; justify-content: center; }
-        .kpi-change .trend-badge { margin-left: 0; }
         .kpi-label { font-size: 12px; font-weight: 600; color: #8F9BBA; margin-top: 4px; }
+        .kpi-change { margin-top: 4px; min-height: 18px; display: flex; align-items: center; justify-content: center; }
+        .kpi-change .trend-badge { margin-left: 0; }
         .trend-badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 10px; margin-left: 6px; vertical-align: middle; }
         .trend-badge.up { background: #DCFCE7; color: #166534; }
         .trend-badge.down { background: #FEE2E2; color: #991B1B; }
@@ -296,8 +299,10 @@
         .plat-eng.yt { background: #FEF2F2; }
         .plat-eng-header { text-align: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid rgba(0,0,0,0.06); }
         .plat-eng-name { font-size: 11px; font-weight: 600; color: #64748B; margin-bottom: 2px; }
-        .plat-eng-total { font-size: 20px; font-weight: 800; color: #1B2559; }
+        .plat-eng-total { font-size: 20px; font-weight: 800; color: #1B2559; line-height: 1.1; }
         .plat-eng-label { font-size: 10px; color: #94A3B8; }
+        .plat-eng-change { margin-top: 3px; min-height: 16px; display: flex; align-items: center; justify-content: center; }
+        .plat-eng-change .trend-badge { margin-left: 0; }
         .plat-eng-breakdown { display: flex; flex-direction: column; gap: 4px; }
         .plat-eng-row {
             display: flex; justify-content: space-between; align-items: center;
@@ -312,6 +317,23 @@
         .plat-eng-row.bold-row { font-weight: 600; color: #1B2559; border-bottom: 1px solid #F1F5F9; padding-bottom: 3px; margin-bottom: 1px; }
 
         /* --- Our Posts horizontal feed --- */
+        .posts-category-tabs {
+            display: flex; gap: 6px; flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+        .posts-cat-btn {
+            padding: 5px 11px; border-radius: 16px; border: 1.5px solid #E2E8F0;
+            background: white; color: #64748B; font-size: 11px; font-weight: 600;
+            cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 5px;
+            font-family: inherit;
+        }
+        .posts-cat-btn:hover { border-color: #94A3B8; color: #334155; }
+        .posts-cat-btn.active { background: #003B71; color: white; border-color: #003B71; }
+        .posts-cat-btn .cat-count {
+            padding: 1px 6px; border-radius: 10px; font-size: 10px;
+            background: #F1F5F9; color: #64748B;
+        }
+        .posts-cat-btn.active .cat-count { background: rgba(255,255,255,0.22); color: white; }
         .posts-feed-section { position: relative; overflow: hidden; }
         .posts-scroll-btn {
             position: absolute; top: 50%; transform: translateY(-50%);
@@ -397,6 +419,43 @@
 
         /* --- Charts --- */
         .chart-container { position: relative; height: 240px; margin-top: 8px; }
+
+        /* --- Sentiment Timeline card --- */
+        .timeline-header {
+            display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+            gap: 12px; margin-bottom: 6px;
+        }
+        .timeline-sub { font-size: 11px; font-weight: 500; color: #94A3B8; text-transform: none; letter-spacing: 0; margin-left: 8px; }
+        .timeline-legend {
+            display: flex; flex-wrap: wrap; gap: 14px;
+            font-size: 11px; color: #64748B; font-weight: 500;
+        }
+        .tl-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+        .tl-swatch { display: inline-block; width: 14px; height: 8px; border-radius: 2px; }
+        .tl-swatch-line { width: 18px; height: 3px; background: #003B71; border-radius: 2px; box-shadow: 0 0 0 2px #fff inset; }
+        .tl-swatch-bar { background: #CBD5E1; }
+        .tl-band { display: inline-block; width: 14px; height: 10px; border-radius: 2px; border: 1px solid; }
+        .tl-band-pos { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.35); }
+        .tl-band-neu { background: rgba(234,179,8,0.10);  border-color: rgba(234,179,8,0.35); }
+        .tl-band-neg { background: rgba(239,68,68,0.10);  border-color: rgba(239,68,68,0.35); }
+        .timeline-stats {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 10px; margin-top: 14px;
+        }
+        .tl-stat {
+            background: #F8FAFC; border-radius: 10px; padding: 12px 14px;
+            border: 1px solid #EEF2F7;
+        }
+        .tl-stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.4px; color: #8F9BBA; font-weight: 700; }
+        .tl-stat-value { font-size: 20px; font-weight: 800; color: #003B71; margin-top: 4px; line-height: 1.15; }
+        .tl-stat-sub   { font-size: 11px; color: #64748B; margin-top: 2px; }
+        .tl-stat-value.pos { color: #16A34A; }
+        .tl-stat-value.neu { color: #CA8A04; }
+        .tl-stat-value.neg { color: #DC2626; }
+        .tl-trend-arrow { display: inline-block; font-size: 16px; margin-right: 2px; }
+        @media (max-width: 720px) {
+            .timeline-stats { grid-template-columns: repeat(2, 1fr); }
+        }
 
         /* --- Empty state --- */
         .empty-state { text-align: center; padding: 40px 20px; color: #94A3B8; }
@@ -558,23 +617,23 @@
             <div class="kpi-grid">
                 <div class="kpi-card">
                     <div class="kpi-value" id="kpiReactions">0</div>
-                    <div class="kpi-change" id="kpiReactionsChange"></div>
                     <div class="kpi-label">Total Reactions</div>
+                    <div class="kpi-change" id="kpiReactionsChange"></div>
                 </div>
                 <div class="kpi-card">
                     <div class="kpi-value" id="kpiComments">0</div>
-                    <div class="kpi-change" id="kpiCommentsChange"></div>
                     <div class="kpi-label">Total Comments</div>
+                    <div class="kpi-change" id="kpiCommentsChange"></div>
                 </div>
                 <div class="kpi-card">
                     <div class="kpi-value" id="kpiShares">0</div>
-                    <div class="kpi-change" id="kpiSharesChange"></div>
                     <div class="kpi-label">Total Shares</div>
+                    <div class="kpi-change" id="kpiSharesChange"></div>
                 </div>
                 <div class="kpi-card">
                     <div class="kpi-value" id="kpiViews">0</div>
-                    <div class="kpi-change" id="kpiViewsChange"></div>
                     <div class="kpi-label">Total Views</div>
+                    <div class="kpi-change" id="kpiViewsChange"></div>
                 </div>
             </div>
         </div>
@@ -588,6 +647,7 @@
         <!-- Our Posts feed -->
         <div class="card" style="margin-bottom:24px;">
             <div class="card-title">Our Posts <span class="posts-count" id="postsCount"></span></div>
+            <div class="posts-category-tabs" id="postsCategoryTabs"></div>
             <div class="posts-feed-wrap">
                 <div class="posts-feed-section">
                 <button class="posts-scroll-btn left" id="postsScrollLeft" onclick="document.getElementById('postsWrap').scrollLeft -= 520">&#8249;</button>
@@ -610,17 +670,19 @@
 
     <!-- Sentiment Timeline -->
     <div class="card" style="margin-bottom: 24px;">
-        <div class="card-title">Sentiment Over Time</div>
-        <div class="chart-container" style="height: 280px; position: relative;">
-            <canvas id="sentimentTimelineChart"></canvas>
+        <div class="timeline-header">
+            <div class="card-title" style="margin-bottom:0;">Sentiment Over Time <span class="timeline-sub">rolling 12 months</span></div>
+            <div class="timeline-legend">
+                <span class="tl-legend-item"><span class="tl-swatch tl-swatch-line"></span>Sentiment score</span>
+                <span class="tl-legend-item"><span class="tl-swatch tl-swatch-bar"></span>Comment volume</span>
+                <span class="tl-legend-item"><span class="tl-band tl-band-pos"></span>Positive zone</span>
+                <span class="tl-legend-item"><span class="tl-band tl-band-neu"></span>Neutral zone</span>
+                <span class="tl-legend-item"><span class="tl-band tl-band-neg"></span>Negative zone</span>
+            </div>
         </div>
-    </div>
-
-    <!-- Content Themes Performance -->
-    <div class="card">
-        <div class="card-title">Content Themes &mdash; Engagement by Topic</div>
-        <div class="chart-container" style="height: 340px; position: relative;">
-            <canvas id="contentThemesChart"></canvas>
+        <div class="timeline-stats" id="timelineStats"></div>
+        <div class="chart-container" style="height: 340px; position: relative; margin-top: 14px;">
+            <canvas id="sentimentTimelineChart"></canvas>
         </div>
     </div>
 
@@ -1293,10 +1355,6 @@ function renderPlatformEngagement(data) {
         if (d.dislikes > 0) rows.push({ label: 'Dislikes', val: d.dislikes, ic: '\uD83D\uDC4E', neg: true });
         rows.push({ label: 'Comments', val: d.comments, ic: '\uD83D\uDCAC' });
         if (d.views > 0) rows.push({ label: 'Views', val: d.views, ic: '\u25B6' });
-        if (d.views > 0 && (d.likes + d.comments) > 0) {
-            var engRate = ((d.likes + d.comments) / d.views * 100).toFixed(1);
-            rows.push({ label: 'Eng. Rate', val: engRate + '%', ic: '\uD83D\uDCC8', isText: true });
-        }
         return { total, rows };
     }
 
@@ -1317,8 +1375,9 @@ function renderPlatformEngagement(data) {
         return '<div class="plat-eng ' + p.cls + '">' +
             '<div class="plat-eng-header">' +
                 '<div class="plat-eng-name">' + p.name + '</div>' +
-                '<div class="plat-eng-total">' + fmt(total) + (prevPE ? ' ' + trendBadge(total, prevTotal) : '') + '</div>' +
+                '<div class="plat-eng-total">' + fmt(total) + '</div>' +
                 '<div class="plat-eng-label">total</div>' +
+                (prevPE ? '<div class="plat-eng-change">' + trendBadge(total, prevTotal) + '</div>' : '') +
             '</div>' +
             '<div class="plat-eng-breakdown">' +
                 rows.map(function(r) {
@@ -1499,9 +1558,6 @@ function renderCommentFeed(comments) {
                                 url = 'https://www.facebook.com/' + encodeURIComponent(c.postId);
                             }
                             var nameHtml = escapeHtml(c.author);
-                            if (c.platform === 'fb' && c.authorIsAnon) {
-                                nameHtml += ' <span style="font-weight:400; color:#94A3B8; font-size:11px;" title="Facebook hides commenter identity unless they\u2019ve authorized this app. Click to view the comment on Facebook.">(identity hidden)</span>';
-                            }
                             return url
                                 ? '<a class="comment-author" href="' + url + '" target="_blank" rel="noopener" style="text-decoration:none; color:inherit;">' + nameHtml + '</a>'
                                 : '<span class="comment-author">' + nameHtml + '</span>';
@@ -1529,17 +1585,94 @@ function renderCommentFeed(comments) {
 // ============================================================
 // POSTS FEED
 // ============================================================
+// Shared content-theme taxonomy, used by the Posts category tabs.
+var POST_THEMES = {
+    'Energy Efficiency': ['energy', 'efficiency', 'efficient', 'saving', 'save', 'conservation', 'conserve', 'weatheriz', 'insulation', 'thermostat', 'hvac', 'led', 'appliance', 'audit', 'usage', 'consumption', 'reduce', 'lower bill', 'utility bill'],
+    'Safety': ['safety', 'safe', 'carbon monoxide', 'gas leak', 'outage', 'storm', 'emergency', 'hazard', 'danger', 'warning', 'caution', 'power line', 'downed', 'call 811', 'dig'],
+    'Electric Vehicles': ['ev', 'electric vehicle', 'charging', 'charger', 'plug-in', 'tesla', 'ev charger', 'charge at home', 'electric car'],
+    'Sustainability': ['solar', 'renewable', 'wind', 'clean energy', 'green', 'sustainab', 'climate', 'carbon', 'emission', 'environment', 'net zero', 'carbon neutral'],
+    'Community': ['community', 'volunteer', 'donat', 'sponsor', 'event', 'partner', 'neighborhood', 'local', 'madison', 'dane county', 'give back', 'support'],
+    'Programs & Rebates': ['rebate', 'incentive', 'program', 'discount', 'free', 'offer', 'sign up', 'enroll', 'focus on energy', 'reward'],
+    'Company News': ['mge', 'madison gas', 'announcement', 'update', 'new', 'launch', 'proud', 'team', 'employee', 'career', 'hiring', 'award'],
+    'Tips & Education': ['tip', 'how to', 'learn', 'know', 'guide', 'help', 'advice', 'reminder', 'did you know', 'fact']
+};
+function classifyPostTheme(text) {
+    var t = (text || '').toLowerCase();
+    var themes = Object.keys(POST_THEMES);
+    for (var i = 0; i < themes.length; i++) {
+        var kws = POST_THEMES[themes[i]];
+        for (var j = 0; j < kws.length; j++) {
+            if (t.indexOf(kws[j]) > -1) return themes[i];
+        }
+    }
+    return 'Other';
+}
+
+var _allPostsCached = [];
+var _activePostCategory = 'all';
+
+function renderPostsCategoryTabs(allPosts) {
+    var tabsEl = document.getElementById('postsCategoryTabs');
+    if (!tabsEl) return;
+    var counts = { all: allPosts.length };
+    allPosts.forEach(function(p) {
+        var cat = p._theme || classifyPostTheme(p.text);
+        p._theme = cat;
+        counts[cat] = (counts[cat] || 0) + 1;
+    });
+    // Order: All first, then themes in POST_THEMES order (only those present), then Other
+    var ordered = ['all'];
+    Object.keys(POST_THEMES).forEach(function(t) { if (counts[t]) ordered.push(t); });
+    if (counts['Other']) ordered.push('Other');
+
+    tabsEl.innerHTML = ordered.map(function(cat) {
+        var label = cat === 'all' ? 'All' : cat;
+        var active = cat === _activePostCategory ? ' active' : '';
+        return '<button class="posts-cat-btn' + active + '" data-cat="' + escapeHtml(cat) + '">' +
+                    escapeHtml(label) +
+                    ' <span class="cat-count">' + counts[cat] + '</span>' +
+               '</button>';
+    }).join('');
+
+    tabsEl.querySelectorAll('.posts-cat-btn').forEach(function(btn) {
+        btn.onclick = function() {
+            tabsEl.querySelectorAll('.posts-cat-btn').forEach(function(b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            _activePostCategory = btn.getAttribute('data-cat');
+            var filtered = _activePostCategory === 'all'
+                ? _allPostsCached
+                : _allPostsCached.filter(function(p) { return (p._theme || classifyPostTheme(p.text)) === _activePostCategory; });
+            renderPostCards(filtered, _allPostsCached.length);
+            var wrap = document.getElementById('postsWrap');
+            if (wrap) wrap.scrollLeft = 0;
+        };
+    });
+}
+
 function renderPostsFeed(data) {
-    const container = document.getElementById('postsFeed');
     const countEl = document.getElementById('postsCount');
     if (!data.allPosts || data.allPosts.length === 0) {
-        container.innerHTML = '<div style="padding:40px;text-align:center;color:#8F9BBA;">No posts found in this date range.</div>';
+        document.getElementById('postsFeed').innerHTML = '<div style="padding:40px;text-align:center;color:#8F9BBA;">No posts found in this date range.</div>';
         if (countEl) countEl.textContent = '';
+        var tabsEl = document.getElementById('postsCategoryTabs');
+        if (tabsEl) tabsEl.innerHTML = '';
         return;
     }
+    _allPostsCached = data.allPosts;
+    _activePostCategory = 'all';
     if (countEl) countEl.textContent = '(' + data.allPosts.length + ')';
+    renderPostsCategoryTabs(data.allPosts);
+    renderPostCards(data.allPosts, data.allPosts.length);
+}
+
+function renderPostCards(posts, totalCount) {
+    const container = document.getElementById('postsFeed');
+    if (!posts || posts.length === 0) {
+        container.innerHTML = '<div style="padding:40px;text-align:center;color:#8F9BBA;width:100%;">No posts in this category.</div>';
+        return;
+    }
     var platLetters = { fb: 'f', ig: 'IG', li: 'in', yt: String.fromCharCode(9654) };
-    container.innerHTML = data.allPosts.map(function(p) {
+    container.innerHTML = posts.map(function(p) {
         var dateStr = p.date ? new Date(p.date).toLocaleDateString('en-US', {
             month: 'short', day: 'numeric', year: 'numeric'
         }) + ' \u00B7 ' + new Date(p.date).toLocaleTimeString('en-US', {
@@ -1556,7 +1689,7 @@ function renderPostsFeed(data) {
                     '<div class="post-card-author">Madison Gas &amp; Electric</div>' +
                     '<div class="post-card-time">' + escapeHtml(dateStr) + '</div>' +
                 '</div>' +
-                '<div class="post-card-rank' + rankClass + '">#' + p.rank + ' <span style="font-weight:400;opacity:0.6">of ' + data.allPosts.length + '</span></div>' +
+                '<div class="post-card-rank' + rankClass + '">#' + p.rank + ' <span style="font-weight:400;opacity:0.6">of ' + totalCount + '</span></div>' +
             '</div>' +
             imageHtml +
             '<div class="post-card-body">' +
@@ -1694,50 +1827,188 @@ function renderSentimentTimeline(rawOrData) {
     });
 
     var labels = rolling.map(function(m) { return m.label; });
+    var volumes = rolling.map(function(m) { return monthMap[m.key].length; });
     var scores = rolling.map(function(m) {
         var texts = monthMap[m.key].join(' ');
         if (!texts.trim()) return null; // gap when no data for that month
         return analyzeSentiment(texts).score;
     });
+
+    // --- Stats row (above chart) ---
+    renderTimelineStats(rolling, scores, volumes);
+
     var canvas = document.getElementById('sentimentTimelineChart');
     if (!canvas) return;
     if (sentimentTimelineInstance) sentimentTimelineInstance.destroy();
-    sentimentTimelineInstance = new Chart(canvas.getContext('2d'), {
-        type: 'line',
+
+    // Build a gradient for the line fill
+    var ctx = canvas.getContext('2d');
+    var gradient = ctx.createLinearGradient(0, 0, 0, 340);
+    gradient.addColorStop(0, 'rgba(0,59,113,0.28)');
+    gradient.addColorStop(1, 'rgba(0,59,113,0.00)');
+
+    // Custom plugin: shaded positive/neutral/negative background zones
+    var zonesPlugin = {
+        id: 'sentimentZones',
+        beforeDatasetsDraw: function(chart) {
+            var ya = chart.scales.y;
+            var xa = chart.scales.x;
+            if (!ya || !xa) return;
+            var ctx = chart.ctx;
+            var left = xa.left, right = xa.right;
+            // Negative zone: 0-40
+            ctx.save();
+            ctx.fillStyle = 'rgba(239,68,68,0.07)';
+            ctx.fillRect(left, ya.getPixelForValue(40), right - left, ya.getPixelForValue(0) - ya.getPixelForValue(40));
+            // Neutral zone: 40-60
+            ctx.fillStyle = 'rgba(234,179,8,0.06)';
+            ctx.fillRect(left, ya.getPixelForValue(60), right - left, ya.getPixelForValue(40) - ya.getPixelForValue(60));
+            // Positive zone: 60-100
+            ctx.fillStyle = 'rgba(34,197,94,0.07)';
+            ctx.fillRect(left, ya.getPixelForValue(100), right - left, ya.getPixelForValue(60) - ya.getPixelForValue(100));
+            // Midline at 50
+            ctx.strokeStyle = 'rgba(148,163,184,0.45)';
+            ctx.setLineDash([4, 4]);
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(left, ya.getPixelForValue(50));
+            ctx.lineTo(right, ya.getPixelForValue(50));
+            ctx.stroke();
+            ctx.restore();
+        }
+    };
+
+    var pointColors = scores.map(function(s) { return s == null ? '#CBD5E1' : s >= 60 ? '#22C55E' : s <= 40 ? '#EF4444' : '#EAB308'; });
+
+    sentimentTimelineInstance = new Chart(ctx, {
+        type: 'bar',
         data: {
             labels: labels,
             datasets: [
                 {
+                    type: 'bar',
+                    label: 'Comment Volume',
+                    data: volumes,
+                    backgroundColor: 'rgba(203,213,225,0.75)',
+                    hoverBackgroundColor: 'rgba(148,163,184,0.9)',
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    yAxisID: 'yVolume',
+                    order: 2,
+                    barPercentage: 0.7,
+                    categoryPercentage: 0.85
+                },
+                {
+                    type: 'line',
                     label: 'Sentiment Score',
                     data: scores,
                     borderColor: '#003B71',
-                    backgroundColor: 'rgba(0,59,113,0.08)',
+                    backgroundColor: gradient,
                     fill: true,
-                    tension: 0.35,
-                    borderWidth: 2.5,
-                    pointRadius: 5,
+                    tension: 0.4,
+                    borderWidth: 3,
+                    pointRadius: 6,
+                    pointHoverRadius: 9,
                     spanGaps: true,
-                    pointBackgroundColor: scores.map(function(s) { return s == null ? '#CBD5E1' : s >= 60 ? '#22C55E' : s <= 40 ? '#EF4444' : '#EAB308'; }),
+                    pointBackgroundColor: pointColors,
                     pointBorderColor: '#fff',
-                    pointBorderWidth: 2
+                    pointBorderWidth: 2,
+                    pointHoverBorderWidth: 3,
+                    yAxisID: 'y',
+                    order: 1
                 }
             ]
         },
         options: {
             responsive: true, maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
+            animation: { duration: 900, easing: 'easeOutQuart' },
             plugins: {
                 legend: { display: false },
-                tooltip: { callbacks: { label: function(ctx) {
-                    return ctx.parsed.y == null ? 'No comments this month' : 'Sentiment: ' + ctx.parsed.y + '/100';
-                }}}
+                tooltip: {
+                    backgroundColor: 'rgba(27,37,89,0.97)',
+                    padding: 12,
+                    titleFont: { size: 12, weight: '700' },
+                    bodyFont: { size: 12 },
+                    cornerRadius: 8,
+                    displayColors: false,
+                    callbacks: {
+                        title: function(items) { return items[0].label; },
+                        label: function(ctx) {
+                            if (ctx.dataset.label === 'Sentiment Score') {
+                                if (ctx.parsed.y == null) return 'Sentiment: no comments';
+                                var tier = ctx.parsed.y >= 60 ? 'Positive' : ctx.parsed.y <= 40 ? 'Negative' : 'Neutral';
+                                return 'Sentiment: ' + ctx.parsed.y + '/100  (' + tier + ')';
+                            }
+                            return 'Comments: ' + (ctx.parsed.y || 0);
+                        }
+                    }
+                }
             },
             scales: {
-                y: { min: 0, max: 100, title: { display: true, text: 'Sentiment Score', font: { size: 11 } }, grid: { color: '#F1F5F9' } },
-                x: { grid: { display: false } }
+                y: {
+                    min: 0, max: 100, position: 'left',
+                    title: { display: true, text: 'Sentiment Score (0-100)', font: { size: 11, weight: '600' }, color: '#64748B' },
+                    grid: { color: '#F1F5F9' },
+                    ticks: { font: { size: 10 }, color: '#94A3B8', stepSize: 20 }
+                },
+                yVolume: {
+                    min: 0, position: 'right',
+                    title: { display: true, text: 'Comment Volume', font: { size: 11, weight: '600' }, color: '#64748B' },
+                    grid: { display: false },
+                    ticks: { font: { size: 10 }, color: '#94A3B8', precision: 0 }
+                },
+                x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#64748B' } }
             }
-        }
+        },
+        plugins: [zonesPlugin]
     });
+}
+
+function renderTimelineStats(rolling, scores, volumes) {
+    var statsEl = document.getElementById('timelineStats');
+    if (!statsEl) return;
+    var withData = [];
+    for (var i = 0; i < scores.length; i++) {
+        if (scores[i] != null) withData.push({ label: rolling[i].label, score: scores[i], vol: volumes[i] });
+    }
+    if (withData.length === 0) {
+        statsEl.innerHTML = '<div class="tl-stat" style="grid-column: 1 / -1;"><div class="tl-stat-label">No data</div><div class="tl-stat-sub">No comments yet in the rolling 12-month window.</div></div>';
+        return;
+    }
+    var totalComments = volumes.reduce(function(a, b) { return a + b; }, 0);
+    var avgScore = Math.round(withData.reduce(function(a, b) { return a + b.score; }, 0) / withData.length);
+    var best = withData.reduce(function(a, b) { return b.score > a.score ? b : a; });
+    var worst = withData.reduce(function(a, b) { return b.score < a.score ? b : a; });
+    // Trend: compare last 3 months avg vs prior 3 months
+    var recent = withData.slice(-3);
+    var prior  = withData.slice(-6, -3);
+    var trendBadgeHtml = '';
+    if (recent.length && prior.length) {
+        var rAvg = recent.reduce(function(a, b) { return a + b.score; }, 0) / recent.length;
+        var pAvg = prior.reduce(function(a, b) { return a + b.score; }, 0) / prior.length;
+        var delta = Math.round(rAvg - pAvg);
+        var arrow = delta > 0 ? '\u25B2' : delta < 0 ? '\u25BC' : '\u25AC';
+        var cls = delta > 0 ? 'pos' : delta < 0 ? 'neg' : 'neu';
+        trendBadgeHtml = '<span class="tl-stat-value ' + cls + '" style="font-size:20px;"><span class="tl-trend-arrow">' + arrow + '</span>' + (delta > 0 ? '+' : '') + delta + '</span>';
+    } else {
+        trendBadgeHtml = '<div class="tl-stat-value">--</div>';
+    }
+    var avgCls = avgScore >= 60 ? 'pos' : avgScore <= 40 ? 'neg' : 'neu';
+    var avgLabel = avgScore >= 60 ? 'Positive' : avgScore <= 40 ? 'Negative' : 'Neutral';
+    statsEl.innerHTML =
+        '<div class="tl-stat"><div class="tl-stat-label">12-mo Avg Sentiment</div>' +
+            '<div class="tl-stat-value ' + avgCls + '">' + avgScore + '<span style="font-size:12px;font-weight:600;color:#94A3B8;"> /100</span></div>' +
+            '<div class="tl-stat-sub">' + avgLabel + '</div></div>' +
+        '<div class="tl-stat"><div class="tl-stat-label">3-mo Trend</div>' +
+            trendBadgeHtml +
+            '<div class="tl-stat-sub">vs. prior 3 months</div></div>' +
+        '<div class="tl-stat"><div class="tl-stat-label">Strongest Month</div>' +
+            '<div class="tl-stat-value pos">' + best.score + '</div>' +
+            '<div class="tl-stat-sub">' + best.label + ' &middot; ' + best.vol + ' comments</div></div>' +
+        '<div class="tl-stat"><div class="tl-stat-label">Weakest Month</div>' +
+            '<div class="tl-stat-value ' + (worst.score <= 40 ? 'neg' : worst.score >= 60 ? 'pos' : 'neu') + '">' + worst.score + '</div>' +
+            '<div class="tl-stat-sub">' + worst.label + ' &middot; ' + worst.vol + ' comments &middot; ' + totalComments.toLocaleString() + ' total</div></div>';
 }
 
 // ============================================================
@@ -1875,7 +2146,6 @@ async function runDashboard() {
         renderPostsFeed(data);
         // Sentiment Over Time runs against raw (unfiltered) comments so it always shows a rolling 12-month window
         renderSentimentTimeline(raw);
-        renderContentThemes(data);
     }
     document.getElementById('lastUpdated').textContent =
         'Updated: ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
