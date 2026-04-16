@@ -3141,7 +3141,7 @@ window.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.view-nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
         document.getElementById('dashboardView').classList.toggle('active', view === 'dashboard');
         document.getElementById('mentionsView').classList.toggle('active', view === 'mentions');
-        if (view === 'mentions' && \!_mentionsState.data) loadMentions();
+        if (view === 'mentions' && !_mentionsState.data) loadMentions();
     };
 
     window.filterMentionsSource = function(source, el) {
@@ -3176,11 +3176,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function renderMentions() {
         const data = _mentionsState.data;
-        if (\!data) return;
+        if (!data) return;
         const feed = document.getElementById('mentionsFeed');
 
         let items = data.items.slice();
-        if (_mentionsState.source \!== 'all') items = items.filter(m => m.source === _mentionsState.source);
+        if (_mentionsState.source !== 'all') items = items.filter(m => m.source === _mentionsState.source);
         if (_mentionsState.keyword) {
             const kw = _mentionsState.keyword;
             items = items.filter(m => (m.title || '').toLowerCase().includes(kw) || (m.snippet || '').toLowerCase().includes(kw));
@@ -3216,7 +3216,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function timeAgo(isoString) {
-        if (\!isoString) return 'unknown';
+        if (!isoString) return 'unknown';
         const diff = Date.now() - new Date(isoString).getTime();
         const mins = Math.floor(diff / 60000);
         if (mins < 1) return 'just now';
