@@ -327,6 +327,25 @@
         .eng-row .trend-badge { font-size: 10px; padding: 1px 5px; }
 
         /* --- Engagement by platform (detailed) --- */
+        .audience-reach-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 14px; }
+        .ar-tile { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 14px 14px 12px; display: flex; flex-direction: column; gap: 8px; }
+        .ar-tile-head { display: flex; align-items: center; justify-content: space-between; }
+        .ar-tile-plat { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: #475569; }
+        .ar-tile-badge { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; color: #fff; }
+        .ar-tile-badge.fb { background: #1877F2; }
+        .ar-tile-badge.ig { background: #E4405F; }
+        .ar-tile-badge.li { background: #0A66C2; }
+        .ar-tile-badge.yt { background: #FF0000; }
+        .ar-metric { display: flex; flex-direction: column; }
+        .ar-metric-label { font-size: 10px; font-weight: 600; color: #64748B; letter-spacing: 0.4px; text-transform: uppercase; }
+        .ar-metric-val { font-size: 17px; font-weight: 700; color: #0F172A; line-height: 1.1; margin-top: 2px; }
+        .ar-metric-mom { font-size: 10px; font-weight: 600; margin-top: 2px; }
+        .ar-metric-mom.pos { color: #16A34A; }
+        .ar-metric-mom.neg { color: #DC2626; }
+        .ar-metric-mom.neu { color: #94A3B8; }
+        .ar-metric-val.na { color: #CBD5E1; font-weight: 600; }
+        .audience-reach-note { font-size: 11px; color: #64748B; margin-top: 12px; font-style: italic; line-height: 1.5; }
+        @media (max-width: 1100px) { .audience-reach-grid { grid-template-columns: repeat(2, 1fr); } }
         .platform-engagement { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto auto; gap: 10px; margin-top: 14px; }
         .platform-engagement .plat-eng.fb { grid-column: 1; grid-row: 1 / -1; display: flex; flex-direction: column; }
         .platform-engagement .plat-eng.fb .plat-eng-breakdown { flex: 1; }
@@ -683,6 +702,13 @@
         <div class="card" style="margin-bottom:24px;">
             <div class="card-title">Engagement by Platform</div>
             <div class="platform-engagement" id="platformEngagement"></div>
+        </div>
+
+        <!-- Audience & Reach -->
+        <div class="card" style="margin-bottom:24px;">
+            <div class="card-title">Audience &amp; Reach</div>
+            <div class="audience-reach-grid" id="audienceReachGrid"></div>
+            <div class="audience-reach-note">Followers reflect current totals. Reach &amp; Impressions cover the selected date range. MoM = change vs. last month's saved snapshot (builds automatically).</div>
         </div>
 
         <!-- Our Posts feed -->
@@ -1600,6 +1626,63 @@ function ahsColor(score) {
     return '#EF4444';
 }
 
+function fmtNum(n) {
+    if (n === null || n === undefined || isNaN(n)) return '--';
+    n = Number(n);
+    if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
+    return Math.round(n).toLocaleString();
+}
+function fmtPct(pct) {
+    if (pct === null || pct === undefined || isNaN(pct)) return null;
+    const sign = pct > 0 ? '+' : '';
+    return sign + pct.toFixed(1) + '%';
+}
+function renderAudienceReach(data) {
+    const grid = document.getElementById('audienceReachGrid');
+    if (!grid || !data.audience) return;
+    const platforms = [
+        { key: 'fb', name: 'Facebook' },
+        { key: 'ig', name: 'Instagram' },
+        { key: 'li', name: 'LinkedIn' },
+        { key: 'yt', name: 'YouTube' }
+    ];
+    const html = platforms.map(p => {
+        const a = data.audience[p.key] || {};
+        const followers = a.followers || 0;
+        const reach = a.reach || 0;
+        const impressions = a.impressions || 0;
+        const momPct = getFollowerMoMChange(p.key, followers);
+        const momStr = fmtPct(momPct);
+        const momClass = momPct === null ? 'neu' : (momPct > 0 ? 'pos' : (momPct < 0 ? 'neg' : 'neu'));
+        const followerVal = followers > 0 ? fmtNum(followers) : '--';
+        const reachVal = reach > 0 ? fmtNum(reach) : '--';
+        const imprVal = impressions > 0 ? fmtNum(impressions) : '--';
+        return `
+            <div class="ar-tile">
+              <div class="ar-tile-head">
+                <span class="ar-tile-plat">${p.name}</span>
+                <span class="ar-tile-badge ${p.key}">${p.key.toUpperCase()}</span>
+              </div>
+              <div class="ar-metric">
+                <span class="ar-metric-label">Followers</span>
+                <span class="ar-metric-val ${followers > 0 ? '' : 'na'}">${followerVal}</span>
+                ${momStr ? `<span class="ar-metric-mom ${momClass}">${momStr} MoM</span>` : `<span class="ar-metric-mom neu">Baseline set</span>`}
+              </div>
+              <div class="ar-metric">
+                <span class="ar-metric-label">Reach</span>
+                <span class="ar-metric-val ${reach > 0 ? '' : 'na'}">${reachVal}</span>
+              </div>
+              <div class="ar-metric">
+                <span class="ar-metric-label">Impressions</span>
+                <span class="ar-metric-val ${impressions > 0 ? '' : 'na'}">${imprVal}</span>
+              </div>
+            </div>
+        `;
+    }).join('');
+    grid.innerHTML = html;
+}
+
 function renderSentiment(data) {
     // Persist a follower snapshot for MoM tracking
     saveFollowerSnapshot(data.audience);
@@ -2362,6 +2445,7 @@ async function runDashboard() {
         } catch(e) { previousPeriodData = null; }
         renderKPIs(data);
         renderSentiment(data);
+        renderAudienceReach(data);
         renderComments(data);
         renderPostsFeed(data);
         // Sentiment Over Time runs against raw (unfiltered) comments so it always shows a rolling 12-month window
