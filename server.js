@@ -420,6 +420,322 @@ app.get('/api/all-data', async (req, res) => {
   res.json(result);
 });
 
+
+// ============================================================
+// MEDIA MONITORING & MENTIONS
+// Adds /api/mentions + 5 source pollers (Reddit, Google Alerts,
+// GDELT, YouTube keyword search, local news RSS). All polling
+// runs in-process on staggered intervals; results cached in memory.
+// ============================================================
+
+const Parser = require('rss-parser');
+const rssParser = new Parser({
+  timeout: 15000,
+  headers: { 'User-Agent': 'MGE-Social-Command-Center/1.0 (Madison Gas and Electric brand monitoring)' }
+});
+
+// --- Brand keyword matching with Wisconsin geo-disambiguation ---
+const BRAND_EXACT = [
+  /\bMadison Gas and Electric\b/i,
+  /\bMadison Gas & Electric\b/i,
+  /\bMG&E\b/i,
+  /\bMGE Energy\b/i
+];
+const BRAND_AMBIGUOUS = /\bMGE\b/;
+const UTILITY_CONTEXT = /\b(outage|power|electric|gas|utility|bill|rate|customer|energy|meter|grid|blackout|restoration|substation|transformer|kilowatt|kwh)\b/i;
+const WISCONSIN_GEO = /\b(Wisconsin|Madison|Dane County|Sun Prairie|Middleton|Fitchburg|Monona|Verona|Waunakee|Stoughton|Cottage Grove|McFarland)\b/i;
+const NEGATIVE_FILTERS = /\bMGE Wealth|MGE Group|Mitsubishi|MGE Capital\b/i;
+
+function matchesBrand(text) {
+  if (!text) return null;
+  if (NEGATIVE_FILTERS.test(text)) return null;
+  for (const p of BRAND_EXACT) {
+    const m = text.match(p);
+    if (m) return { keyword: m[0], confidence: 'high' };
+  }
+  if (BRAND_AMBIGUOUS.test(text)) {
+    const u = UTILITY_CONTEXT.test(text);
+    const g = WISCONSIN_GEO.test(text);
+    if (u || g) return { keyword: 'MGE', confidence: (u && g) ? 'high' : 'medium' };
+  }
+  return null;
+}
+
+// --- In-memory cache (no DB, intentional for free-tier footprint) ---
+const MENTIONS = {
+  items: [],
+  lastPoll: {},
+  stats: { reddit: 0, google_alerts: 0, gdelt: 0, youtube_search: 0, local_news: 0 },
+  maxSize: 500
+};
+
+function addMentions(source, incoming) {
+  MENTIONS.lastPoll[source] = new Date().toISOString();
+  if (!incoming || incoming.length === 0) return 0;
+  const existing = new Set(MENTIONS.items.map(m => m.id));
+  const additions = incoming.filter(i => !existing.has(i.id));
+  if (additions.length === 0) return 0;
+  MENTIONS.items = [...additions, ...MENTIONS.items]
+    .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
+    .slice(0, MENTIONS.maxSize);
+  MENTIONS.stats[source] = (MENTIONS.stats[source] || 0) + additions.length;
+  console.log(' [MENTIONS] ' + source + ': +' + additions.length + ' (cache total: ' + MENTIONS.items.length + ')');
+  return additions.length;
+}
+
+function cleanHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ').trim();
+}
+
+// --- 1. Reddit (no-auth public JSON endpoints) ---
+async function pollReddit() {
+  try {
+    const queries = [
+      'https://www.reddit.com/r/madisonwi+wisconsin+madison+greenbay+milwaukee/search.json?q=%22Madison+Gas+and+Electric%22+OR+%22MG%26E%22+OR+MGE&restrict_sr=1&sort=new&limit=25&t=week',
+      'https://www.reddit.com/search.json?q=%22Madison+Gas+and+Electric%22+OR+%22MG%26E%22&sort=new&limit=25&t=week'
+    ];
+    const found = [];
+    for (const url of queries) {
+      const resp = await fetch(url, { headers: { 'User-Agent': 'MGE-Social-Command-Center/1.0' } });
+      if (!resp.ok) continue;
+      const data = await resp.json();
+      for (const c of (data && data.data && data.data.children) || []) {
+        const d = c.data;
+        const text = (d.title || '') + ' ' + (d.selftext || '');
+        const m = matchesBrand(text);
+        if (!m) continue;
+        found.push({
+          id: 'reddit:' + d.id,
+          source: 'reddit',
+          sourceDisplay: 'Reddit \u00b7 r/' + d.subreddit,
+          title: d.title || '',
+          snippet: (d.selftext || '').substring(0, 300),
+          url: 'https://www.reddit.com' + d.permalink,
+          author: 'u/' + (d.author || 'unknown'),
+          publishedAt: new Date((d.created_utc || Date.now() / 1000) * 1000).toISOString(),
+          matchedKeyword: m.keyword,
+          confidence: m.confidence,
+          engagement: { score: d.score || 0, comments: d.num_comments || 0 }
+        });
+      }
+    }
+    addMentions('reddit', found);
+  } catch (err) {
+    console.warn(' [MENTIONS] Reddit failed:', err.message);
+  }
+}
+
+// --- 2. Google Alerts RSS (Taylor creates the alerts, we poll URLs from env) ---
+function extractGalertUrl(wrapped) {
+  if (!wrapped) return null;
+  try { return new URL(wrapped).searchParams.get('url') || null; } catch { return null; }
+}
+
+async function pollGoogleAlerts() {
+  const urls = (process.env.GOOGLE_ALERTS_RSS_URLS || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (urls.length === 0) { MENTIONS.lastPoll.google_alerts = new Date().toISOString(); return; }
+  const found = [];
+  for (const url of urls) {
+    try {
+      const feed = await rssParser.parseURL(url);
+      for (const item of (feed.items || [])) {
+        const actualUrl = extractGalertUrl(item.link) || item.link;
+        const text = cleanHtml(item.title || '') + ' ' + cleanHtml(item.contentSnippet || item.content || '');
+        const m = matchesBrand(text);
+        if (!m) continue;
+        let domain = 'Google Alerts';
+        try { domain = new URL(actualUrl).hostname.replace(/^www\./, ''); } catch {}
+        found.push({
+          id: 'galerts:' + (item.guid || actualUrl),
+          source: 'google_alerts',
+          sourceDisplay: 'Google Alerts \u00b7 ' + domain,
+          title: cleanHtml(item.title || ''),
+          snippet: cleanHtml(item.contentSnippet || item.content || '').substring(0, 300),
+          url: actualUrl,
+          author: domain,
+          publishedAt: item.isoDate || item.pubDate || new Date().toISOString(),
+          matchedKeyword: m.keyword,
+          confidence: m.confidence
+        });
+      }
+    } catch (err) {
+      console.warn(' [MENTIONS] Google Alert feed failed:', err.message);
+    }
+  }
+  addMentions('google_alerts', found);
+}
+
+// --- 3. GDELT Doc 2.0 (free news API) ---
+function parseGdeltDate(s) {
+  if (!s) return null;
+  const m = String(s).match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/);
+  return m ? `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}Z` : null;
+}
+
+async function pollGDELT() {
+  try {
+    const queries = ['"Madison Gas and Electric"', '"Madison Gas & Electric"', '"MG&E" Wisconsin'];
+    const found = [];
+    for (const q of queries) {
+      const url = `https://api.gdeltproject.org/api/v2/doc/doc?query=${encodeURIComponent(q)}&mode=ArtList&format=json&maxrecords=25&sort=DateDesc&timespan=7d`;
+      const resp = await fetch(url);
+      if (!resp.ok) continue;
+      const body = await resp.text();
+      let data; try { data = JSON.parse(body); } catch { continue; }
+      for (const a of (data.articles || [])) {
+        const m = matchesBrand(a.title || '');
+        if (!m) continue;
+        found.push({
+          id: 'gdelt:' + (a.url || a.documentidentifier || a.title),
+          source: 'gdelt',
+          sourceDisplay: 'GDELT \u00b7 ' + (a.domain || 'news'),
+          title: a.title || '',
+          snippet: '',
+          url: a.url,
+          author: a.domain || 'Unknown',
+          publishedAt: parseGdeltDate(a.seendate) || new Date().toISOString(),
+          matchedKeyword: m.keyword,
+          confidence: m.confidence
+        });
+      }
+    }
+    addMentions('gdelt', found);
+  } catch (err) {
+    console.warn(' [MENTIONS] GDELT failed:', err.message);
+  }
+}
+
+// --- 4. YouTube keyword search (reuses existing YOUTUBE_API_KEY) ---
+async function pollYouTubeMentions() {
+  const apiKey = (typeof config !== 'undefined' && config.youtube && config.youtube.apiKey) || process.env.YOUTUBE_API_KEY;
+  if (!apiKey) { MENTIONS.lastPoll.youtube_search = new Date().toISOString(); return; }
+  try {
+    const queries = ['"Madison Gas and Electric"', '"MG&E" Wisconsin'];
+    const found = [];
+    for (const q of queries) {
+      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(q)}&type=video&order=date&maxResults=15&key=${apiKey}`;
+      const resp = await fetch(url);
+      if (!resp.ok) continue;
+      const data = await resp.json();
+      for (const v of (data.items || [])) {
+        const s = v.snippet || {};
+        const m = matchesBrand((s.title || '') + ' ' + (s.description || ''));
+        if (!m) continue;
+        found.push({
+          id: 'youtube:' + (v.id && v.id.videoId),
+          source: 'youtube_search',
+          sourceDisplay: 'YouTube \u00b7 ' + (s.channelTitle || 'Search'),
+          title: s.title || '',
+          snippet: (s.description || '').substring(0, 300),
+          url: 'https://www.youtube.com/watch?v=' + (v.id && v.id.videoId),
+          author: s.channelTitle || 'YouTube',
+          publishedAt: s.publishedAt || new Date().toISOString(),
+          matchedKeyword: m.keyword,
+          confidence: m.confidence
+        });
+      }
+    }
+    addMentions('youtube_search', found);
+  } catch (err) {
+    console.warn(' [MENTIONS] YouTube search failed:', err.message);
+  }
+}
+
+// --- 5. Local news RSS ---
+const LOCAL_NEWS_FEEDS = [
+  { url: 'https://www.channel3000.com/feed/', name: 'Channel 3000' },
+  { url: 'https://www.nbc15.com/arc/outboundfeeds/rss/', name: 'NBC 15' },
+  { url: 'https://madison.com/search/?f=rss&t=article&l=50&s=start_time&sd=desc', name: 'Wisconsin State Journal' },
+  { url: 'https://isthmus.com/feed/', name: 'Isthmus' },
+  { url: 'https://captimes.com/search/?f=rss&t=article&l=50&s=start_time&sd=desc', name: 'Cap Times' },
+  { url: 'https://www.jsonline.com/rss/', name: 'Milwaukee Journal Sentinel' }
+];
+
+async function pollLocalNews() {
+  const found = [];
+  for (const feed of LOCAL_NEWS_FEEDS) {
+    try {
+      const data = await rssParser.parseURL(feed.url);
+      for (const item of (data.items || [])) {
+        const text = cleanHtml(item.title || '') + ' ' + cleanHtml(item.contentSnippet || item.content || '');
+        const m = matchesBrand(text);
+        if (!m) continue;
+        found.push({
+          id: 'news:' + (item.guid || item.link),
+          source: 'local_news',
+          sourceDisplay: feed.name,
+          title: cleanHtml(item.title || ''),
+          snippet: cleanHtml(item.contentSnippet || '').substring(0, 300),
+          url: item.link,
+          author: item.creator || feed.name,
+          publishedAt: item.isoDate || item.pubDate || new Date().toISOString(),
+          matchedKeyword: m.keyword,
+          confidence: m.confidence
+        });
+      }
+    } catch (err) {
+      console.warn(' [MENTIONS] RSS feed failed: ' + feed.name + ' (' + err.message + ')');
+    }
+  }
+  addMentions('local_news', found);
+}
+
+// --- Staggered schedulers (spread API calls, stay well under rate limits) ---
+function startMentionPollers() {
+  console.log(' [MENTIONS] Starting pollers (5 sources, staggered)...');
+  setTimeout(pollReddit, 5000);
+  setTimeout(pollLocalNews, 20000);
+  setTimeout(pollGoogleAlerts, 35000);
+  setTimeout(pollGDELT, 60000);
+  setTimeout(pollYouTubeMentions, 90000);
+  setInterval(pollReddit, 30 * 60 * 1000);
+  setInterval(pollLocalNews, 30 * 60 * 1000);
+  setInterval(pollGoogleAlerts, 60 * 60 * 1000);
+  setInterval(pollGDELT, 120 * 60 * 1000);
+  setInterval(pollYouTubeMentions, 240 * 60 * 1000);
+}
+
+// --- API endpoints ---
+app.get('/api/mentions', (req, res) => {
+  const { source, keyword, since } = req.query;
+  let items = MENTIONS.items.slice();
+  if (source && source !== 'all') items = items.filter(m => m.source === source);
+  if (keyword) {
+    const kw = String(keyword).toLowerCase();
+    items = items.filter(m => (m.title || '').toLowerCase().includes(kw) || (m.snippet || '').toLowerCase().includes(kw));
+  }
+  if (since) {
+    const sd = new Date(since);
+    if (!isNaN(sd.getTime())) items = items.filter(m => new Date(m.publishedAt) >= sd);
+  }
+  res.json({ count: items.length, total: MENTIONS.items.length, lastPoll: MENTIONS.lastPoll, stats: MENTIONS.stats, items });
+});
+
+let _lastManualMentionsRefresh = 0;
+app.post('/api/mentions/refresh', (req, res) => {
+  const now = Date.now();
+  if (now - _lastManualMentionsRefresh < 60000) {
+    return res.json({ error: true, message: 'Please wait at least 60 seconds between manual refreshes.' });
+  }
+  _lastManualMentionsRefresh = now;
+  Promise.all([pollReddit(), pollLocalNews(), pollGoogleAlerts()]).catch(() => {});
+  res.json({ ok: true, message: 'Refresh triggered. New mentions will appear within ~15 seconds.' });
+});
+
+if (process.env.NODE_ENV === 'production' || process.env.ENABLE_MENTIONS === 'true') {
+  startMentionPollers();
+}
+
+// ============================================================
+// END MEDIA MONITORING & MENTIONS
+// ============================================================
+
+
 const PORT = config.server.port;
 app.listen(PORT, () => {
   console.log('');
