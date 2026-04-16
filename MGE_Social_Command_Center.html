@@ -337,6 +337,19 @@
         .eng-row .trend-badge { font-size: 10px; padding: 1px 5px; }
 
         /* --- Engagement by platform (detailed) --- */
+        .follower-summary-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 14px; }
+        .foll-sum-tile { background: #F8FAFC; border-radius: 8px; padding: 10px 10px 8px; text-align: center; border-left: 3px solid #CBD5E1; }
+        .foll-sum-tile.fb { border-left-color: #1877F2; }
+        .foll-sum-tile.ig { border-left-color: #E4405F; }
+        .foll-sum-tile.li { border-left-color: #0A66C2; }
+        .foll-sum-tile.yt { border-left-color: #FF0000; }
+        .foll-sum-plat { font-size: 10px; font-weight: 700; color: #64748B; letter-spacing: 0.4px; text-transform: uppercase; }
+        .foll-sum-val { font-size: 18px; font-weight: 800; color: #0F172A; margin: 2px 0; }
+        .foll-sum-delta { font-size: 10px; font-weight: 600; }
+        .foll-sum-delta.pos { color: #16A34A; }
+        .foll-sum-delta.neg { color: #DC2626; }
+        .foll-sum-delta.neu { color: #94A3B8; }
+        @media (max-width: 700px) { .follower-summary-row { grid-template-columns: 1fr 1fr; } }
         .audience-reach-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 14px; }
         .ar-tile { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 14px 14px 12px; display: flex; flex-direction: column; gap: 8px; }
         .ar-tile-head { display: flex; align-items: center; justify-content: space-between; }
@@ -676,6 +689,44 @@
                 </div>
             </div>
         </div>
+
+        <!-- Audience Health Over Time (in left col under comments) -->
+        <div class="card" style="margin-top:24px;">
+            <div class="timeline-header">
+                <div class="card-title" style="margin-bottom:0;">Audience Health Over Time <span class="timeline-sub">rolling 12 months</span></div>
+                <div class="timeline-legend" style="flex-wrap:wrap;">
+                    <span class="tl-legend-item"><span class="tl-swatch tl-swatch-line"></span>Sentiment score</span>
+                    <span class="tl-legend-item"><span class="tl-swatch tl-swatch-bar"></span>Comment volume</span>
+                    <span class="tl-legend-item"><span class="tl-band tl-band-pos"></span>Positive zone</span>
+                    <span class="tl-legend-item"><span class="tl-band tl-band-neu"></span>Neutral zone</span>
+                    <span class="tl-legend-item"><span class="tl-band tl-band-neg"></span>Negative zone</span>
+                </div>
+            </div>
+            <div class="timeline-stats" id="timelineStats"></div>
+            <div class="chart-container" style="height: 280px; position: relative; margin-top: 14px;">
+                <canvas id="sentimentTimelineChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Follower Growth Over Time (in left col) -->
+        <div class="card" style="margin-top:24px;">
+            <div class="timeline-header">
+                <div class="card-title" style="margin-bottom:0;">Follower Growth Over Time</div>
+                <div class="timeline-legend">
+                    <span class="tl-legend-item"><span style="display:inline-block;width:14px;height:3px;background:#1877F2;border-radius:2px;vertical-align:middle;margin-right:4px;"></span>Facebook</span>
+                    <span class="tl-legend-item"><span style="display:inline-block;width:14px;height:3px;background:#E4405F;border-radius:2px;vertical-align:middle;margin-right:4px;"></span>Instagram</span>
+                    <span class="tl-legend-item"><span style="display:inline-block;width:14px;height:3px;background:#0A66C2;border-radius:2px;vertical-align:middle;margin-right:4px;"></span>LinkedIn</span>
+                    <span class="tl-legend-item"><span style="display:inline-block;width:14px;height:3px;background:#FF0000;border-radius:2px;vertical-align:middle;margin-right:4px;"></span>YouTube</span>
+                </div>
+            </div>
+            <div class="follower-summary-row" id="followerSummaryRow"></div>
+            <div class="chart-container" style="height: 260px; position: relative; margin-top: 14px;">
+                <canvas id="followerGrowthChart"></canvas>
+            </div>
+            <div style="font-size:11px;color:#64748B;font-style:italic;margin-top:10px;">
+                Snapshot captured on each dashboard load. Historical depth grows automatically over time.
+            </div>
+        </div>
     </div>
 
     <!-- RIGHT COLUMN: KPIs + Charts -->
@@ -747,47 +798,6 @@
     </div>
 </div>
 
-<!-- Full-width charts section -->
-<div style="max-width: 1600px; margin: 0 auto; padding: 0 36px 28px;">
-
-    <!-- Audience Health Timeline -->
-    <div class="card" style="margin-bottom: 24px;">
-        <div class="timeline-header">
-            <div class="card-title" style="margin-bottom:0;">Audience Health Over Time <span class="timeline-sub">rolling 12 months</span></div>
-            <div class="timeline-legend">
-                <span class="tl-legend-item"><span class="tl-swatch tl-swatch-line"></span>Sentiment score</span>
-                <span class="tl-legend-item"><span class="tl-swatch tl-swatch-bar"></span>Comment volume</span>
-                <span class="tl-legend-item"><span class="tl-band tl-band-pos"></span>Positive zone</span>
-                <span class="tl-legend-item"><span class="tl-band tl-band-neu"></span>Neutral zone</span>
-                <span class="tl-legend-item"><span class="tl-band tl-band-neg"></span>Negative zone</span>
-            </div>
-        </div>
-        <div class="timeline-stats" id="timelineStats"></div>
-        <div class="chart-container" style="height: 340px; position: relative; margin-top: 14px;">
-            <canvas id="sentimentTimelineChart"></canvas>
-        </div>
-    </div>
-
-    <!-- Follower Growth Over Time -->
-    <div class="card" style="margin-bottom: 24px;">
-        <div class="timeline-header">
-            <div class="card-title" style="margin-bottom:0;">Follower Growth Over Time</div>
-            <div class="timeline-legend">
-                <span class="tl-legend-item"><span style="display:inline-block;width:14px;height:3px;background:#1877F2;border-radius:2px;vertical-align:middle;margin-right:4px;"></span>Facebook</span>
-                <span class="tl-legend-item"><span style="display:inline-block;width:14px;height:3px;background:#E4405F;border-radius:2px;vertical-align:middle;margin-right:4px;"></span>Instagram</span>
-                <span class="tl-legend-item"><span style="display:inline-block;width:14px;height:3px;background:#0A66C2;border-radius:2px;vertical-align:middle;margin-right:4px;"></span>LinkedIn</span>
-                <span class="tl-legend-item"><span style="display:inline-block;width:14px;height:3px;background:#FF0000;border-radius:2px;vertical-align:middle;margin-right:4px;"></span>YouTube</span>
-            </div>
-        </div>
-        <div class="chart-container" style="height: 300px; position: relative; margin-top: 14px;">
-            <canvas id="followerGrowthChart"></canvas>
-        </div>
-        <div style="font-size:11px;color:#64748B;font-style:italic;margin-top:10px;">
-            Snapshot captured on each dashboard load and stored locally. Historical depth grows automatically over time.
-        </div>
-    </div>
-
-</div>
 
 <script>
 // ============================================================
@@ -2407,45 +2417,75 @@ function renderTimelineStats(rolling, scores, volumes) {
 // FOLLOWER GROWTH OVER TIME (uses localStorage snapshots)
 // ============================================================
 let followerGrowthChartInstance = null;
-function renderFollowerGrowthChart() {
+function renderFollowerGrowthChart(data) {
     const canvas = document.getElementById('followerGrowthChart');
+    const summaryRow = document.getElementById('followerSummaryRow');
     if (!canvas) return;
+
+    const platforms = [
+        { key: 'fb', label: 'Facebook',  color: '#1877F2', cls: 'fb' },
+        { key: 'ig', label: 'Instagram', color: '#E4405F', cls: 'ig' },
+        { key: 'li', label: 'LinkedIn',  color: '#0A66C2', cls: 'li' },
+        { key: 'yt', label: 'YouTube',   color: '#FF0000', cls: 'yt' }
+    ];
+
+    // Render summary tiles above chart (current followers + MoM)
+    if (summaryRow && data && data.audience) {
+        summaryRow.innerHTML = platforms.map(p => {
+            const f = (data.audience[p.key] && data.audience[p.key].followers) || 0;
+            const momPct = getFollowerMoMChange(p.key, f);
+            const momStr = (momPct === null || isNaN(momPct)) ? null : ((momPct > 0 ? '+' : '') + momPct.toFixed(1) + '%');
+            const momCls = momPct === null ? 'neu' : (momPct > 0 ? 'pos' : (momPct < 0 ? 'neg' : 'neu'));
+            return '<div class="foll-sum-tile ' + p.cls + '">'
+                + '<div class="foll-sum-plat">' + p.label + '</div>'
+                + '<div class="foll-sum-val">' + (f > 0 ? fmtNum(f) : '--') + '</div>'
+                + '<div class="foll-sum-delta ' + momCls + '">' + (momStr ? momStr + ' MoM' : 'Baseline set') + '</div>'
+                + '</div>';
+        }).join('');
+    }
+
     const snapshots = getFollowerSnapshots();
-    // snapshots is { 'YYYY-MM': { fb, ig, li, yt } }
     const months = Object.keys(snapshots).sort();
+
     if (months.length === 0) {
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#94A3B8';
-        ctx.font = '14px system-ui, sans-serif';
+        ctx.font = '14px system-ui, -apple-system, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('First snapshot captured today. Chart builds as monthly data accumulates.', canvas.width / 2, canvas.height / 2);
+        ctx.fillText('First snapshot captured today.', canvas.width / 2, canvas.height / 2 - 10);
+        ctx.fillText('Chart builds as monthly data accumulates.', canvas.width / 2, canvas.height / 2 + 14);
         return;
     }
-    // Even with 1 data point, show a bar chart so the user sees current state
+
     const labels = months.map(m => {
         const [y, mo] = m.split('-');
         const d = new Date(parseInt(y), parseInt(mo) - 1);
         return d.toLocaleString('default', { month: 'short', year: '2-digit' });
     });
-    const platforms = [
-        { key: 'fb', label: 'Facebook',  color: '#1877F2' },
-        { key: 'ig', label: 'Instagram', color: '#E4405F' },
-        { key: 'li', label: 'LinkedIn',  color: '#0A66C2' },
-        { key: 'yt', label: 'YouTube',   color: '#FF0000' }
-    ];
-    const datasets = platforms.map(p => ({
-        label: p.label,
-        data: months.map(m => (snapshots[m] && snapshots[m][p.key]) || 0),
-        borderColor: p.color,
-        backgroundColor: p.color + '18',
-        borderWidth: 2,
-        tension: 0.3,
-        pointRadius: months.length <= 6 ? 5 : 3,
-        pointBackgroundColor: p.color,
-        fill: false
-    }));
-    // Destroy previous instance
+
+    const ctx = canvas.getContext('2d');
+    const datasets = platforms.map(p => {
+        // Create gradient fill
+        const gradient = ctx.createLinearGradient(0, 0, 0, canvas.parentElement.clientHeight || 260);
+        gradient.addColorStop(0, p.color + '30');
+        gradient.addColorStop(1, p.color + '05');
+        return {
+            label: p.label,
+            data: months.map(m => (snapshots[m] && snapshots[m][p.key]) || 0),
+            borderColor: p.color,
+            backgroundColor: gradient,
+            borderWidth: 2.5,
+            tension: 0.35,
+            pointRadius: months.length <= 6 ? 5 : 3,
+            pointHoverRadius: 7,
+            pointBackgroundColor: '#fff',
+            pointBorderColor: p.color,
+            pointBorderWidth: 2,
+            fill: true
+        };
+    });
+
     if (followerGrowthChartInstance) {
         followerGrowthChartInstance.destroy();
         followerGrowthChartInstance = null;
@@ -2460,19 +2500,32 @@ function renderFollowerGrowthChart() {
             plugins: {
                 legend: { display: false },
                 tooltip: {
+                    backgroundColor: '#1E293B',
+                    titleFont: { size: 12, weight: '600' },
+                    bodyFont: { size: 12 },
+                    padding: 10,
+                    cornerRadius: 8,
                     callbacks: {
                         label: function(ctx) {
-                            return ctx.dataset.label + ': ' + (ctx.parsed.y || 0).toLocaleString() + ' followers';
+                            const v = ctx.parsed.y || 0;
+                            return ' ' + ctx.dataset.label + ': ' + v.toLocaleString() + ' followers';
                         }
                     }
                 }
             },
             scales: {
-                x: { grid: { display: false } },
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { size: 11 }, color: '#64748B' }
+                },
                 y: {
                     beginAtZero: false,
-                    ticks: { callback: function(v) { return v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v; } },
-                    grid: { color: '#F1F5F9' }
+                    ticks: {
+                        callback: function(v) { return v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : v; },
+                        font: { size: 11 },
+                        color: '#64748B'
+                    },
+                    grid: { color: '#F1F5F9', drawBorder: false }
                 }
             }
         }
@@ -2614,8 +2667,8 @@ async function runDashboard() {
         renderPostsFeed(data);
         // Audience Health Over Time runs against raw (unfiltered) comments so it always shows a rolling 12-month window
         renderSentimentTimeline(raw);
-        // Follower Growth Over Time (from localStorage snapshots)
-        renderFollowerGrowthChart();
+        // Follower Growth Over Time (from localStorage snapshots + current audience data)
+        renderFollowerGrowthChart(data);
     }
     document.getElementById('lastUpdated').textContent =
         'Updated: ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
