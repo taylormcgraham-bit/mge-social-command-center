@@ -102,6 +102,44 @@
             text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px;
         }
 
+        /* --- AHS methodology note --- */
+        .ahs-methodology {
+            font-size: 11px; color: #94A3B8; line-height: 1.5;
+            margin: -6px 0 14px 0; padding: 10px 14px;
+            background: #F8FAFC; border-left: 3px solid #CBD5E1;
+            border-radius: 4px;
+        }
+        .ahs-methodology em { font-style: italic; }
+        .ahs-methodology strong { color: #64748B; font-weight: 600; font-style: normal; }
+
+        /* --- Audience & Reach card --- */
+        .audience-reach-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+        }
+        .ar-tile {
+            padding: 14px; border-radius: 12px; background: #F8FAFC;
+            border: 1px solid #EEF2F7;
+        }
+        .ar-tile.fb { background: #EBF5FF; border-color: #D0E4FF; }
+        .ar-tile.ig { background: #FDF2F8; border-color: #F9D5EB; }
+        .ar-tile.li { background: #EFF6FF; border-color: #D4E4FB; }
+        .ar-tile.yt { background: #FEF2F2; border-color: #FBD5D5; }
+        .ar-tile-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid rgba(0,0,0,0.06);
+        }
+        .ar-tile-platform { font-size: 12px; font-weight: 700; color: #1B2559; }
+        .ar-tile-metric { display: flex; justify-content: space-between; align-items: baseline; font-size: 11px; color: #64748B; margin-bottom: 4px; }
+        .ar-tile-metric-val { font-size: 16px; font-weight: 700; color: #1B2559; }
+        .ar-tile-metric-sub { font-size: 10px; color: #94A3B8; }
+        .ar-tile-big { font-size: 22px; font-weight: 800; color: #003B71; line-height: 1.1; }
+        .ar-tile-big-label { font-size: 10px; color: #64748B; text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; margin-top: 2px; }
+        .ar-tile-row { display: flex; justify-content: space-between; align-items: baseline; margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(0,0,0,0.08); font-size: 11px; color: #64748B; }
+        .ar-tile-row-val { font-weight: 700; color: #1B2559; }
+        .ar-trend-up { color: #16A34A; font-weight: 700; }
+        .ar-trend-down { color: #DC2626; font-weight: 700; }
+        .ar-trend-flat { color: #64748B; font-weight: 700; }
+
         /* --- Sentiment gauge (arc) --- */
         .sentiment-gauge { text-align: center; padding: 10px 0; position: relative; }
         .gauge-wrap { position: relative; width: 220px; height: 130px; margin: 0 auto; }
@@ -554,9 +592,12 @@
     <!-- LEFT COLUMN: Comments + Sentiment -->
     <div class="left-col">
 
-        <!-- Overall Sentiment -->
+        <!-- Overall Audience Health Score -->
         <div class="card" style="margin-bottom:24px;">
-            <div class="card-title">Audience Sentiment</div>
+            <div class="card-title">Audience Health Score</div>
+            <div class="ahs-methodology">
+                <em>A composite 0&ndash;100 score blending four weighted pillars: <strong>Engagement Quality</strong> (40%) &mdash; tiered weighting of comments, shares, reactions, and views normalized to reach; <strong>Comment Sentiment</strong> (40%) &mdash; tone of audience conversations, confidence-weighted by comment volume; <strong>Reach &amp; Awareness</strong> (10%) &mdash; period reach vs. trailing baseline; <strong>Audience Growth</strong> (10%) &mdash; month-over-month follower change. Each pillar is normalized against its platform baseline; missing pillars drop and remaining weights rescale to 100%. The overall gauge is a reach-weighted average of per-platform scores.</em>
+            </div>
             <div class="sentiment-gauge">
                 <div class="gauge-wrap">
                     <svg viewBox="0 0 220 130" id="gaugeArc">
@@ -943,19 +984,25 @@ async function fetchAllData() {
     const untilISO = end.toISOString();
     const dateQS = '?since=' + encodeURIComponent(sinceISO) + '&until=' + encodeURIComponent(untilISO);
 
-    const [fbPosts, fbComments, fbInsights,
-           igMedia, igComments,
-           liPosts, liComments,
-           ytVideos, ytComments] = await Promise.all([
+    const [fbPosts, fbComments, fbInsights, fbPage,
+           igMedia, igComments, igProfile, igReach,
+           liPosts, liComments, liOrg, liPageStats,
+           ytVideos, ytComments, ytChannel] = await Promise.all([
         status.facebook  ? apiFetch('/api/facebook/posts' + dateQS)        : null,
         status.facebook  ? apiFetch('/api/facebook/all-comments' + dateQS) : null,
         status.facebook  ? apiFetch('/api/facebook/insights')              : null,
+        status.facebook  ? apiFetch('/api/facebook/page')                  : null,
         status.instagram ? apiFetch('/api/instagram/media' + dateQS)       : null,
         status.instagram ? apiFetch('/api/instagram/all-comments' + dateQS): null,
+        status.instagram ? apiFetch('/api/instagram/profile')              : null,
+        status.instagram ? apiFetch('/api/instagram/reach' + dateQS)       : null,
         status.linkedin  ? apiFetch('/api/linkedin/posts' + dateQS)        : null,
         status.linkedin  ? apiFetch('/api/linkedin/all-comments' + dateQS) : null,
+        status.linkedin  ? apiFetch('/api/linkedin/organization')          : null,
+        status.linkedin  ? apiFetch('/api/linkedin/page-stats')            : null,
         status.youtube   ? apiFetch('/api/youtube/videos' + dateQS)        : null,
-        status.youtube   ? apiFetch('/api/youtube/all-comments' + dateQS)  : null
+        status.youtube   ? apiFetch('/api/youtube/all-comments' + dateQS)  : null,
+        status.youtube   ? apiFetch('/api/youtube/channel')                : null
     ]);
 
     const quotaHit = [fbPosts,fbComments,igMedia,igComments,liPosts,liComments,ytVideos,ytComments]
@@ -966,10 +1013,10 @@ async function fetchAllData() {
 
     return {
         status,
-        facebook:  { posts: fbPosts, comments: fbComments, insights: fbInsights },
-        instagram: { media: igMedia, comments: igComments },
-        linkedin:  { posts: liPosts, comments: liComments },
-        youtube:   { videos: ytVideos, comments: ytComments }
+        facebook:  { posts: fbPosts, comments: fbComments, insights: fbInsights, page: fbPage },
+        instagram: { media: igMedia, comments: igComments, profile: igProfile, reach: igReach },
+        linkedin:  { posts: liPosts, comments: liComments, organization: liOrg, pageStats: liPageStats },
+        youtube:   { videos: ytVideos, comments: ytComments, channel: ytChannel }
     };
 }
 
@@ -989,6 +1036,12 @@ function processData(raw, dateRangeOverride) {
         },
         reactionSentiment: { fb: 0, ig: 0, li: 0, yt: 0, count: 0 },
         platformComments: { fb: [], ig: [], li: [], yt: [] },
+        audience: {
+            fb: { followers: 0, reach: 0, impressions: 0 },
+            ig: { followers: 0, reach: 0, impressions: 0 },
+            li: { followers: 0, reach: 0, impressions: 0 },
+            yt: { followers: 0, reach: 0, impressions: 0 }
+        },
         postEngagement: [],
         allPosts: []
     };
@@ -1265,7 +1318,97 @@ function processData(raw, dateRangeOverride) {
     const ranked = [...result.allPosts].sort((a, b) => b.totalEngagement - a.totalEngagement);
     ranked.forEach((p, i) => p.rank = i + 1);
 
+    // --- Audience / Reach / Followers per platform ---
+    // Facebook
+    if (raw.facebook && raw.facebook.page) {
+        const p = raw.facebook.page;
+        result.audience.fb.followers = p.followers_count || p.fan_count || 0;
+    }
+    if (raw.facebook && raw.facebook.insights) {
+        const ins = raw.facebook.insights;
+        result.audience.fb.reach = ins.page_impressions_unique || ins.reach || 0;
+        result.audience.fb.impressions = ins.page_impressions || ins.impressions || 0;
+    }
+    // Instagram
+    if (raw.instagram && raw.instagram.profile) {
+        result.audience.ig.followers = raw.instagram.profile.followers_count || 0;
+    }
+    if (raw.instagram && raw.instagram.reach) {
+        const mediaArr = raw.instagram.reach.data || (Array.isArray(raw.instagram.reach) ? raw.instagram.reach : []);
+        mediaArr.forEach(m => {
+            if (!isInRange(m.timestamp)) return;
+            const insData = m.insights && m.insights.data ? m.insights.data : [];
+            insData.forEach(metric => {
+                const v = (metric.values && metric.values[0] && metric.values[0].value) || 0;
+                if (metric.name === 'reach') result.audience.ig.reach += v;
+                if (metric.name === 'impressions') result.audience.ig.impressions += v;
+            });
+        });
+    }
+    // LinkedIn
+    if (raw.linkedin && raw.linkedin.organization) {
+        const o = raw.linkedin.organization;
+        result.audience.li.followers = o.followersCount || o.totalFollowerCount || (o.firstDegreeSize || 0);
+    }
+    if (raw.linkedin && raw.linkedin.pageStats) {
+        const ps = raw.linkedin.pageStats;
+        const elems = ps.elements || [];
+        const stats = (elems[0] && elems[0].totalPageStatistics) || {};
+        const views = stats.views || {};
+        // LI page-level reach/impressions (all pages aggregate)
+        const allViews = views.allPageViews || {};
+        result.audience.li.impressions += allViews.pageViews || 0;
+    }
+    // YouTube
+    if (raw.youtube && raw.youtube.channel) {
+        const items = raw.youtube.channel.items || [];
+        const stats = (items[0] && items[0].statistics) || {};
+        result.audience.yt.followers = parseInt(stats.subscriberCount) || 0;
+        // Use total channel views as reach proxy; per-period video viewCount already aggregated in kpis.views
+        result.audience.yt.reach = result.platformEngagement.yt.views || 0;
+        result.audience.yt.impressions = result.platformEngagement.yt.views || 0;
+    }
+
     return result;
+}
+
+// ============================================================
+// FOLLOWER SNAPSHOTS (localStorage, month-over-month growth)
+// ============================================================
+const AHS_SNAPSHOT_KEY = 'mge_follower_snapshots_v1';
+function getFollowerSnapshots() {
+    try {
+        const raw = localStorage.getItem(AHS_SNAPSHOT_KEY);
+        return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+}
+function saveFollowerSnapshot(audience) {
+    if (!audience) return;
+    const snapshots = getFollowerSnapshots();
+    const now = new Date();
+    const ymKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    snapshots[ymKey] = {
+        ts: now.toISOString(),
+        fb: audience.fb.followers || 0,
+        ig: audience.ig.followers || 0,
+        li: audience.li.followers || 0,
+        yt: audience.yt.followers || 0
+    };
+    try { localStorage.setItem(AHS_SNAPSHOT_KEY, JSON.stringify(snapshots)); } catch (e) {}
+}
+function getPreviousMonthSnapshot() {
+    const snapshots = getFollowerSnapshots();
+    const now = new Date();
+    const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const key = prev.getFullYear() + '-' + String(prev.getMonth() + 1).padStart(2, '0');
+    return snapshots[key] || null;
+}
+function getFollowerMoMChange(platformKey, currentFollowers) {
+    const prev = getPreviousMonthSnapshot();
+    if (!prev || !prev[platformKey]) return { diff: null, pct: null };
+    const diff = currentFollowers - prev[platformKey];
+    const pct = prev[platformKey] ? (diff / prev[platformKey]) * 100 : null;
+    return { diff, pct };
 }
 
 // ============================================================
@@ -1393,30 +1536,108 @@ function renderPlatformEngagement(data) {
     }).join('');
 }
 
+// ============================================================
+// AUDIENCE HEALTH SCORE (AHS) — 4-pillar engine
+// Pillars: Engagement Quality 40% | Comment Sentiment 40% | Reach 10% | Growth 10%
+// ============================================================
+function ahsPillarEngagement(pe) {
+    if (!pe || !pe.postCount) return null;
+    const total = (pe.like || pe.likes || 0) + (pe.love || 0) + (pe.care || 0) + (pe.haha || 0)
+                + (pe.wow || 0) - (pe.sad || 0) - (pe.angry || 0) - (pe.dislikes || 0)
+                + (pe.comments || 0) + (pe.shares || 0) + (pe.saves || 0);
+    const perPost = total / pe.postCount;
+    // tanh-normalized against baseline of ~25 weighted engagements/post
+    const score = 50 + 50 * Math.tanh((perPost - 25) / 25);
+    return Math.max(0, Math.min(100, score));
+}
+function ahsPillarSentiment(comments) {
+    if (!comments || comments.length === 0) return null;
+    const txt = comments.map(c => c.text).join(' ');
+    const s = analyzeSentiment(txt);
+    // Confidence-weighted: small sample → pull toward neutral (50)
+    const conf = Math.min(1, comments.length / 15);
+    return Math.round(s.score * conf + 50 * (1 - conf));
+}
+function ahsPillarReach(aud) {
+    if (!aud || !aud.followers || !aud.reach) return null;
+    const ratio = aud.reach / aud.followers; // monthly reach / follower base
+    // Target: 30% reach = 75 score; 100% = 100
+    const score = 50 + 50 * Math.tanh((ratio - 0.3) / 0.3);
+    return Math.max(0, Math.min(100, score));
+}
+function ahsPillarGrowth(platformKey, followers) {
+    const mom = getFollowerMoMChange(platformKey, followers);
+    if (mom.pct === null) return null;
+    // 0% = 50, +3% = ~85, -3% = ~15
+    const score = 50 + 50 * Math.tanh(mom.pct / 3);
+    return Math.max(0, Math.min(100, score));
+}
+function ahsComposite(pillars) {
+    // pillars: { engagement, sentiment, reach, growth } with possible nulls
+    const W = { engagement: 40, sentiment: 40, reach: 10, growth: 10 };
+    let num = 0, den = 0;
+    Object.keys(W).forEach(k => {
+        if (pillars[k] !== null && pillars[k] !== undefined) {
+            num += pillars[k] * W[k];
+            den += W[k];
+        }
+    });
+    if (!den) return null;
+    return Math.round(num / den);
+}
+function ahsLabel(score) {
+    if (score === null) return '--';
+    if (score >= 75) return 'Excellent';
+    if (score >= 60) return 'Healthy';
+    if (score >= 45) return 'Fair';
+    if (score >= 30) return 'Weak';
+    return 'At Risk';
+}
+function ahsColor(score) {
+    if (score === null) return '#94A3B8';
+    if (score >= 60) return '#22C55E';
+    if (score >= 45) return '#EAB308';
+    return '#EF4444';
+}
+
 function renderSentiment(data) {
-    const allText = data.comments.map(c => c.text).join(' ');
-    const commentSent = analyzeSentiment(allText);
-    // Blend reaction sentiment into overall score (20% weight)
-    let overall = commentSent;
-    if (data.reactionSentiment && data.reactionSentiment.count > 0) {
-        const rs = data.reactionSentiment;
-        const totalRxn = rs.fb + rs.ig + rs.li + rs.yt;
-        // Normalize reaction sentiment to 0-100 scale
-        const avgRxn = totalRxn / rs.count; // typically -2.5 to +2 range
-        const rxnScore = Math.round(Math.min(100, Math.max(0, (avgRxn + 2.5) * 20)));
-        // Blend: 80% comment-based + 20% reaction-based
-        const blendedScore = Math.round(commentSent.score * 0.8 + rxnScore * 0.2);
-        const blendedLabel = blendedScore >= 60 ? 'Positive' : blendedScore <= 40 ? 'Negative' : 'Neutral';
-        overall = { score: blendedScore, label: blendedLabel };
-    }
-    document.getElementById('overallScore').textContent = overall.score;
-    document.getElementById('overallLabel').textContent = overall.label + ' Overall Sentiment';
+    // Persist a follower snapshot for MoM tracking
+    saveFollowerSnapshot(data.audience);
+
+    // Compute per-platform pillar scores + composite
+    const platformKeys = ['fb', 'ig', 'li', 'yt'];
+    const perPlatform = {};
+    platformKeys.forEach(k => {
+        const pillars = {
+            engagement: ahsPillarEngagement(data.platformEngagement[k]),
+            sentiment:  ahsPillarSentiment(data.platformComments[k]),
+            reach:      ahsPillarReach(data.audience[k]),
+            growth:     ahsPillarGrowth(k, data.audience[k].followers)
+        };
+        perPlatform[k] = { pillars, score: ahsComposite(pillars) };
+    });
+
+    // Overall = reach-weighted composite of per-platform scores.
+    // Weight by followers (reach proxy when no reach data); fall back to equal.
+    let totalWeight = 0, weightedSum = 0;
+    platformKeys.forEach(k => {
+        const s = perPlatform[k].score;
+        if (s === null) return;
+        const w = data.audience[k].followers || 1;
+        weightedSum += s * w;
+        totalWeight += w;
+    });
+    const overallScore = totalWeight ? Math.round(weightedSum / totalWeight) : null;
+    const overall = { score: overallScore === null ? 0 : overallScore, label: ahsLabel(overallScore) };
+
+    document.getElementById('overallScore').textContent = overallScore === null ? '--' : overallScore;
+    document.getElementById('overallLabel').textContent = overall.label + ' Audience Health';
 
     // Animate arc gauge
     const arcFill = document.getElementById('gaugeArcFill');
     const arcTotal = 283; // approximate arc length
     const fillLen = (overall.score / 100) * arcTotal;
-    const color = overall.score >= 60 ? '#22C55E' : overall.score <= 40 ? '#EF4444' : '#EAB308';
+    const color = ahsColor(overallScore);
     arcFill.setAttribute('stroke', color);
     arcFill.setAttribute('stroke-dasharray', fillLen + ' ' + arcTotal);
 
@@ -1445,20 +1666,19 @@ function renderSentiment(data) {
         { key: 'yt', el: 'sentYT', bar: 'sentBarYT', pct: 'sentPctYT' }
     ];
     platforms.forEach(p => {
-        const comments = data.platformComments[p.key];
-        const texts = comments.map(c => c.text).join(' ');
-        const s = analyzeSentiment(texts);
+        const pScore = perPlatform[p.key].score;
+        const hasData = pScore !== null;
         const el = document.getElementById(p.el);
-        const hasData = comments.length > 0;
-        el.textContent = hasData ? s.score + '%' : '--';
-        el.className = 'plat-sent-score ' + s.label.toLowerCase();
-        // Percentage label
-        document.getElementById(p.pct).textContent = hasData ? s.label : '';
-        // Mini bar fill
+        el.textContent = hasData ? pScore : '--';
+        const lbl = ahsLabel(pScore);
+        const cls = pScore === null ? 'neutral'
+                  : pScore >= 60 ? 'positive'
+                  : pScore >= 45 ? 'neutral' : 'negative';
+        el.className = 'plat-sent-score ' + cls;
+        document.getElementById(p.pct).textContent = hasData ? lbl : '';
         const bar = document.getElementById(p.bar);
-        const barColor = s.score >= 60 ? '#22C55E' : s.score <= 40 ? '#EF4444' : '#EAB308';
-        bar.style.width = hasData ? s.score + '%' : '0%';
-        bar.style.background = barColor;
+        bar.style.width = hasData ? pScore + '%' : '0%';
+        bar.style.background = ahsColor(pScore);
     });
 }
 
