@@ -28,3 +28,5 @@ services:
         sync: false
       - key: DASHBOARD_PASSWORD
         sync: false
+      - key: GOOGLE_ALERTS_RSS_URLS
+        sync: false
