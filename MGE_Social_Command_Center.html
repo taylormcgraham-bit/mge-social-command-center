@@ -84,9 +84,10 @@
         }
         .main-grid > * { min-width: 0; overflow: hidden; }
         .main-grid .left-col, .main-grid .right-col { display: flex; flex-direction: column; gap: 24px; }
-        /* Left col: comment card stretches to fill remaining height, matching right column bottom */
-        .main-grid .left-col > .card:last-child { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
-        .main-grid .left-col > .card:last-child .comment-feed { flex: 1 1 auto; overflow-y: auto; min-height: 200px; }
+        /* Left col: constrain to right-col height so comment card fills remaining space with scroll */
+        .main-grid .left-col { min-height: 0; overflow: hidden; }
+        .main-grid .left-col > .card:last-child { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; overflow: hidden; }
+        .main-grid .left-col > .card:last-child .comment-feed { flex: 1 1 0; overflow-y: auto; min-height: 200px; }
         .main-grid .right-col > .card:last-child { flex: 0 0 auto; }
         @media (max-width: 960px) { .main-grid { grid-template-columns: 1fr; } }
 
