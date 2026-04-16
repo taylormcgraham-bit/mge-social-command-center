@@ -750,10 +750,10 @@
 <!-- Full-width charts section -->
 <div style="max-width: 1600px; margin: 0 auto; padding: 0 36px 28px;">
 
-    <!-- Sentiment Timeline -->
+    <!-- Audience Health Timeline -->
     <div class="card" style="margin-bottom: 24px;">
         <div class="timeline-header">
-            <div class="card-title" style="margin-bottom:0;">Sentiment Over Time <span class="timeline-sub">rolling 12 months</span></div>
+            <div class="card-title" style="margin-bottom:0;">Audience Health Over Time <span class="timeline-sub">rolling 12 months</span></div>
             <div class="timeline-legend">
                 <span class="tl-legend-item"><span class="tl-swatch tl-swatch-line"></span>Sentiment score</span>
                 <span class="tl-legend-item"><span class="tl-swatch tl-swatch-bar"></span>Comment volume</span>
@@ -765,6 +765,25 @@
         <div class="timeline-stats" id="timelineStats"></div>
         <div class="chart-container" style="height: 340px; position: relative; margin-top: 14px;">
             <canvas id="sentimentTimelineChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Follower Growth Over Time -->
+    <div class="card" style="margin-bottom: 24px;">
+        <div class="timeline-header">
+            <div class="card-title" style="margin-bottom:0;">Follower Growth Over Time</div>
+            <div class="timeline-legend">
+                <span class="tl-legend-item"><span style="display:inline-block;width:14px;height:3px;background:#1877F2;border-radius:2px;vertical-align:middle;margin-right:4px;"></span>Facebook</span>
+                <span class="tl-legend-item"><span style="display:inline-block;width:14px;height:3px;background:#E4405F;border-radius:2px;vertical-align:middle;margin-right:4px;"></span>Instagram</span>
+                <span class="tl-legend-item"><span style="display:inline-block;width:14px;height:3px;background:#0A66C2;border-radius:2px;vertical-align:middle;margin-right:4px;"></span>LinkedIn</span>
+                <span class="tl-legend-item"><span style="display:inline-block;width:14px;height:3px;background:#FF0000;border-radius:2px;vertical-align:middle;margin-right:4px;"></span>YouTube</span>
+            </div>
+        </div>
+        <div class="chart-container" style="height: 300px; position: relative; margin-top: 14px;">
+            <canvas id="followerGrowthChart"></canvas>
+        </div>
+        <div style="font-size:11px;color:#64748B;font-style:italic;margin-top:10px;">
+            Snapshot captured on each dashboard load and stored locally. Historical depth grows automatically over time.
         </div>
     </div>
 
@@ -2385,6 +2404,82 @@ function renderTimelineStats(rolling, scores, volumes) {
 }
 
 // ============================================================
+// FOLLOWER GROWTH OVER TIME (uses localStorage snapshots)
+// ============================================================
+let followerGrowthChartInstance = null;
+function renderFollowerGrowthChart() {
+    const canvas = document.getElementById('followerGrowthChart');
+    if (!canvas) return;
+    const snapshots = getFollowerSnapshots();
+    // snapshots is { 'YYYY-MM': { fb, ig, li, yt } }
+    const months = Object.keys(snapshots).sort();
+    if (months.length === 0) {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#94A3B8';
+        ctx.font = '14px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('First snapshot captured today. Chart builds as monthly data accumulates.', canvas.width / 2, canvas.height / 2);
+        return;
+    }
+    // Even with 1 data point, show a bar chart so the user sees current state
+    const labels = months.map(m => {
+        const [y, mo] = m.split('-');
+        const d = new Date(parseInt(y), parseInt(mo) - 1);
+        return d.toLocaleString('default', { month: 'short', year: '2-digit' });
+    });
+    const platforms = [
+        { key: 'fb', label: 'Facebook',  color: '#1877F2' },
+        { key: 'ig', label: 'Instagram', color: '#E4405F' },
+        { key: 'li', label: 'LinkedIn',  color: '#0A66C2' },
+        { key: 'yt', label: 'YouTube',   color: '#FF0000' }
+    ];
+    const datasets = platforms.map(p => ({
+        label: p.label,
+        data: months.map(m => (snapshots[m] && snapshots[m][p.key]) || 0),
+        borderColor: p.color,
+        backgroundColor: p.color + '18',
+        borderWidth: 2,
+        tension: 0.3,
+        pointRadius: months.length <= 6 ? 5 : 3,
+        pointBackgroundColor: p.color,
+        fill: false
+    }));
+    // Destroy previous instance
+    if (followerGrowthChartInstance) {
+        followerGrowthChartInstance.destroy();
+        followerGrowthChartInstance = null;
+    }
+    followerGrowthChartInstance = new Chart(canvas, {
+        type: months.length === 1 ? 'bar' : 'line',
+        data: { labels, datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            return ctx.dataset.label + ': ' + (ctx.parsed.y || 0).toLocaleString() + ' followers';
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { grid: { display: false } },
+                y: {
+                    beginAtZero: false,
+                    ticks: { callback: function(v) { return v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v; } },
+                    grid: { color: '#F1F5F9' }
+                }
+            }
+        }
+    });
+}
+
+// ============================================================
 // CONTENT THEMES CHART
 // ============================================================
 var contentThemesInstance = null;
@@ -2517,8 +2612,10 @@ async function runDashboard() {
         renderSentiment(data);
         renderComments(data);
         renderPostsFeed(data);
-        // Sentiment Over Time runs against raw (unfiltered) comments so it always shows a rolling 12-month window
+        // Audience Health Over Time runs against raw (unfiltered) comments so it always shows a rolling 12-month window
         renderSentimentTimeline(raw);
+        // Follower Growth Over Time (from localStorage snapshots)
+        renderFollowerGrowthChart();
     }
     document.getElementById('lastUpdated').textContent =
         'Updated: ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
