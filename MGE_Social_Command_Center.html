@@ -873,23 +873,24 @@
 <!-- Methodology footer -->
 <div class="ahs-methodology-footer">
     <div class="ahs-method-title">Audience Health Score &mdash; Methodology</div>
-    <em>A composite 0&ndash;100 score blending two equally weighted pillars (50/50). Each pillar is computed per platform, then the overall gauge is a follower-weighted average of per-platform scores, giving larger audiences proportional influence.</em>
+    <em>A composite 0&ndash;100 score blending two equally weighted pillars (50/50). All engagement metrics are <strong>normalized per post</strong>, so platforms with fewer posts in the selected date range aren't penalized for lower volume &mdash; only the quality of engagement on each post matters. Platforms with fewer than 2 posts in the period are excluded entirely and labeled &ldquo;Low activity.&rdquo; The overall gauge is a follower-weighted average of qualifying per-platform scores.</em>
     <div class="ahs-method-grid">
         <div class="ahs-method-col">
             <h4>Engagement Quality (50%)</h4>
-            <p><em>Interactions are scored on a tiered weighting system that values depth of engagement:</em></p>
+            <p><em>Interactions are scored per post using a tiered weighting system that values depth of engagement:</em></p>
             <p><strong>Tier 1 &mdash; Highest Value:</strong> <em>Comments (weighted 5x) &mdash; indicate real conversation and audience investment.</em></p>
-            <p><strong>Tier 2 &mdash; High Value:</strong> <em>Shares/Retweets (weighted 3x) &mdash; audience actively amplifying your content to their own network.</em></p>
-            <p><strong>Tier 3 &mdash; Moderate Value:</strong> <em>Reactions/Likes (weighted 1x) &mdash; positive signal but low-effort interaction.</em></p>
+            <p><strong>Tier 2 &mdash; High Value:</strong> <em>Shares &amp; Saves (weighted 3x) &mdash; audience actively amplifying your content or bookmarking it for later.</em></p>
+            <p><strong>Tier 3 &mdash; Moderate Value:</strong> <em>Reactions/Likes (weighted 1x) &mdash; positive signal but low-effort interaction. Negative reactions (sad, angry, dislikes) are subtracted.</em></p>
             <p><strong>Tier 4 &mdash; Baseline:</strong> <em>Views (weighted 0.2x) &mdash; passive consumption, valued as reach awareness.</em></p>
-            <p><em>The ratio of weighted interactions to total engagement determines the pillar score. Higher-tier engagement pushes the score toward 100.</em></p>
+            <p><em>The weighted total is divided by the number of posts in the period, then normalized via tanh curve (baseline: ~30 weighted engagements/post = score 50).</em></p>
         </div>
         <div class="ahs-method-col">
             <h4>Comment Sentiment (50%)</h4>
             <p><em>Analyzes the tone of audience conversations using keyword-based sentiment scoring.</em></p>
             <p><strong>Confidence Weighting:</strong> <em>The sentiment score is confidence-weighted by comment volume. With fewer than 15 comments, the score pulls toward neutral (50) to avoid over-reacting to small samples. With 0 comments, sentiment returns null and the algorithm gracefully degrades to engagement-only scoring.</em></p>
             <p><strong>Formula:</strong> <em>final = (raw_sentiment &times; confidence) + (50 &times; (1 &minus; confidence)), where confidence = min(1, comment_count / 15).</em></p>
-            <p><strong>Null-safe rescaling:</strong> <em>If a platform has no comments, the sentiment pillar drops entirely and the remaining engagement pillar rescales to 100% weight for that platform, keeping the score meaningful rather than penalizing silence.</em></p>
+            <p><strong>Minimum Post Threshold:</strong> <em>Platforms with fewer than 2 posts in the selected date range are excluded from the overall score entirely. This prevents low-volume platforms (e.g., Instagram or YouTube during quiet periods) from dragging down the aggregate score when there simply isn&rsquo;t enough data to evaluate.</em></p>
+            <p><strong>Null-safe rescaling:</strong> <em>If a pillar returns null (no comments) or a platform is excluded (low posts), the remaining data rescales automatically. The score reflects only platforms and pillars with meaningful activity.</em></p>
         </div>
     </div>
 </div>
@@ -1743,18 +1744,28 @@ function renderPlatformEngagement(data) {
 }
 
 // ============================================================
-// AUDIENCE HEALTH SCORE (AHS) — 4-pillar engine
-// Pillars: Engagement Quality 40% | Comment Sentiment 40% | Reach 10% | Growth 10%
+// AUDIENCE HEALTH SCORE (AHS) — 2-pillar engine (50/50)
+// Pillars: Engagement Quality 50% | Comment Sentiment 50%
+// Post-normalized: engagement scored per-post so low-volume platforms aren't penalized
+// Minimum threshold: platforms with <2 posts drop out gracefully
 // ============================================================
+var AHS_MIN_POSTS = 2; // minimum posts in period to include platform
+
 function ahsPillarEngagement(pe) {
-    if (!pe || !pe.postCount) return null;
-    const total = (pe.like || pe.likes || 0) + (pe.love || 0) + (pe.care || 0) + (pe.haha || 0)
-                + (pe.wow || 0) - (pe.sad || 0) - (pe.angry || 0) - (pe.dislikes || 0)
-                + (pe.comments || 0) + (pe.shares || 0) + (pe.saves || 0);
-    const perPost = total / pe.postCount;
-    // tanh-normalized against baseline of ~25 weighted engagements/post
-    const score = 50 + 50 * Math.tanh((perPost - 25) / 25);
-    return Math.max(0, Math.min(100, score));
+    if (!pe || !pe.postCount || pe.postCount < AHS_MIN_POSTS) return null;
+    // Tiered weighting: deeper interactions count more
+    var comments  = (pe.comments || 0) * 5;   // Tier 1: highest value
+    var shares    = (pe.shares || 0) * 3;      // Tier 2: high value (includes saves)
+    var saves     = (pe.saves || 0) * 3;
+    var reactions = (pe.like || pe.likes || 0) + (pe.love || 0) + (pe.care || 0)
+                  + (pe.haha || 0) + (pe.wow || 0); // Tier 3: moderate value (1x)
+    var negatives = (pe.sad || 0) + (pe.angry || 0) + (pe.dislikes || 0); // subtract
+    var views     = (pe.views || 0) * 0.2;     // Tier 4: baseline
+    var weighted  = comments + shares + saves + reactions - negatives + views;
+    var perPost   = weighted / pe.postCount;
+    // tanh-normalized: baseline ~30 weighted engagements/post = score 50
+    var score = 50 + 50 * Math.tanh((perPost - 30) / 30);
+    return Math.max(0, Math.min(100, Math.round(score)));
 }
 function ahsPillarSentiment(comments) {
     if (!comments || comments.length === 0) return null;
@@ -1871,11 +1882,17 @@ function renderSentiment(data) {
     const platformKeys = ['fb', 'ig', 'li', 'yt'];
     const perPlatform = {};
     platformKeys.forEach(k => {
+        const pe = data.platformEngagement[k];
+        // If platform has fewer than minimum posts, exclude entirely
+        if (!pe || !pe.postCount || pe.postCount < AHS_MIN_POSTS) {
+            perPlatform[k] = { pillars: { engagement: null, sentiment: null }, score: null, postCount: pe ? pe.postCount : 0 };
+            return;
+        }
         const pillars = {
-            engagement: ahsPillarEngagement(data.platformEngagement[k]),
+            engagement: ahsPillarEngagement(pe),
             sentiment:  ahsPillarSentiment(data.platformComments[k])
         };
-        perPlatform[k] = { pillars, score: ahsComposite(pillars) };
+        perPlatform[k] = { pillars, score: ahsComposite(pillars), postCount: pe.postCount };
     });
 
     // Overall = reach-weighted composite of per-platform scores.
@@ -1941,8 +1958,10 @@ function renderSentiment(data) {
         { key: 'yt', el: 'sentYT', bar: 'sentBarYT', pct: 'sentPctYT' }
     ];
     platforms.forEach(p => {
-        const pScore = perPlatform[p.key].score;
+        const pp = perPlatform[p.key];
+        const pScore = pp.score;
         const hasData = pScore !== null;
+        const pc = pp.postCount || 0;
         const el = document.getElementById(p.el);
         el.textContent = hasData ? pScore : '--';
         const lbl = ahsLabel(pScore);
@@ -1950,7 +1969,16 @@ function renderSentiment(data) {
                   : pScore >= 60 ? 'positive'
                   : pScore >= 45 ? 'neutral' : 'negative';
         el.className = 'plat-sent-score ' + cls;
-        document.getElementById(p.pct).textContent = hasData ? lbl : '';
+        // Show post count context + label or low-activity notice
+        var pctText = '';
+        if (hasData) {
+            pctText = lbl + '  (' + pc + ' post' + (pc !== 1 ? 's' : '') + ')';
+        } else if (pc > 0 && pc < AHS_MIN_POSTS) {
+            pctText = 'Low activity (' + pc + ' post)';
+        } else {
+            pctText = 'No posts in period';
+        }
+        document.getElementById(p.pct).textContent = pctText;
         const bar = document.getElementById(p.bar);
         bar.style.width = hasData ? pScore + '%' : '0%';
         bar.style.background = ahsColor(pScore);
