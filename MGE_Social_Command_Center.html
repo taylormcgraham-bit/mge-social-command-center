@@ -314,8 +314,18 @@
         .no-comments .icon { font-size: 32px; margin-bottom: 8px; }
 
         /* --- KPI cards --- */
-        .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-        .kpi-card { background: #F8FAFC; border-radius: 12px; padding: 18px; text-align: center; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        @media (max-width: 1100px) { .kpi-grid { grid-template-columns: 1fr 1fr; } }
+        .kpi-card { background: #F8FAFC; border-radius: 12px; padding: 16px; text-align: center; }
+        .kpi-followers-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px solid #E2E8F0; }
+        .kpi-foll-tile { background: #fff; border: 1px solid #E2E8F0; border-radius: 8px; padding: 10px 12px; text-align: center; display: flex; flex-direction: column; gap: 2px; }
+        .kpi-foll-plat { font-size: 10px; font-weight: 700; color: #64748B; letter-spacing: 0.5px; text-transform: uppercase; }
+        .kpi-foll-val { font-size: 16px; font-weight: 700; color: #0F172A; }
+        .kpi-foll-mom { font-size: 10px; font-weight: 600; }
+        .kpi-foll-mom.pos { color: #16A34A; }
+        .kpi-foll-mom.neg { color: #DC2626; }
+        .kpi-foll-mom.neu { color: #94A3B8; }
+        @media (max-width: 700px) { .kpi-followers-row { grid-template-columns: 1fr 1fr; } }
         .kpi-value { font-size: 32px; font-weight: 800; color: #003B71; display: flex; align-items: baseline; justify-content: center; gap: 6px; }
         .kpi-label { font-size: 12px; font-weight: 600; color: #8F9BBA; margin-top: 4px; }
         .kpi-change { margin-top: 4px; min-height: 18px; display: flex; align-items: center; justify-content: center; }
@@ -695,7 +705,18 @@
                     <div class="kpi-label">Total Views</div>
                     <div class="kpi-change" id="kpiViewsChange"></div>
                 </div>
+                <div class="kpi-card">
+                    <div class="kpi-value" id="kpiReach">0</div>
+                    <div class="kpi-label">Total Reach</div>
+                    <div class="kpi-change" id="kpiReachChange"></div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-value" id="kpiImpressions">0</div>
+                    <div class="kpi-label">Total Impressions</div>
+                    <div class="kpi-change" id="kpiImpressionsChange"></div>
+                </div>
             </div>
+            <div class="kpi-followers-row" id="kpiFollowersRow"></div>
         </div>
 
         <!-- Engagement by Platform -->
@@ -704,12 +725,6 @@
             <div class="platform-engagement" id="platformEngagement"></div>
         </div>
 
-        <!-- Audience & Reach -->
-        <div class="card" style="margin-bottom:24px;">
-            <div class="card-title">Audience &amp; Reach</div>
-            <div class="audience-reach-grid" id="audienceReachGrid"></div>
-            <div class="audience-reach-note">Followers reflect current totals. Reach &amp; Impressions cover the selected date range. MoM = change vs. last month's saved snapshot (builds automatically).</div>
-        </div>
 
         <!-- Our Posts feed -->
         <div class="card" style="margin-bottom:24px;">
@@ -1053,7 +1068,7 @@ function processData(raw, dateRangeOverride) {
     if (!raw) return null;
     const result = {
         comments: [],
-        kpis: { reactions: 0, comments: 0, shares: 0, views: 0 },
+        kpis: { reactions: 0, comments: 0, shares: 0, views: 0, reach: 0, impressions: 0, followers: 0 },
         platformEngagement: {
             fb: { postCount: 0, like: 0, love: 0, wow: 0, haha: 0, sad: 0, angry: 0, care: 0, comments: 0, shares: 0, views: 0 },
             ig: { postCount: 0, likes: 0, comments: 0, saves: 0, shares: 0, views: 0 },
@@ -1352,8 +1367,20 @@ function processData(raw, dateRangeOverride) {
     }
     if (raw.facebook && raw.facebook.insights) {
         const ins = raw.facebook.insights;
-        result.audience.fb.reach = ins.page_impressions_unique || ins.reach || 0;
-        result.audience.fb.impressions = ins.page_impressions || ins.impressions || 0;
+        // Graph API shape: { data: [{ name, period, values: [{value, end_time}, ...] }] }
+        const insArr = ins.data || (Array.isArray(ins) ? ins : []);
+        const sumMetric = (name) => {
+            const m = insArr.find(x => x && x.name === name);
+            if (!m || !Array.isArray(m.values)) return 0;
+            return m.values.reduce((s, v) => s + (Number(v.value) || 0), 0);
+        };
+        // Fall back to flat-object shape for backwards compat
+        const flatReach = ins.page_impressions_unique || ins.reach;
+        const flatImpr = ins.page_impressions || ins.impressions;
+        result.audience.fb.reach = (typeof flatReach === 'number' ? flatReach : 0)
+            || sumMetric('page_impressions_unique');
+        result.audience.fb.impressions = (typeof flatImpr === 'number' ? flatImpr : 0)
+            || sumMetric('page_impressions');
     }
     // Instagram
     if (raw.instagram && raw.instagram.profile) {
@@ -1394,6 +1421,13 @@ function processData(raw, dateRangeOverride) {
         result.audience.yt.reach = result.platformEngagement.yt.views || 0;
         result.audience.yt.impressions = result.platformEngagement.yt.views || 0;
     }
+
+    // Roll audience totals into top-level KPIs
+    ['fb','ig','li','yt'].forEach(k => {
+        result.kpis.reach += result.audience[k].reach || 0;
+        result.kpis.impressions += result.audience[k].impressions || 0;
+        result.kpis.followers += result.audience[k].followers || 0;
+    });
 
     return result;
 }
@@ -1469,16 +1503,48 @@ function renderKPIs(data) {
     if (el('kpiComments')) el('kpiComments').textContent = fmt(data.kpis.comments);
     if (el('kpiShares')) el('kpiShares').textContent = fmt(data.kpis.shares);
     if (el('kpiViews')) el('kpiViews').textContent = fmt(data.kpis.views);
+    if (el('kpiReach')) el('kpiReach').textContent = fmt(data.kpis.reach);
+    if (el('kpiImpressions')) el('kpiImpressions').textContent = fmt(data.kpis.impressions);
     if (el('kpiReactionsChange')) el('kpiReactionsChange').innerHTML = prev ? trendBadge(data.kpis.reactions, prev.reactions) : '';
     if (el('kpiCommentsChange')) el('kpiCommentsChange').innerHTML = prev ? trendBadge(data.kpis.comments, prev.comments) : '';
     if (el('kpiSharesChange')) el('kpiSharesChange').innerHTML = prev ? trendBadge(data.kpis.shares, prev.shares) : '';
     if (el('kpiViewsChange')) el('kpiViewsChange').innerHTML = prev ? trendBadge(data.kpis.views, prev.views) : '';
+    if (el('kpiReachChange')) el('kpiReachChange').innerHTML = prev ? trendBadge(data.kpis.reach || 0, prev.reach || 0) : '';
+    if (el('kpiImpressionsChange')) el('kpiImpressionsChange').innerHTML = prev ? trendBadge(data.kpis.impressions || 0, prev.impressions || 0) : '';
+    // Followers row by platform
+    const followersRow = el('kpiFollowersRow');
+    if (followersRow && data.audience) {
+        const plats = [
+            { key: 'fb', name: 'Facebook' },
+            { key: 'ig', name: 'Instagram' },
+            { key: 'li', name: 'LinkedIn' },
+            { key: 'yt', name: 'YouTube' }
+        ];
+        followersRow.innerHTML = plats.map(p => {
+            const f = (data.audience[p.key] && data.audience[p.key].followers) || 0;
+            const momPct = getFollowerMoMChange(p.key, f);
+            const momStr = (momPct === null || isNaN(momPct)) ? null : ((momPct > 0 ? '+' : '') + momPct.toFixed(1) + '% MoM');
+            const momCls = momPct === null ? 'neu' : (momPct > 0 ? 'pos' : (momPct < 0 ? 'neg' : 'neu'));
+            return '<div class="kpi-foll-tile">'
+                + '<div class="kpi-foll-plat">' + p.name + ' Followers</div>'
+                + '<div class="kpi-foll-val">' + (f > 0 ? fmt(f) : '--') + '</div>'
+                + '<div class="kpi-foll-mom ' + momCls + '">' + (momStr || 'baseline set') + '</div>'
+                + '</div>';
+        }).join('');
+    }
     renderPlatformEngagement(data);
 }
 
 function renderPlatformEngagement(data) {
     const pe = data.platformEngagement;
+    const aud = data.audience || { fb:{}, ig:{}, li:{}, yt:{} };
     const container = document.getElementById('platformEngagement');
+
+    // Append reach/impressions rows from audience data so they show on every platform
+    function appendReachRows(rows, a) {
+        if (a && a.reach > 0)       rows.push({ label: 'Reach',       val: a.reach,       ic: '\uD83D\uDCE1' });
+        if (a && a.impressions > 0) rows.push({ label: 'Impressions', val: a.impressions, ic: '\uD83D\uDC42' });
+    }
 
     // Build detailed rows per platform
     function buildFB(d) {
@@ -1496,6 +1562,7 @@ function renderPlatformEngagement(data) {
         rows.push({ label: 'Comments', val: d.comments, ic: '\uD83D\uDCAC' });
         if (d.shares > 0) rows.push({ label: 'Shares', val: d.shares, ic: '\uD83D\uDD01' });
         if (d.views > 0) rows.push({ label: 'Views', val: d.views, ic: '\uD83D\uDC41' });
+        appendReachRows(rows, aud.fb);
         return { total, rows };
     }
     function buildIG(d) {
@@ -1505,6 +1572,7 @@ function renderPlatformEngagement(data) {
             { label: 'Comments', val: d.comments, ic: '\uD83D\uDCAC' },
             { label: 'Saves', val: d.saves, ic: '\uD83D\uDD16' }
         ];
+        appendReachRows(rows, aud.ig);
         return { total, rows };
     }
     function buildLI(d) {
@@ -1514,6 +1582,7 @@ function renderPlatformEngagement(data) {
             { label: 'Comments', val: d.comments, ic: '\uD83D\uDCAC' }
         ];
         if (d.shares > 0) rows.push({ label: 'Shares', val: d.shares, ic: '\uD83D\uDD01' });
+        appendReachRows(rows, aud.li);
         return { total, rows };
     }
     function buildYT(d) {
@@ -1524,6 +1593,7 @@ function renderPlatformEngagement(data) {
         if (d.dislikes > 0) rows.push({ label: 'Dislikes', val: d.dislikes, ic: '\uD83D\uDC4E', neg: true });
         rows.push({ label: 'Comments', val: d.comments, ic: '\uD83D\uDCAC' });
         if (d.views > 0) rows.push({ label: 'Views', val: d.views, ic: '\u25B6' });
+        appendReachRows(rows, aud.yt);
         return { total, rows };
     }
 
@@ -2445,7 +2515,6 @@ async function runDashboard() {
         } catch(e) { previousPeriodData = null; }
         renderKPIs(data);
         renderSentiment(data);
-        renderAudienceReach(data);
         renderComments(data);
         renderPostsFeed(data);
         // Sentiment Over Time runs against raw (unfiltered) comments so it always shows a rolling 12-month window
