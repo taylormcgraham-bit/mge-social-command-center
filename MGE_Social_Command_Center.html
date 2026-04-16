@@ -84,11 +84,9 @@
         }
         .main-grid > * { min-width: 0; overflow: hidden; }
         .main-grid .left-col, .main-grid .right-col { display: flex; flex-direction: column; gap: 24px; }
-        /* Left col last card (Comments) no longer stretches to fill the column.
-           Its inner comment-feed has its own max-height, keeping the card height
-           comparable to the Posts card on the right. */
-        .main-grid .left-col > .card:last-child { display: flex; flex-direction: column; min-height: 0; }
-        .main-grid .left-col > .card:last-child .comment-feed { max-height: 520px; min-height: 0; }
+        /* Left col: comment card stretches to fill remaining height, matching right column bottom */
+        .main-grid .left-col > .card:last-child { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+        .main-grid .left-col > .card:last-child .comment-feed { flex: 1 1 auto; overflow-y: auto; min-height: 200px; }
         .main-grid .right-col > .card:last-child { flex: 0 0 auto; }
         @media (max-width: 960px) { .main-grid { grid-template-columns: 1fr; } }
 
@@ -103,14 +101,14 @@
         }
 
         /* --- AHS methodology note --- */
-        .ahs-methodology {
-            font-size: 11px; color: #94A3B8; line-height: 1.5;
-            margin: -6px 0 14px 0; padding: 10px 14px;
-            background: #F8FAFC; border-left: 3px solid #CBD5E1;
-            border-radius: 4px;
+        .ahs-methodology-footer {
+            font-size: 11px; color: #94A3B8; line-height: 1.6;
+            padding: 16px 36px;
+            background: #F8FAFC; border-top: 1px solid #E2E8F0;
+            max-width: 1600px; margin: 0 auto;
         }
-        .ahs-methodology em { font-style: italic; }
-        .ahs-methodology strong { color: #64748B; font-weight: 600; font-style: normal; }
+        .ahs-methodology-footer em { font-style: italic; }
+        .ahs-methodology-footer strong { color: #64748B; font-weight: 600; font-style: normal; }
 
         /* --- Audience & Reach card --- */
         .audience-reach-grid {
@@ -140,16 +138,44 @@
         .ar-trend-down { color: #DC2626; font-weight: 700; }
         .ar-trend-flat { color: #64748B; font-weight: 700; }
 
-        /* --- Sentiment gauge (arc) --- */
-        .sentiment-gauge { text-align: center; padding: 10px 0; position: relative; }
-        .gauge-wrap { position: relative; width: 220px; height: 130px; margin: 0 auto; }
-        .gauge-wrap svg { width: 220px; height: 130px; }
+        /* --- Hero Gauge (flashy, glowing) --- */
+        .sentiment-gauge { text-align: center; padding: 20px 0 10px; position: relative; }
+        .gauge-wrap {
+            position: relative; width: 280px; height: 160px; margin: 0 auto;
+            filter: drop-shadow(0 0 20px rgba(34, 197, 94, 0.15));
+            transition: filter 0.6s ease;
+        }
+        .gauge-wrap:hover { filter: drop-shadow(0 0 30px rgba(34, 197, 94, 0.3)); }
+        .gauge-wrap svg { width: 280px; height: 160px; }
         .gauge-center {
-            position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+            position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
             text-align: center;
         }
-        .gauge-score { font-size: 42px; font-weight: 800; color: #003B71; line-height: 1; }
-        .gauge-label { font-size: 12px; color: #8F9BBA; margin-top: 2px; }
+        .gauge-score {
+            font-size: 56px; font-weight: 900; line-height: 1;
+            background: linear-gradient(135deg, #003B71 0%, #0066CC 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .gauge-label {
+            font-size: 13px; font-weight: 700; letter-spacing: 0.5px;
+            text-transform: uppercase; color: #64748B; margin-top: 4px;
+        }
+        .gauge-pillar-row {
+            display: flex; justify-content: center; gap: 8px; margin-top: 16px;
+        }
+        .gauge-pillar-chip {
+            font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 20px;
+            background: #F1F5F9; color: #475569; letter-spacing: 0.3px;
+        }
+        .gauge-pillar-chip .chip-val { color: #0F172A; margin-left: 3px; }
+        @keyframes gaugeArcPulse {
+            0%, 100% { filter: drop-shadow(0 0 6px rgba(34,197,94,0.3)); }
+            50% { filter: drop-shadow(0 0 14px rgba(34,197,94,0.5)); }
+        }
+        .gauge-wrap.animated { animation: gaugeArcPulse 3s ease-in-out infinite; }
+        @keyframes gaugeScoreCountUp { from { opacity: 0; transform: translateX(-50%) scale(0.7); } to { opacity: 1; transform: translateX(-50%) scale(1); } }
+        .gauge-center.animate-in { animation: gaugeScoreCountUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
 
         /* Sentiment distribution merged into gauge card */
         .sentiment-dist-row {
@@ -318,13 +344,25 @@
         @media (max-width: 1100px) { .kpi-grid { grid-template-columns: 1fr 1fr; } }
         .kpi-card { background: #F8FAFC; border-radius: 12px; padding: 16px; text-align: center; }
         .kpi-followers-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px solid #E2E8F0; }
-        .kpi-foll-tile { background: #fff; border: 1px solid #E2E8F0; border-radius: 8px; padding: 10px 12px; text-align: center; display: flex; flex-direction: column; gap: 2px; }
-        .kpi-foll-plat { font-size: 10px; font-weight: 700; color: #64748B; letter-spacing: 0.5px; text-transform: uppercase; }
-        .kpi-foll-val { font-size: 16px; font-weight: 700; color: #0F172A; }
-        .kpi-foll-mom { font-size: 10px; font-weight: 600; }
-        .kpi-foll-mom.pos { color: #16A34A; }
-        .kpi-foll-mom.neg { color: #DC2626; }
-        .kpi-foll-mom.neu { color: #94A3B8; }
+        .foll-badge {
+            position: relative; overflow: hidden; border-radius: 12px; padding: 14px 14px 12px;
+            text-align: center; display: flex; flex-direction: column; align-items: center; gap: 3px;
+            color: #fff; transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .foll-badge:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+        .foll-badge::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.2) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        .foll-badge.fb { background: linear-gradient(135deg, #1877F2 0%, #0D47A1 100%); }
+        .foll-badge.ig { background: linear-gradient(135deg, #E4405F 0%, #C13584 50%, #F77737 100%); }
+        .foll-badge.li { background: linear-gradient(135deg, #0A66C2 0%, #004182 100%); }
+        .foll-badge.yt { background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%); }
+        .foll-badge-icon { font-size: 18px; margin-bottom: 2px; }
+        .foll-badge-val { font-size: 22px; font-weight: 900; letter-spacing: -0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .foll-badge-label { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; opacity: 0.85; }
+        .foll-badge-mom { font-size: 10px; font-weight: 700; background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 10px; margin-top: 2px; }
         @media (max-width: 700px) { .kpi-followers-row { grid-template-columns: 1fr 1fr; } }
         .kpi-value { font-size: 32px; font-weight: 800; color: #003B71; display: flex; align-items: baseline; justify-content: center; gap: 6px; }
         .kpi-label { font-size: 12px; font-weight: 600; color: #8F9BBA; margin-top: 4px; }
@@ -634,23 +672,33 @@
     <!-- LEFT COLUMN: Comments + Sentiment -->
     <div class="left-col">
 
-        <!-- Overall Audience Health Score -->
-        <div class="card" style="margin-bottom:24px;">
-            <div class="card-title">Audience Health Score</div>
-            <div class="ahs-methodology">
-                <em>A composite 0&ndash;100 score blending four weighted pillars: <strong>Engagement Quality</strong> (40%) &mdash; tiered weighting of comments, shares, reactions, and views normalized to reach; <strong>Comment Sentiment</strong> (40%) &mdash; tone of audience conversations, confidence-weighted by comment volume; <strong>Reach &amp; Awareness</strong> (10%) &mdash; period reach vs. trailing baseline; <strong>Audience Growth</strong> (10%) &mdash; month-over-month follower change. Each pillar is normalized against its platform baseline; missing pillars drop and remaining weights rescale to 100%. The overall gauge is a reach-weighted average of per-platform scores.</em>
-            </div>
+        <!-- Overall Audience Health Score (Hero) -->
+        <div class="card" style="margin-bottom:24px; border: 1px solid #E2E8F0; background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);">
+            <div class="card-title" style="text-align:center; font-size: 13px;">Audience Health Score</div>
             <div class="sentiment-gauge">
-                <div class="gauge-wrap">
-                    <svg viewBox="0 0 220 130" id="gaugeArc">
-                        <path d="M 20 120 A 90 90 0 0 1 200 120" fill="none" stroke="#E2E8F0" stroke-width="16" stroke-linecap="round"/>
-                        <path d="M 20 120 A 90 90 0 0 1 200 120" fill="none" stroke="#22C55E" stroke-width="16" stroke-linecap="round" id="gaugeArcFill" stroke-dasharray="0 283"/>
+                <div class="gauge-wrap animated" id="gaugeWrap">
+                    <svg viewBox="0 0 280 160" id="gaugeArc">
+                        <defs>
+                            <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#EF4444"/>
+                                <stop offset="35%" style="stop-color:#EAB308"/>
+                                <stop offset="65%" style="stop-color:#22C55E"/>
+                                <stop offset="100%" style="stop-color:#16A34A"/>
+                            </linearGradient>
+                            <filter id="gaugeGlow">
+                                <feGaussianBlur stdDeviation="3" result="blur"/>
+                                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                            </filter>
+                        </defs>
+                        <path d="M 25 145 A 115 115 0 0 1 255 145" fill="none" stroke="#E2E8F0" stroke-width="18" stroke-linecap="round"/>
+                        <path d="M 25 145 A 115 115 0 0 1 255 145" fill="none" stroke="url(#gaugeGrad)" stroke-width="18" stroke-linecap="round" id="gaugeArcFill" stroke-dasharray="0 362" filter="url(#gaugeGlow)" style="transition: stroke-dasharray 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);"/>
                     </svg>
-                    <div class="gauge-center">
+                    <div class="gauge-center animate-in">
                         <div class="gauge-score" id="overallScore">--</div>
                         <div class="gauge-label" id="overallLabel">Analyzing...</div>
                     </div>
                 </div>
+                <div class="gauge-pillar-row" id="gaugePillarRow"></div>
                 <!-- Sentiment distribution bar (merged here) -->
                 <div class="gauge-bar-wrap">
                     <div class="gauge-bar" id="gaugeSentBar"></div>
@@ -682,49 +730,11 @@
                 <button class="filter-btn" data-filter="yt">YouTube</button>
             </div>
 
-            <div class="comment-feed" id="commentFeed">
+            <div class="comment-feed" id="commentFeed" style="flex:1;">
                 <div class="empty-state">
                     <div class="empty-state-icon">[ ]</div>
                     <div class="empty-state-text">Loading comments...</div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Audience Health Over Time (in left col under comments) -->
-        <div class="card" style="margin-top:24px;">
-            <div class="timeline-header">
-                <div class="card-title" style="margin-bottom:0;">Audience Health Over Time <span class="timeline-sub">rolling 12 months</span></div>
-                <div class="timeline-legend" style="flex-wrap:wrap;">
-                    <span class="tl-legend-item"><span class="tl-swatch tl-swatch-line"></span>Sentiment score</span>
-                    <span class="tl-legend-item"><span class="tl-swatch tl-swatch-bar"></span>Comment volume</span>
-                    <span class="tl-legend-item"><span class="tl-band tl-band-pos"></span>Positive zone</span>
-                    <span class="tl-legend-item"><span class="tl-band tl-band-neu"></span>Neutral zone</span>
-                    <span class="tl-legend-item"><span class="tl-band tl-band-neg"></span>Negative zone</span>
-                </div>
-            </div>
-            <div class="timeline-stats" id="timelineStats"></div>
-            <div class="chart-container" style="height: 280px; position: relative; margin-top: 14px;">
-                <canvas id="sentimentTimelineChart"></canvas>
-            </div>
-        </div>
-
-        <!-- Follower Growth Over Time (in left col) -->
-        <div class="card" style="margin-top:24px;">
-            <div class="timeline-header">
-                <div class="card-title" style="margin-bottom:0;">Follower Growth Over Time</div>
-                <div class="timeline-legend">
-                    <span class="tl-legend-item"><span style="display:inline-block;width:14px;height:3px;background:#1877F2;border-radius:2px;vertical-align:middle;margin-right:4px;"></span>Facebook</span>
-                    <span class="tl-legend-item"><span style="display:inline-block;width:14px;height:3px;background:#E4405F;border-radius:2px;vertical-align:middle;margin-right:4px;"></span>Instagram</span>
-                    <span class="tl-legend-item"><span style="display:inline-block;width:14px;height:3px;background:#0A66C2;border-radius:2px;vertical-align:middle;margin-right:4px;"></span>LinkedIn</span>
-                    <span class="tl-legend-item"><span style="display:inline-block;width:14px;height:3px;background:#FF0000;border-radius:2px;vertical-align:middle;margin-right:4px;"></span>YouTube</span>
-                </div>
-            </div>
-            <div class="follower-summary-row" id="followerSummaryRow"></div>
-            <div class="chart-container" style="height: 260px; position: relative; margin-top: 14px;">
-                <canvas id="followerGrowthChart"></canvas>
-            </div>
-            <div style="font-size:11px;color:#64748B;font-style:italic;margin-top:10px;">
-                Snapshot captured on each dashboard load. Historical depth grows automatically over time.
             </div>
         </div>
     </div>
@@ -798,6 +808,30 @@
     </div>
 </div>
 
+<!-- Full-width: Audience Health Over Time -->
+<div style="max-width: 1600px; margin: 0 auto; padding: 0 36px 24px;">
+    <div class="card">
+        <div class="timeline-header">
+            <div class="card-title" style="margin-bottom:0;">Audience Health Over Time <span class="timeline-sub">rolling 12 months</span></div>
+            <div class="timeline-legend" style="flex-wrap:wrap;">
+                <span class="tl-legend-item"><span class="tl-swatch tl-swatch-line"></span>Sentiment score</span>
+                <span class="tl-legend-item"><span class="tl-swatch tl-swatch-bar"></span>Comment volume</span>
+                <span class="tl-legend-item"><span class="tl-band tl-band-pos"></span>Positive zone</span>
+                <span class="tl-legend-item"><span class="tl-band tl-band-neu"></span>Neutral zone</span>
+                <span class="tl-legend-item"><span class="tl-band tl-band-neg"></span>Negative zone</span>
+            </div>
+        </div>
+        <div class="timeline-stats" id="timelineStats"></div>
+        <div class="chart-container" style="height: 340px; position: relative; margin-top: 14px;">
+            <canvas id="sentimentTimelineChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Methodology footer -->
+<div class="ahs-methodology-footer">
+    <em>Audience Health Score methodology &mdash; A composite 0&ndash;100 score blending four weighted pillars: <strong>Engagement Quality</strong> (40%) &mdash; tiered weighting of comments, shares, reactions, and views normalized to reach; <strong>Comment Sentiment</strong> (40%) &mdash; tone of audience conversations, confidence-weighted by comment volume; <strong>Reach &amp; Awareness</strong> (10%) &mdash; period reach vs. trailing baseline; <strong>Audience Growth</strong> (10%) &mdash; month-over-month follower change. Each pillar is normalized against its platform baseline; missing pillars drop and remaining weights rescale to 100%. The overall gauge is a reach-weighted average of per-platform scores.</em>
+</div>
 
 <script>
 // ============================================================
@@ -1540,24 +1574,24 @@ function renderKPIs(data) {
     if (el('kpiViewsChange')) el('kpiViewsChange').innerHTML = prev ? trendBadge(data.kpis.views, prev.views) : '';
     if (el('kpiReachChange')) el('kpiReachChange').innerHTML = prev ? trendBadge(data.kpis.reach || 0, prev.reach || 0) : '';
     if (el('kpiImpressionsChange')) el('kpiImpressionsChange').innerHTML = prev ? trendBadge(data.kpis.impressions || 0, prev.impressions || 0) : '';
-    // Followers row by platform
+    // Flashy follower badges by platform
     const followersRow = el('kpiFollowersRow');
     if (followersRow && data.audience) {
         const plats = [
-            { key: 'fb', name: 'Facebook' },
-            { key: 'ig', name: 'Instagram' },
-            { key: 'li', name: 'LinkedIn' },
-            { key: 'yt', name: 'YouTube' }
+            { key: 'fb', name: 'Facebook', icon: '\uD83D\uDC65', cls: 'fb' },
+            { key: 'ig', name: 'Instagram', icon: '\uD83D\uDCF8', cls: 'ig' },
+            { key: 'li', name: 'LinkedIn', icon: '\uD83D\uDCBC', cls: 'li' },
+            { key: 'yt', name: 'YouTube', icon: '\u25B6\uFE0F', cls: 'yt' }
         ];
         followersRow.innerHTML = plats.map(p => {
             const f = (data.audience[p.key] && data.audience[p.key].followers) || 0;
             const momPct = getFollowerMoMChange(p.key, f);
-            const momStr = (momPct === null || isNaN(momPct)) ? null : ((momPct > 0 ? '+' : '') + momPct.toFixed(1) + '% MoM');
-            const momCls = momPct === null ? 'neu' : (momPct > 0 ? 'pos' : (momPct < 0 ? 'neg' : 'neu'));
-            return '<div class="kpi-foll-tile">'
-                + '<div class="kpi-foll-plat">' + p.name + ' Followers</div>'
-                + '<div class="kpi-foll-val">' + (f > 0 ? fmt(f) : '--') + '</div>'
-                + '<div class="kpi-foll-mom ' + momCls + '">' + (momStr || 'baseline set') + '</div>'
+            const momStr = (momPct === null || isNaN(momPct)) ? null : ((momPct > 0 ? '+' : '') + momPct.toFixed(1) + '%');
+            return '<div class="foll-badge ' + p.cls + '">'
+                + '<div class="foll-badge-icon">' + p.icon + '</div>'
+                + '<div class="foll-badge-val">' + (f > 0 ? fmtNum(f) : '--') + '</div>'
+                + '<div class="foll-badge-label">' + p.name + '</div>'
+                + (momStr ? '<div class="foll-badge-mom">' + momStr + ' MoM</div>' : '')
                 + '</div>';
         }).join('');
     }
@@ -1815,13 +1849,28 @@ function renderSentiment(data) {
     document.getElementById('overallScore').textContent = overallScore === null ? '--' : overallScore;
     document.getElementById('overallLabel').textContent = overall.label + ' Audience Health';
 
-    // Animate arc gauge
+    // Animate arc gauge (larger hero arc, gradient stroke)
     const arcFill = document.getElementById('gaugeArcFill');
-    const arcTotal = 283; // approximate arc length
+    const arcTotal = 362; // arc length for 280x160 SVG
     const fillLen = (overall.score / 100) * arcTotal;
-    const color = ahsColor(overallScore);
-    arcFill.setAttribute('stroke', color);
     arcFill.setAttribute('stroke-dasharray', fillLen + ' ' + arcTotal);
+
+    // Render pillar chips below gauge
+    const pillarRow = document.getElementById('gaugePillarRow');
+    if (pillarRow) {
+        const firstActive = platformKeys.find(k => perPlatform[k].score !== null);
+        const pillarsToShow = firstActive ? perPlatform[firstActive].pillars : {};
+        const chipData = [
+            { label: 'Engagement', val: pillarsToShow.engagement },
+            { label: 'Sentiment', val: pillarsToShow.sentiment },
+            { label: 'Reach', val: pillarsToShow.reach },
+            { label: 'Growth', val: pillarsToShow.growth }
+        ];
+        pillarRow.innerHTML = chipData.map(c => {
+            const v = c.val !== null && c.val !== undefined ? Math.round(c.val) : '--';
+            return '<span class="gauge-pillar-chip">' + c.label + ' <span class="chip-val">' + v + '</span></span>';
+        }).join('');
+    }
 
     // Render distribution bar & counts in gauge section
     let pos = 0, neu = 0, neg = 0;
@@ -2667,8 +2716,6 @@ async function runDashboard() {
         renderPostsFeed(data);
         // Audience Health Over Time runs against raw (unfiltered) comments so it always shows a rolling 12-month window
         renderSentimentTimeline(raw);
-        // Follower Growth Over Time (from localStorage snapshots + current audience data)
-        renderFollowerGrowthChart(data);
     }
     document.getElementById('lastUpdated').textContent =
         'Updated: ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
