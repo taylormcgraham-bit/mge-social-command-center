@@ -856,8 +856,10 @@
         <div class="timeline-header">
             <div class="card-title" style="margin-bottom:0;">Audience Health Over Time <span class="timeline-sub">rolling 12 months</span></div>
             <div class="timeline-legend" style="flex-wrap:wrap;">
-                <span class="tl-legend-item"><span class="tl-swatch tl-swatch-line"></span>Sentiment score</span>
-                <span class="tl-legend-item"><span class="tl-swatch tl-swatch-bar"></span>Comment volume</span>
+                <span class="tl-legend-item"><span class="tl-swatch" style="background:linear-gradient(135deg,#003B71,#0066CC);width:14px;height:3px;border-radius:2px;"></span>AHS Score</span>
+                <span class="tl-legend-item"><span class="tl-swatch" style="background:linear-gradient(135deg,#22C55E,#16A34A);width:14px;height:3px;border-radius:2px;"></span>Sentiment</span>
+                <span class="tl-legend-item"><span class="tl-swatch" style="background:rgba(0,102,204,0.5);width:10px;height:10px;border-radius:2px;"></span>Engagement</span>
+                <span class="tl-legend-item"><span class="tl-swatch tl-swatch-bar"></span>Comments</span>
                 <span class="tl-legend-item"><span class="tl-band tl-band-pos"></span>Positive zone</span>
                 <span class="tl-legend-item"><span class="tl-band tl-band-neu"></span>Neutral zone</span>
                 <span class="tl-legend-item"><span class="tl-band tl-band-neg"></span>Negative zone</span>
@@ -1597,6 +1599,41 @@ function getFollowerMoMChange(platformKey, currentFollowers) {
 }
 
 // ============================================================
+// AHS HISTORY (localStorage, monthly composite scores for timeline chart)
+// ============================================================
+var AHS_HISTORY_KEY = 'mge_ahs_history_v2';
+function getAhsHistory() {
+    try {
+        var raw = localStorage.getItem(AHS_HISTORY_KEY);
+        return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+}
+function saveAhsScore(overallScore, perPlatform) {
+    if (overallScore === null) return;
+    var history = getAhsHistory();
+    var now = new Date();
+    var ymKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    history[ymKey] = {
+        ts: now.toISOString(),
+        score: overallScore,
+        platforms: {}
+    };
+    if (perPlatform) {
+        ['fb', 'ig', 'li', 'yt'].forEach(function(k) {
+            if (perPlatform[k]) {
+                history[ymKey].platforms[k] = {
+                    score: perPlatform[k].score,
+                    engagement: perPlatform[k].pillars ? perPlatform[k].pillars.engagement : null,
+                    sentiment: perPlatform[k].pillars ? perPlatform[k].pillars.sentiment : null,
+                    postCount: perPlatform[k].postCount || 0
+                };
+            }
+        });
+    }
+    try { localStorage.setItem(AHS_HISTORY_KEY, JSON.stringify(history)); } catch (e) {}
+}
+
+// ============================================================
 // RENDERING
 // ============================================================
 function fmt(n) {
@@ -1907,6 +1944,9 @@ function renderSentiment(data) {
     });
     const overallScore = totalWeight ? Math.round(weightedSum / totalWeight) : null;
     const overall = { score: overallScore === null ? 0 : overallScore, label: ahsLabel(overallScore) };
+
+    // Stamp this month's AHS score into history for the timeline chart
+    saveAhsScore(overallScore, perPlatform);
 
     document.getElementById('overallScore').textContent = overallScore === null ? '--' : overallScore;
     document.getElementById('overallLabel').textContent = overall.label + ' Audience Health';
@@ -2319,8 +2359,8 @@ function extractAllRawComments(raw) {
     return out;
 }
 
-function renderSentimentTimeline(rawOrData) {
-    // Build the rolling 12-month window ending at the current month, regardless of the date filter.
+function renderSentimentTimeline(rawOrData, processedData) {
+    // Build the rolling 12-month window ending at the current month
     var rolling = [];
     var now = new Date();
     for (var i = 11; i >= 0; i--) {
@@ -2331,7 +2371,7 @@ function renderSentimentTimeline(rawOrData) {
         });
     }
 
-    // Prefer raw (un-filtered) comments. If a processed `data` was passed, fall back to data.comments.
+    // Extract all raw comments for sentiment per month
     var allComments = [];
     if (rawOrData && (rawOrData.facebook || rawOrData.instagram || rawOrData.linkedin || rawOrData.youtube)) {
         allComments = extractAllRawComments(rawOrData);
@@ -2339,36 +2379,65 @@ function renderSentimentTimeline(rawOrData) {
         allComments = rawOrData.comments;
     }
 
-    var monthMap = {};
-    rolling.forEach(function(m) { monthMap[m.key] = []; });
+    // Extract all posts for engagement per month
+    var allPosts = [];
+    if (processedData && processedData.posts) {
+        allPosts = processedData.posts;
+    }
+
+    // Bucket comments by month
+    var commentMap = {};
+    rolling.forEach(function(m) { commentMap[m.key] = []; });
     allComments.forEach(function(c) {
         if (!c.time) return;
         var d = new Date(c.time);
         if (isNaN(d.getTime())) return;
         var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-        if (monthMap[key]) monthMap[key].push(c.text || '');
+        if (commentMap[key]) commentMap[key].push(c.text || '');
+    });
+
+    // Bucket engagement by month from posts
+    var engMap = {};
+    rolling.forEach(function(m) { engMap[m.key] = 0; });
+    allPosts.forEach(function(p) {
+        if (!p.time) return;
+        var d = new Date(p.time);
+        if (isNaN(d.getTime())) return;
+        var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+        if (engMap[key] !== undefined) {
+            engMap[key] += (p.engagement || 0);
+        }
     });
 
     var labels = rolling.map(function(m) { return m.label; });
-    var volumes = rolling.map(function(m) { return monthMap[m.key].length; });
-    var scores = rolling.map(function(m) {
-        var texts = monthMap[m.key].join(' ');
-        if (!texts.trim()) return null; // gap when no data for that month
+    var commentVolumes = rolling.map(function(m) { return commentMap[m.key].length; });
+    var engVolumes = rolling.map(function(m) { return engMap[m.key]; });
+    var sentimentScores = rolling.map(function(m) {
+        var texts = commentMap[m.key].join(' ');
+        if (!texts.trim()) return null;
         return analyzeSentiment(texts).score;
     });
 
+    // AHS composite scores from localStorage history
+    var ahsHistory = getAhsHistory();
+    var ahsScores = rolling.map(function(m) {
+        var entry = ahsHistory[m.key];
+        return entry ? entry.score : null;
+    });
+
     // --- Stats row (above chart) ---
-    renderTimelineStats(rolling, scores, volumes);
+    renderTimelineStats(rolling, ahsScores, commentVolumes);
 
     var canvas = document.getElementById('sentimentTimelineChart');
     if (!canvas) return;
     if (sentimentTimelineInstance) sentimentTimelineInstance.destroy();
 
-    // Build a gradient for the line fill
     var ctx = canvas.getContext('2d');
-    var gradient = ctx.createLinearGradient(0, 0, 0, 340);
-    gradient.addColorStop(0, 'rgba(0,59,113,0.28)');
-    gradient.addColorStop(1, 'rgba(0,59,113,0.00)');
+
+    // Gradient fills for lines
+    var ahsGradient = ctx.createLinearGradient(0, 0, 0, 340);
+    ahsGradient.addColorStop(0, 'rgba(0,59,113,0.22)');
+    ahsGradient.addColorStop(1, 'rgba(0,59,113,0.00)');
 
     // Custom plugin: shaded positive/neutral/negative background zones
     var zonesPlugin = {
@@ -2379,17 +2448,13 @@ function renderSentimentTimeline(rawOrData) {
             if (!ya || !xa) return;
             var ctx = chart.ctx;
             var left = xa.left, right = xa.right;
-            // Negative zone: 0-40
             ctx.save();
             ctx.fillStyle = 'rgba(239,68,68,0.07)';
             ctx.fillRect(left, ya.getPixelForValue(40), right - left, ya.getPixelForValue(0) - ya.getPixelForValue(40));
-            // Neutral zone: 40-60
             ctx.fillStyle = 'rgba(234,179,8,0.06)';
             ctx.fillRect(left, ya.getPixelForValue(60), right - left, ya.getPixelForValue(40) - ya.getPixelForValue(60));
-            // Positive zone: 60-100
             ctx.fillStyle = 'rgba(34,197,94,0.07)';
             ctx.fillRect(left, ya.getPixelForValue(100), right - left, ya.getPixelForValue(60) - ya.getPixelForValue(100));
-            // Midline at 50
             ctx.strokeStyle = 'rgba(148,163,184,0.45)';
             ctx.setLineDash([4, 4]);
             ctx.lineWidth = 1;
@@ -2401,7 +2466,8 @@ function renderSentimentTimeline(rawOrData) {
         }
     };
 
-    var pointColors = scores.map(function(s) { return s == null ? '#CBD5E1' : s >= 60 ? '#22C55E' : s <= 40 ? '#EF4444' : '#EAB308'; });
+    var ahsPointColors = ahsScores.map(function(s) { return s == null ? '#CBD5E1' : s >= 60 ? '#003B71' : s >= 45 ? '#EAB308' : '#EF4444'; });
+    var sentPointColors = sentimentScores.map(function(s) { return s == null ? '#CBD5E1' : s >= 60 ? '#22C55E' : s <= 40 ? '#EF4444' : '#EAB308'; });
 
     sentimentTimelineInstance = new Chart(ctx, {
         type: 'bar',
@@ -2410,35 +2476,68 @@ function renderSentimentTimeline(rawOrData) {
             datasets: [
                 {
                     type: 'bar',
-                    label: 'Comment Volume',
-                    data: volumes,
+                    label: 'Engagement',
+                    data: engVolumes,
+                    backgroundColor: 'rgba(0,102,204,0.5)',
+                    hoverBackgroundColor: 'rgba(0,102,204,0.7)',
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    yAxisID: 'yVolume',
+                    order: 4,
+                    barPercentage: 0.4,
+                    categoryPercentage: 0.8,
+                    stack: 'bars'
+                },
+                {
+                    type: 'bar',
+                    label: 'Comments',
+                    data: commentVolumes,
                     backgroundColor: 'rgba(203,213,225,0.75)',
                     hoverBackgroundColor: 'rgba(148,163,184,0.9)',
                     borderRadius: 6,
                     borderSkipped: false,
                     yAxisID: 'yVolume',
-                    order: 2,
-                    barPercentage: 0.7,
-                    categoryPercentage: 0.85
+                    order: 3,
+                    barPercentage: 0.4,
+                    categoryPercentage: 0.8,
+                    stack: 'bars'
                 },
                 {
                     type: 'line',
-                    label: 'Sentiment Score',
-                    data: scores,
+                    label: 'AHS Score',
+                    data: ahsScores,
                     borderColor: '#003B71',
-                    backgroundColor: gradient,
+                    backgroundColor: ahsGradient,
                     fill: true,
                     tension: 0.4,
                     borderWidth: 3,
                     pointRadius: 6,
                     pointHoverRadius: 9,
                     spanGaps: true,
-                    pointBackgroundColor: pointColors,
+                    pointBackgroundColor: ahsPointColors,
                     pointBorderColor: '#fff',
                     pointBorderWidth: 2,
                     pointHoverBorderWidth: 3,
                     yAxisID: 'y',
                     order: 1
+                },
+                {
+                    type: 'line',
+                    label: 'Sentiment',
+                    data: sentimentScores,
+                    borderColor: '#22C55E',
+                    borderDash: [6, 3],
+                    fill: false,
+                    tension: 0.4,
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 7,
+                    spanGaps: true,
+                    pointBackgroundColor: sentPointColors,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 1.5,
+                    yAxisID: 'y',
+                    order: 2
                 }
             ]
         },
@@ -2454,14 +2553,22 @@ function renderSentimentTimeline(rawOrData) {
                     titleFont: { size: 12, weight: '700' },
                     bodyFont: { size: 12 },
                     cornerRadius: 8,
-                    displayColors: false,
+                    displayColors: true,
                     callbacks: {
                         title: function(items) { return items[0].label; },
                         label: function(ctx) {
-                            if (ctx.dataset.label === 'Sentiment Score') {
+                            if (ctx.dataset.label === 'AHS Score') {
+                                if (ctx.parsed.y == null) return 'AHS: no data';
+                                var tier = ctx.parsed.y >= 75 ? 'Excellent' : ctx.parsed.y >= 60 ? 'Healthy' : ctx.parsed.y >= 45 ? 'Fair' : 'Weak';
+                                return 'AHS: ' + ctx.parsed.y + '/100  (' + tier + ')';
+                            }
+                            if (ctx.dataset.label === 'Sentiment') {
                                 if (ctx.parsed.y == null) return 'Sentiment: no comments';
                                 var tier = ctx.parsed.y >= 60 ? 'Positive' : ctx.parsed.y <= 40 ? 'Negative' : 'Neutral';
                                 return 'Sentiment: ' + ctx.parsed.y + '/100  (' + tier + ')';
+                            }
+                            if (ctx.dataset.label === 'Engagement') {
+                                return 'Engagement: ' + (ctx.parsed.y || 0).toLocaleString();
                             }
                             return 'Comments: ' + (ctx.parsed.y || 0);
                         }
@@ -2471,17 +2578,17 @@ function renderSentimentTimeline(rawOrData) {
             scales: {
                 y: {
                     min: 0, max: 100, position: 'left',
-                    title: { display: true, text: 'Sentiment Score (0-100)', font: { size: 11, weight: '600' }, color: '#64748B' },
+                    title: { display: true, text: 'Score (0-100)', font: { size: 11, weight: '600' }, color: '#64748B' },
                     grid: { color: '#F1F5F9' },
                     ticks: { font: { size: 10 }, color: '#94A3B8', stepSize: 20 }
                 },
                 yVolume: {
-                    min: 0, position: 'right',
-                    title: { display: true, text: 'Comment Volume', font: { size: 11, weight: '600' }, color: '#64748B' },
+                    min: 0, position: 'right', stacked: true,
+                    title: { display: true, text: 'Volume', font: { size: 11, weight: '600' }, color: '#64748B' },
                     grid: { display: false },
                     ticks: { font: { size: 10 }, color: '#94A3B8', precision: 0 }
                 },
-                x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#64748B' } }
+                x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#64748B' }, stacked: true }
             }
         },
         plugins: [zonesPlugin]
@@ -2496,14 +2603,13 @@ function renderTimelineStats(rolling, scores, volumes) {
         if (scores[i] != null) withData.push({ label: rolling[i].label, score: scores[i], vol: volumes[i] });
     }
     if (withData.length === 0) {
-        statsEl.innerHTML = '<div class="tl-stat" style="grid-column: 1 / -1;"><div class="tl-stat-label">No data</div><div class="tl-stat-sub">No comments yet in the rolling 12-month window.</div></div>';
+        statsEl.innerHTML = '<div class="tl-stat" style="grid-column: 1 / -1;"><div class="tl-stat-label">No history yet</div><div class="tl-stat-sub">AHS scores will build up over time as the dashboard runs each month.</div></div>';
         return;
     }
     var totalComments = volumes.reduce(function(a, b) { return a + b; }, 0);
     var avgScore = Math.round(withData.reduce(function(a, b) { return a + b.score; }, 0) / withData.length);
     var best = withData.reduce(function(a, b) { return b.score > a.score ? b : a; });
     var worst = withData.reduce(function(a, b) { return b.score < a.score ? b : a; });
-    // Trend: compare last 3 months avg vs prior 3 months
     var recent = withData.slice(-3);
     var prior  = withData.slice(-6, -3);
     var trendBadgeHtml = '';
@@ -2517,12 +2623,12 @@ function renderTimelineStats(rolling, scores, volumes) {
     } else {
         trendBadgeHtml = '<div class="tl-stat-value">--</div>';
     }
-    var avgCls = avgScore >= 60 ? 'pos' : avgScore <= 40 ? 'neg' : 'neu';
-    var avgLabel = avgScore >= 60 ? 'Positive' : avgScore <= 40 ? 'Negative' : 'Neutral';
+    var avgCls = avgScore >= 75 ? 'pos' : avgScore >= 45 ? 'neu' : 'neg';
+    var avgLabel = avgScore >= 75 ? 'Excellent' : avgScore >= 60 ? 'Healthy' : avgScore >= 45 ? 'Fair' : 'Weak';
     statsEl.innerHTML =
-        '<div class="tl-stat"><div class="tl-stat-label">12-mo Avg Sentiment</div>' +
+        '<div class="tl-stat"><div class="tl-stat-label">Avg AHS Score</div>' +
             '<div class="tl-stat-value ' + avgCls + '">' + avgScore + '<span style="font-size:12px;font-weight:600;color:#94A3B8;"> /100</span></div>' +
-            '<div class="tl-stat-sub">' + avgLabel + '</div></div>' +
+            '<div class="tl-stat-sub">' + avgLabel + ' &middot; ' + withData.length + ' month' + (withData.length !== 1 ? 's' : '') + ' of data</div></div>' +
         '<div class="tl-stat"><div class="tl-stat-label">3-mo Trend</div>' +
             trendBadgeHtml +
             '<div class="tl-stat-sub">vs. prior 3 months</div></div>' +
@@ -2530,8 +2636,8 @@ function renderTimelineStats(rolling, scores, volumes) {
             '<div class="tl-stat-value pos">' + best.score + '</div>' +
             '<div class="tl-stat-sub">' + best.label + ' &middot; ' + best.vol + ' comments</div></div>' +
         '<div class="tl-stat"><div class="tl-stat-label">Weakest Month</div>' +
-            '<div class="tl-stat-value ' + (worst.score <= 40 ? 'neg' : worst.score >= 60 ? 'pos' : 'neu') + '">' + worst.score + '</div>' +
-            '<div class="tl-stat-sub">' + worst.label + ' &middot; ' + worst.vol + ' comments &middot; ' + totalComments.toLocaleString() + ' total</div></div>';
+            '<div class="tl-stat-value ' + (worst.score < 45 ? 'neg' : worst.score >= 60 ? 'pos' : 'neu') + '">' + worst.score + '</div>' +
+            '<div class="tl-stat-sub">' + worst.label + ' &middot; ' + totalComments.toLocaleString() + ' total comments</div></div>';
 }
 
 // ============================================================
@@ -2786,8 +2892,8 @@ async function runDashboard() {
         renderSentiment(data);
         renderComments(data);
         renderPostsFeed(data);
-        // Audience Health Over Time runs against raw (unfiltered) comments so it always shows a rolling 12-month window
-        renderSentimentTimeline(raw);
+        // Audience Health Over Time runs against raw (unfiltered) data for rolling 12-month window
+        renderSentimentTimeline(raw, data);
     }
     document.getElementById('lastUpdated').textContent =
         'Updated: ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
