@@ -535,24 +535,6 @@ const TOPICAL_STRICT_SIGNALS = /\b(power outage|power outages|outage|outages|no 
 // reject it (catches Tammy Baldwin, election coverage, general Madison news).
 const POLITICAL_NOISE = /\b(tammy baldwin|ron johnson|tony evers|derrick van orden|gwen moore|mark pocan|kamala harris|donald trump|joe biden|senator|congressm\w+|congresswom\w+|state assembly|state senator|state representative|election\w*|campaign\w*|primary|midterm|partisan|ballot|voter|voting|poll\w*|house of representatives|gubernatorial|state capitol|governor's office|state of the union|impeach\w+|indict\w+|supreme court|scotus)\b/i;
 
-// Sentiment scoring (utility/customer-service flavored).
-// Negative words dominate utility chatter since people post complaints more than compliments.
-const SENTIMENT_POSITIVE = /\b(great|excellent|amazing|fantastic|love(d)?|thanks?|thank you|helpful|appreciate|grateful|impressed|happy|pleased|pleasant|good job|well done|kudos|fair|reasonable|timely|fast|friendly|responsive|professional|solved|resolved|success(ful)?|efficient|reliable|outstanding|awesome|smooth|quick fix|saved|refund|credit|apprec\w*|thankful|satisf\w+|commend\w+)\b/gi;
-const SENTIMENT_NEGATIVE = /\b(terrible|awful|horrible|worst|hate(d|s)?|disgust\w+|angry|anger|frustrat\w+|furious|outage|blackout|no power|overcharg\w+|rip[- ]off|scam\w*|ridiculous|unacceptable|complain\w+|disappoint\w+|delay\w+|ignored?|unresponsive|broken|failed?|failure|problem|issue|error|bad service|incompetent|rude|lying|lies|fraud|lawsuit|sued|class action|outrageous|shut off|shutoff|cutoff|cut off|disconnected|exorbitant|price gouging|gouging|robbed|thieves|stealing|stolen|crooked|crooks)\b/gi;
-
-function scoreSentiment(text) {
-  if (!text) return { score: 0, label: 'neutral', pos: 0, neg: 0 };
-  const pos = (text.match(SENTIMENT_POSITIVE) || []).length;
-  const neg = (text.match(SENTIMENT_NEGATIVE) || []).length;
-  const score = pos - neg;
-  let label = 'neutral';
-  if (score >= 2) label = 'positive';
-  else if (score <= -2) label = 'negative';
-  else if (score === 1) label = 'positive';
-  else if (score === -1) label = 'negative';
-  return { score, label, pos, neg };
-}
-
 function verifyTopicalContent(text) {
   if (!text) return false;
   const hasStrictSignal = TOPICAL_STRICT_SIGNALS.test(text);
@@ -628,12 +610,6 @@ function addMentions(source, incoming) {
   incoming = incoming.filter(m => !isJobListing(m));
   const jobSkipped = beforeJob - incoming.length;
   if (jobSkipped > 0) console.log(' [MENTIONS] ' + source + ': filtered ' + jobSkipped + ' job listing(s)');
-  // Attach sentiment to each mention
-  for (const m of incoming) {
-    if (!m.sentiment) {
-      m.sentiment = scoreSentiment((m.title || '') + ' ' + (m.snippet || ''));
-    }
-  }
   const existing = new Set(MENTIONS.items.map(m => m.id));
   const additions = incoming.filter(i => !existing.has(i.id));
   if (additions.length === 0) return 0;
