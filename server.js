@@ -526,6 +526,45 @@ const BRANDS = {
 // Domains to exclude from all brand matching (stock signal bots, content farms, etc.)
 const EXCLUDED_DOMAINS = /(getagraph\.com|tickercrunch|marketbeat\.com\/stock-ideas|zacks\.com\/stock\/news|simplywall\.st|insidermonkey\.com|stockstotrade|stocknews\.com|stockinvest|nasdaq\.com\/articles\/.*stock|benzinga\.com\/quote|fool\.com\/quote)/i;
 
+// Strict energy/utility signal — for topical items to be accepted, their text must hit one of these.
+// This is more specific than generic keywords like "power" or "solar" alone to filter out political
+// coverage, non-utility news, and general Madison news.
+const TOPICAL_STRICT_SIGNALS = /\b(power outage|power outages|outage|outages|no power|blackout|blackouts|kilowatt|kwh|solar panels?|solar install\w*|solar array|rooftop solar|solar company|solar companies|solar energy|install solar|going solar|heat pump|heat pumps|ev charger|ev charging|electric vehicle charg\w+|utility bill|utility bills|electric bill|electric bills|gas bill|gas bills|rate increase|rate hike|rate case|net metering|time[- ]of[- ]use|tou rate|focus on energy|smart meter|smart meters|electric grid|substation|transformer|public service commission|psc wisconsin|natural gas|nuclear plant|point beach|kewaunee|wind farm|wind turbine|renewable energy|clean energy|energy efficiency|weatherization|energy assistance|liheap|shut off|shutoff|power restored|power restoration)\b/i;
+
+// Political/general-news noise — if topical text matches this AND doesn't have strong utility signal,
+// reject it (catches Tammy Baldwin, election coverage, general Madison news).
+const POLITICAL_NOISE = /\b(tammy baldwin|ron johnson|tony evers|derrick van orden|gwen moore|mark pocan|kamala harris|donald trump|joe biden|senator|congressm\w+|congresswom\w+|state assembly|state senator|state representative|election\w*|campaign\w*|primary|midterm|partisan|ballot|voter|voting|poll\w*|house of representatives|gubernatorial|state capitol|governor's office|state of the union|impeach\w+|indict\w+|supreme court|scotus)\b/i;
+
+// Sentiment scoring (utility/customer-service flavored).
+// Negative words dominate utility chatter since people post complaints more than compliments.
+const SENTIMENT_POSITIVE = /\b(great|excellent|amazing|fantastic|love(d)?|thanks?|thank you|helpful|appreciate|grateful|impressed|happy|pleased|pleasant|good job|well done|kudos|fair|reasonable|timely|fast|friendly|responsive|professional|solved|resolved|success(ful)?|efficient|reliable|outstanding|awesome|smooth|quick fix|saved|refund|credit|apprec\w*|thankful|satisf\w+|commend\w+)\b/gi;
+const SENTIMENT_NEGATIVE = /\b(terrible|awful|horrible|worst|hate(d|s)?|disgust\w+|angry|anger|frustrat\w+|furious|outage|blackout|no power|overcharg\w+|rip[- ]off|scam\w*|ridiculous|unacceptable|complain\w+|disappoint\w+|delay\w+|ignored?|unresponsive|broken|failed?|failure|problem|issue|error|bad service|incompetent|rude|lying|lies|fraud|lawsuit|sued|class action|outrageous|shut off|shutoff|cutoff|cut off|disconnected|exorbitant|price gouging|gouging|robbed|thieves|stealing|stolen|crooked|crooks)\b/gi;
+
+function scoreSentiment(text) {
+  if (!text) return { score: 0, label: 'neutral', pos: 0, neg: 0 };
+  const pos = (text.match(SENTIMENT_POSITIVE) || []).length;
+  const neg = (text.match(SENTIMENT_NEGATIVE) || []).length;
+  const score = pos - neg;
+  let label = 'neutral';
+  if (score >= 2) label = 'positive';
+  else if (score <= -2) label = 'negative';
+  else if (score === 1) label = 'positive';
+  else if (score === -1) label = 'negative';
+  return { score, label, pos, neg };
+}
+
+function verifyTopicalContent(text) {
+  if (!text) return false;
+  const hasStrictSignal = TOPICAL_STRICT_SIGNALS.test(text);
+  if (!hasStrictSignal) return false;
+  // Even with strict signal, if political noise dominates, reject
+  const signalMatches = (text.match(new RegExp(TOPICAL_STRICT_SIGNALS.source, 'gi')) || []).length;
+  const politicalMatches = (text.match(new RegExp(POLITICAL_NOISE.source, 'gi')) || []).length;
+  // Require at least as many strict signals as political references
+  if (politicalMatches > signalMatches) return false;
+  return true;
+}
+
 // Identify which brand a piece of text matches (if any)
 // Returns { brand, keyword, confidence } or null
 function matchesAnyBrand(text, url) {
@@ -589,6 +628,12 @@ function addMentions(source, incoming) {
   incoming = incoming.filter(m => !isJobListing(m));
   const jobSkipped = beforeJob - incoming.length;
   if (jobSkipped > 0) console.log(' [MENTIONS] ' + source + ': filtered ' + jobSkipped + ' job listing(s)');
+  // Attach sentiment to each mention
+  for (const m of incoming) {
+    if (!m.sentiment) {
+      m.sentiment = scoreSentiment((m.title || '') + ' ' + (m.snippet || ''));
+    }
+  }
   const existing = new Set(MENTIONS.items.map(m => m.id));
   const additions = incoming.filter(i => !existing.has(i.id));
   if (additions.length === 0) return 0;
@@ -673,13 +718,20 @@ async function pollReddit() {
           matchedKeyword = m.keyword;
           confidence = m.confidence;
         } else {
-          // Topical query — accept as-is but still check if text also matches a known brand
+          // Topical query — require strict energy signal (not just political/general mentions)
           const m = matchesAnyBrand(text, externalUrl || permalink);
           if (m) {
+            // Still accept if it matches a known brand — that's always valid
             brandTag = m.brand;
             matchedKeyword = m.keyword;
             confidence = m.confidence;
           } else {
+            // For pure topical, require the text to hit the strict signal list
+            // AND have more utility signals than political noise
+            if (!verifyTopicalContent(text)) continue;
+            // Use the first strict-signal match as the displayed keyword
+            const sig = text.match(TOPICAL_STRICT_SIGNALS);
+            matchedKeyword = sig ? sig[0] : 'energy topic';
             confidence = 'topical';
           }
         }
