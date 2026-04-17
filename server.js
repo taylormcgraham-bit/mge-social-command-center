@@ -497,9 +497,6 @@ const WISCONSIN_GEO = /\b(Wisconsin|Madison|Dane County|Sun Prairie|Middleton|Fi
 // Brand configurations: each utility, with strict patterns and optional ambiguous+context disambiguation
 // "requiresContext" means the text must ALSO mention utility terms or the utility's service-area geo
 // (used to filter out false positives like sports arenas, stock tickers, unrelated orgs)
-const XCEL_GEO = /\b(Wisconsin|Minnesota|Colorado|Texas|North Dakota|South Dakota|New Mexico|Michigan|Eau Claire|Minneapolis|Saint Paul|St\. Paul|Denver)\b/i;
-const ALLIANT_GEO = /\b(Wisconsin|Iowa|Madison|Cedar Rapids|Dubuque|Waterloo|Davenport|Quad Cities)\b/i;
-
 const BRANDS = {
   mge: {
     exact: [/\bMadison Gas and Electric\b/i, /\bMadison Gas & Electric\b/i, /\bMG&E\b/i, /\bMGE Energy\b/i],
@@ -521,15 +518,9 @@ const BRANDS = {
     negative: null,
     requiresContext: false,
     contextRegex: null
-  },
-  xcel: {
-    // Xcel Energy Center = NHL/sports arena in St. Paul, MN. Filter this out.
-    exact: [/\bXcel Energy Inc\b/i, /\bNorthern States Power\b/i, /\bPublic Service Company of Colorado\b/i, /\bSouthwestern Public Service\b/i],
-    ambiguous: /\bXcel Energy\b/i,
-    negative: /\bXcel Energy Center|Xcel Energy Arena|Xcel Center\b/i,
-    requiresContext: true,
-    contextRegex: XCEL_GEO // require utility-area geo to avoid stock-ticker bots and sports arena
   }
+  // Xcel Energy intentionally removed — was surfacing inappropriate / off-topic content
+  // (stock-bot signals, sports-arena references). Can be re-added later with stricter rules.
 };
 
 // Domains to exclude from all brand matching (stock signal bots, content farms, etc.)
@@ -586,7 +577,7 @@ const MENTIONS = {
   items: [],
   lastPoll: {},
   stats: { reddit: 0, google_alerts: 0, gdelt: 0, youtube_search: 0, local_news: 0 },
-  brandStats: { mge: 0, alliant: 0, we_energies: 0, xcel: 0, topical: 0 },
+  brandStats: { mge: 0, alliant: 0, we_energies: 0, topical: 0 },
   maxSize: 800
 };
 
@@ -635,7 +626,6 @@ const REDDIT_QUERIES = [
   { url: 'https://www.reddit.com/search.json?q=%22Alliant+Energy%22+Wisconsin&sort=new&limit=20&t=year', tag: 'alliant', requireBrand: true },
   { url: 'https://www.reddit.com/r/wisconsin+milwaukee+madisonwi+greenbay+Appleton/search.json?q=%22We+Energies%22&restrict_sr=1&sort=new&limit=20&t=year', tag: 'we_energies', requireBrand: true },
   { url: 'https://www.reddit.com/search.json?q=%22We+Energies%22&sort=new&limit=20&t=year', tag: 'we_energies', requireBrand: true },
-  { url: 'https://www.reddit.com/search.json?q=%22Xcel+Energy%22&sort=new&limit=20&t=year', tag: 'xcel', requireBrand: true },
   // --- Topical (scoped to WI subs; surface for context even without brand name) ---
   { url: 'https://www.reddit.com/r/madisonwi+wisconsin+madison+milwaukee+greenbay/search.json?q=%22power+outage%22+OR+%22power+out%22+OR+blackout+OR+%22no+power%22&restrict_sr=1&sort=new&limit=20&t=month', tag: 'topical', requireBrand: false },
   { url: 'https://www.reddit.com/r/madisonwi+wisconsin+madison+milwaukee/search.json?q=%22solar+energy%22+OR+%22solar+panels%22+OR+%22solar+company%22+OR+%22solar+install%22+OR+%22go+solar%22&restrict_sr=1&sort=new&limit=15&t=year', tag: 'topical', requireBrand: false },
@@ -792,8 +782,7 @@ async function pollGDELT() {
       { q: '"Madison Gas & Electric"', tag: 'mge' },
       { q: '"MG&E" Wisconsin', tag: 'mge' },
       { q: '"Alliant Energy" Wisconsin', tag: 'alliant' },
-      { q: '"We Energies"', tag: 'we_energies' },
-      { q: '"Xcel Energy" Wisconsin OR Minnesota', tag: 'xcel' }
+      { q: '"We Energies"', tag: 'we_energies' }
     ];
     const found = [];
     for (const { q, tag } of queries) {
@@ -840,8 +829,7 @@ async function pollYouTubeMentions() {
       { q: '"Madison Gas and Electric"', tag: 'mge' },
       { q: '"MG&E" Wisconsin', tag: 'mge' },
       { q: '"Alliant Energy" Wisconsin', tag: 'alliant' },
-      { q: '"We Energies"', tag: 'we_energies' },
-      { q: '"Xcel Energy"', tag: 'xcel' }
+      { q: '"We Energies"', tag: 'we_energies' }
     ];
     const found = [];
     for (const { q, tag } of queries) {
