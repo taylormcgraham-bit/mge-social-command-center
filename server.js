@@ -495,46 +495,80 @@ const UTILITY_CONTEXT = /\b(outage|power|electric|gas|utility|bill|rate|customer
 const WISCONSIN_GEO = /\b(Wisconsin|Madison|Dane County|Sun Prairie|Middleton|Fitchburg|Monona|Verona|Waunakee|Stoughton|Cottage Grove|McFarland|Milwaukee|Green Bay|Appleton|Eau Claire|Kenosha|Racine|Oshkosh|Janesville|La Crosse)\b/i;
 
 // Brand configurations: each utility, with strict patterns and optional ambiguous+context disambiguation
+// "requiresContext" means the text must ALSO mention utility terms or the utility's service-area geo
+// (used to filter out false positives like sports arenas, stock tickers, unrelated orgs)
+const XCEL_GEO = /\b(Wisconsin|Minnesota|Colorado|Texas|North Dakota|South Dakota|New Mexico|Michigan|Eau Claire|Minneapolis|Saint Paul|St\. Paul|Denver)\b/i;
+const ALLIANT_GEO = /\b(Wisconsin|Iowa|Madison|Cedar Rapids|Dubuque|Waterloo|Davenport|Quad Cities)\b/i;
+
 const BRANDS = {
   mge: {
     exact: [/\bMadison Gas and Electric\b/i, /\bMadison Gas & Electric\b/i, /\bMG&E\b/i, /\bMGE Energy\b/i],
     ambiguous: /\bMGE\b/,
     negative: /\bMGE Wealth|MGE Group|Mitsubishi|MGE Capital\b/i,
-    requiresContext: true
+    requiresContext: true,
+    contextRegex: null // uses default UTILITY_CONTEXT + WISCONSIN_GEO
   },
   alliant: {
     exact: [/\bAlliant Energy\b/i, /\bAlliant Energy Corporation\b/i, /\bInterstate Power (and|&) Light\b/i, /\bWisconsin Power (and|&) Light\b/i],
     ambiguous: null,
-    negative: /\bAlliant International|Alliant University|Alliant Insurance|Alliant Credit Union\b/i,
-    requiresContext: false
+    negative: /\bAlliant International|Alliant University|Alliant Insurance|Alliant Credit Union|Alliant Techsystems|Alliant Capital\b/i,
+    requiresContext: false,
+    contextRegex: null
   },
   we_energies: {
     exact: [/\bWe Energies\b/i, /\bWisconsin Electric Power\b/i, /\bWEC Energy Group\b/i, /\bWisconsin Gas LLC\b/i],
     ambiguous: null,
     negative: null,
-    requiresContext: false
+    requiresContext: false,
+    contextRegex: null
   },
   xcel: {
-    exact: [/\bXcel Energy\b/i, /\bXcel Energy Inc\b/i, /\bNorthern States Power\b/i],
-    ambiguous: null,
-    negative: null,
-    requiresContext: false
+    // Xcel Energy Center = NHL/sports arena in St. Paul, MN. Filter this out.
+    exact: [/\bXcel Energy Inc\b/i, /\bNorthern States Power\b/i, /\bPublic Service Company of Colorado\b/i, /\bSouthwestern Public Service\b/i],
+    ambiguous: /\bXcel Energy\b/i,
+    negative: /\bXcel Energy Center|Xcel Energy Arena|Xcel Center\b/i,
+    requiresContext: true,
+    contextRegex: XCEL_GEO // require utility-area geo to avoid stock-ticker bots and sports arena
   }
 };
 
+// Domains to exclude from all brand matching (stock signal bots, content farms, etc.)
+const EXCLUDED_DOMAINS = /(getagraph\.com|tickercrunch|marketbeat\.com\/stock-ideas|zacks\.com\/stock\/news|simplywall\.st|insidermonkey\.com|stockstotrade|stocknews\.com|stockinvest|nasdaq\.com\/articles\/.*stock|benzinga\.com\/quote|fool\.com\/quote)/i;
+
 // Identify which brand a piece of text matches (if any)
-function matchesAnyBrand(text) {
+// Returns { brand, keyword, confidence } or null
+function matchesAnyBrand(text, url) {
   if (!text) return null;
+  // Domain exclusion first — skip stock-signal and low-quality sources entirely
+  if (url && EXCLUDED_DOMAINS.test(url)) return null;
+
   for (const [tag, cfg] of Object.entries(BRANDS)) {
     if (cfg.negative && cfg.negative.test(text)) continue;
+
+    // Exact match (strong brand signal)
     for (const p of cfg.exact) {
       const m = text.match(p);
-      if (m) return { brand: tag, keyword: m[0], confidence: 'high' };
+      if (m) {
+        // Even for exact matches, some brands require context (Xcel) to filter out arena/stock noise
+        if (cfg.requiresContext && cfg.contextRegex) {
+          const u = UTILITY_CONTEXT.test(text);
+          const g = cfg.contextRegex.test(text);
+          if (!u && !g) continue;
+          return { brand: tag, keyword: m[0], confidence: (u && g) ? 'high' : 'medium' };
+        }
+        return { brand: tag, keyword: m[0], confidence: 'high' };
+      }
     }
+
+    // Ambiguous match (needs context disambiguation)
     if (cfg.ambiguous && cfg.ambiguous.test(text)) {
       const u = UTILITY_CONTEXT.test(text);
-      const g = WISCONSIN_GEO.test(text);
-      if (u || g) return { brand: tag, keyword: 'MGE', confidence: (u && g) ? 'high' : 'medium' };
+      const ctxRegex = cfg.contextRegex || WISCONSIN_GEO;
+      const g = ctxRegex.test(text);
+      if (u || g) {
+        const keyword = (text.match(cfg.ambiguous) || [tag])[0];
+        return { brand: tag, keyword: keyword, confidence: (u && g) ? 'high' : 'medium' };
+      }
     }
   }
   return null;
@@ -634,18 +668,23 @@ async function pollReddit() {
         const d = c.data;
         if (!d || !d.id) continue;
         const text = (d.title || '') + ' ' + (d.selftext || '');
+        const permalink = 'https://www.reddit.com' + (d.permalink || '');
+        const externalUrl = d.url_overridden_by_dest || '';
         let brandTag = q.tag;
         let matchedKeyword = q.tag;
         let confidence = 'medium';
 
+        // Check external link for excluded domains too (catches stock bots posting to Reddit)
+        if (externalUrl && EXCLUDED_DOMAINS.test(externalUrl)) continue;
+
         if (q.requireBrand) {
-          const m = matchesAnyBrand(text);
+          const m = matchesAnyBrand(text, externalUrl || permalink);
           if (!m || m.brand !== q.tag) continue;
           matchedKeyword = m.keyword;
           confidence = m.confidence;
         } else {
           // Topical query — accept as-is but still check if text also matches a known brand
-          const m = matchesAnyBrand(text);
+          const m = matchesAnyBrand(text, externalUrl || permalink);
           if (m) {
             brandTag = m.brand;
             matchedKeyword = m.keyword;
@@ -712,7 +751,7 @@ async function pollGoogleAlerts() {
       for (const item of (feed.items || [])) {
         const actualUrl = extractGalertUrl(item.link) || item.link;
         const text = cleanHtml(item.title || '') + ' ' + cleanHtml(item.contentSnippet || item.content || '');
-        const m = matchesAnyBrand(text);
+        const m = matchesAnyBrand(text, actualUrl);
         if (!m) continue;
         let domain = 'Google Alerts';
         try { domain = new URL(actualUrl).hostname.replace(/^www\./, ''); } catch {}
@@ -764,7 +803,7 @@ async function pollGDELT() {
       const body = await resp.text();
       let data; try { data = JSON.parse(body); } catch { continue; }
       for (const a of (data.articles || [])) {
-        const m = matchesAnyBrand(a.title || '');
+        const m = matchesAnyBrand(a.title || '', a.url);
         if (!m || m.brand !== tag) continue;
         found.push({
           id: 'gdelt:' + (a.url || a.documentidentifier || a.title),
@@ -812,7 +851,8 @@ async function pollYouTubeMentions() {
       const data = await resp.json();
       for (const v of (data.items || [])) {
         const s = v.snippet || {};
-        const m = matchesAnyBrand((s.title || '') + ' ' + (s.description || ''));
+        const vurl = 'https://www.youtube.com/watch?v=' + (v.id && v.id.videoId);
+        const m = matchesAnyBrand((s.title || '') + ' ' + (s.description || ''), vurl);
         if (!m || m.brand !== tag) continue;
         const thumbs = s.thumbnails || {};
         const thumb = (thumbs.high && thumbs.high.url) || (thumbs.medium && thumbs.medium.url) || (thumbs.default && thumbs.default.url) || null;
@@ -856,7 +896,7 @@ async function pollLocalNews() {
       const data = await rssParser.parseURL(feed.url);
       for (const item of (data.items || [])) {
         const text = cleanHtml(item.title || '') + ' ' + cleanHtml(item.contentSnippet || item.content || '');
-        const m = matchesAnyBrand(text);
+        const m = matchesAnyBrand(text, item.link);
         if (!m) continue;
         found.push({
           id: 'news:' + (item.guid || item.link),
