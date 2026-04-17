@@ -2613,24 +2613,90 @@ function renderCommentFeed(comments) {
 // ============================================================
 // POSTS FEED
 // ============================================================
-// Shared content-theme taxonomy, used by the Posts category tabs.
+// Shared content-theme taxonomy, used by the Posts category tabs AND the Content Themes chart.
+// Uses word-bounded regex patterns (not loose substring match) so "every" doesn't match "EV"
+// and "proud" doesn't match "producer". Categories are ordered — first match wins — so more
+// specific categories (Wildlife, Safety) come before catchalls (Company News).
 var POST_THEMES = {
-    'Energy Efficiency': ['energy', 'efficiency', 'efficient', 'saving', 'save', 'conservation', 'conserve', 'weatheriz', 'insulation', 'thermostat', 'hvac', 'led', 'appliance', 'audit', 'usage', 'consumption', 'reduce', 'lower bill', 'utility bill'],
-    'Safety': ['safety', 'safe', 'carbon monoxide', 'gas leak', 'outage', 'storm', 'emergency', 'hazard', 'danger', 'warning', 'caution', 'power line', 'downed', 'call 811', 'dig'],
-    'Electric Vehicles': ['ev', 'electric vehicle', 'charging', 'charger', 'plug-in', 'tesla', 'ev charger', 'charge at home', 'electric car'],
-    'Sustainability': ['solar', 'renewable', 'wind', 'clean energy', 'green', 'sustainab', 'climate', 'carbon', 'emission', 'environment', 'net zero', 'carbon neutral'],
-    'Community': ['community', 'volunteer', 'donat', 'sponsor', 'event', 'partner', 'neighborhood', 'local', 'madison', 'dane county', 'give back', 'support'],
-    'Programs & Rebates': ['rebate', 'incentive', 'program', 'discount', 'free', 'offer', 'sign up', 'enroll', 'focus on energy', 'reward'],
-    'Company News': ['mge', 'madison gas', 'announcement', 'update', 'new', 'launch', 'proud', 'team', 'employee', 'career', 'hiring', 'award'],
-    'Tips & Education': ['tip', 'how to', 'learn', 'know', 'guide', 'help', 'advice', 'reminder', 'did you know', 'fact']
+    'Wildlife & Nature': [
+        /\bperegrine\b/, /\bfalcon\w*\b/, /\bnest\s*cam\b/, /\bnesting\b/, /\beaglet\w*\b/,
+        /\bosprey\w*\b/, /\bwildlife\b/, /\bpollinator\w*\b/, /\bprairie\b/,
+        /\bmonarch\w* butterfl\w+\b/, /\bbirds? of prey\b/, /\braptor\w*\b/
+    ],
+    'Safety': [
+        /\bsafety\b/, /\bstay safe\b/, /\bbe safe\b/, /\bcarbon monoxide\b/, /\bgas leak\b/,
+        /\boutage\b/, /\bstorm\b/, /\bemergency\b/, /\bhazard\w*\b/, /\bdanger\w*\b/,
+        /\bpower line\w*\b/, /\bdowned\b/, /\bcall 811\b/, /\bdiggers? hotline\b/, /\bbefore you dig\b/,
+        /\bcaution\b/, /\bsafely\b/, /\bfire\b/, /\bflood/, /\btornado\b/
+    ],
+    'Electric Vehicles': [
+        /\belectric vehicles?\b/, /\bev\s*charg\w+\b/, /\bev\s*charger\b/, /\bev\s*fleet\b/,
+        /\belectric car\w*\b/, /\belectric truck\w*\b/, /\bcharging station\w*\b/,
+        /\blevel\s*[123]\s*charg\w+\b/, /\btesla\b/, /\bplug[- ]in hybrid\b/,
+        /\bdc\s*fast charg\w+\b/, /\bhome charg\w+\b/, /\bcharge at home\b/,
+        /\bmge charg\w+\b/, /\bzero[- ]emission vehicle\w*\b/
+    ],
+    'Sustainability & Clean Energy': [
+        /\bsolar (panel|energy|power|install|array|farm|rebate|incentive|project|customer)\w*\b/,
+        /\brooftop solar\b/, /\bcommunity solar\b/, /\bgo solar\b/, /\bgoing solar\b/,
+        /\brenewable\w* energy\b/, /\brenewables?\b/, /\bwind (farm|turbine|energy|power)\w*\b/,
+        /\bclean energy\b/, /\bgreen energy\b/, /\bsustainab\w+\b/,
+        /\bclimate (change|action|goal|commitment)\w*\b/,
+        /\bcarbon (emission|neutral|footprint|reduction|free)\w*\b/, /\bnet[- ]zero\b/,
+        /\bdecarbon\w+\b/, /\bbattery storage\b/, /\benergy storage\b/, /\bgreenhouse gas\b/,
+        /\bsunnier side\b/, /\bshared solar\b/
+    ],
+    'Energy Efficiency': [
+        /\benergy[- ]efficien\w+\b/, /\benergy[- ]saving\w*\b/, /\bsave energy\b/, /\bsaving energy\b/,
+        /\bweatheriz\w+\b/, /\binsulation\b/, /\bthermostat\w*\b/, /\bhvac\b/, /\bled bulb\w*\b/,
+        /\benergy audit\b/, /\blower (your |the )?bill\b/, /\butility bill\b/,
+        /\benergy (consumption|use|usage)\b/, /\breduce (your |the )?energy\b/,
+        /\befficient appliance\w*\b/, /\bsmart thermostat\w*\b/, /\bconservation\b/,
+        /\benergy tip\w*\b/, /\bheat pump\w*\b/, /\binduction cooktop\w*\b/, /\bair sealing\b/
+    ],
+    'Programs & Rebates': [
+        /\brebate\w*\b/, /\bincentive\w*\b/, /\bdiscount\w*\b/, /\b(sign|signing)\s*up\b/,
+        /\benroll\w+\b/, /\bfocus on energy\b/, /\bbonus\b/, /\breward\w*\b/,
+        /\bfree (assessment|audit|kit|tool)\w*\b/, /\bbill assist\w+\b/, /\bliheap\b/,
+        /\bshift\s*(&|and)\s*save\b/, /\btime[- ]of[- ]use\b/, /\btou rate\w*\b/,
+        /\bshared solar\b/, /\bpayment plan\w*\b/, /\bbudget bill\w+\b/
+    ],
+    'Careers': [
+        /\bhiring\b/, /\bwe[ '\u2019]re hiring\b/, /\bjoin our team\b/, /\bcareer opportunit\w+\b/,
+        /\bjob opening\w*\b/, /\bnow hiring\b/, /\bemployee spotlight\b/, /\binternship\w*\b/,
+        /\bapply (now|today|here)\b/, /\bopen position\w*\b/, /\bcareer fair\b/
+    ],
+    'Community & Events': [
+        /\bcommunity\b/, /\bvolunteer\w*\b/, /\bdonat\w+\b/, /\bsponsor\w*\b/, /\bfundrais\w+\b/,
+        /\bpartnering with\b/, /\bneighborhood\w*\b/, /\blocal business\w*\b/, /\bdane county\b/,
+        /\bgive back\b/, /\bjoin us\b/, /\bblock party\b/, /\bfood drive\b/, /\bfestival\b/,
+        /\bearth day\b/, /\bsummer solstice\b/, /\bfarmers? market\b/, /\bunited way\b/,
+        /\bcharity\b/, /\bcelebrat(e|ing)\b/
+    ],
+    'Tips & Education': [
+        /\bdid you know\b/, /\bhow to\b/, /\bquick tip\b/, /\breminder\b/,
+        /\blearn (how|about|more)\b/, /\bmyth\b/, /\b#?factfriday\b/, /\benergy (101|fact)\b/,
+        /\beveryday habit\w*\b/, /\bsimple way\w*\b/
+    ],
+    'Company News': [
+        /\b(press|news) release\b/, /\bannounc\w+\b/, /\blaunch\w*\b/, /\bmilestone\w*\b/,
+        /\bachievement\w*\b/, /\baward\w+\b/, /\brecogniz\w+\b/,
+        /\bnew (office|facility|project|program|service|initiative)\w*\b/,
+        /\bpleased to (share|announce|introduce)\b/,
+        /\bproud to (share|announce|introduce|partner|be)\b/,
+        /\brated\s+#?\d\b/, /\b(top|best) (utility|ranked)\b/, /\bannual report\b/,
+        /\bcertified\b/, /\bceo\b/, /\bboard of directors\b/
+    ]
 };
+
 function classifyPostTheme(text) {
     var t = (text || '').toLowerCase();
+    if (!t) return 'Other';
     var themes = Object.keys(POST_THEMES);
     for (var i = 0; i < themes.length; i++) {
-        var kws = POST_THEMES[themes[i]];
-        for (var j = 0; j < kws.length; j++) {
-            if (t.indexOf(kws[j]) > -1) return themes[i];
+        var patterns = POST_THEMES[themes[i]];
+        for (var j = 0; j < patterns.length; j++) {
+            if (patterns[j].test(t)) return themes[i];
         }
     }
     return 'Other';
@@ -3230,46 +3296,21 @@ function renderFollowerGrowthChart(data) {
 var contentThemesInstance = null;
 function renderContentThemes(data) {
     if (!data.allPosts || data.allPosts.length === 0) return;
-    // Define utility-relevant content themes with keywords
-    var themes = {
-        'Energy Efficiency': ['energy', 'efficiency', 'efficient', 'saving', 'save', 'conservation', 'conserve', 'weatheriz', 'insulation', 'thermostat', 'hvac', 'led', 'appliance', 'audit', 'usage', 'consumption', 'reduce', 'lower bill', 'utility bill'],
-        'Safety': ['safety', 'safe', 'carbon monoxide', 'gas leak', 'outage', 'storm', 'emergency', 'hazard', 'danger', 'warning', 'caution', 'power line', 'downed', 'call 811', 'dig'],
-        'Electric Vehicles': ['ev', 'electric vehicle', 'charging', 'charger', 'plug-in', 'tesla', 'ev charger', 'charge at home', 'electric car'],
-        'Sustainability': ['solar', 'renewable', 'wind', 'clean energy', 'green', 'sustainab', 'climate', 'carbon', 'emission', 'environment', 'net zero', 'carbon neutral'],
-        'Community': ['community', 'volunteer', 'donat', 'sponsor', 'event', 'partner', 'neighborhood', 'local', 'madison', 'dane county', 'give back', 'support'],
-        'Programs & Rebates': ['rebate', 'incentive', 'program', 'discount', 'free', 'offer', 'sign up', 'enroll', 'focus on energy', 'reward'],
-        'Company News': ['mge', 'madison gas', 'announcement', 'update', 'new', 'launch', 'proud', 'team', 'employee', 'career', 'hiring', 'award'],
-        'Tips & Education': ['tip', 'how to', 'learn', 'know', 'guide', 'help', 'advice', 'reminder', 'did you know', 'fact']
-    };
-
+    // Reuse the shared POST_THEMES / classifyPostTheme so both the Posts category tabs
+    // and the Content Themes chart always agree on how posts are categorized.
     var themeData = {};
-    Object.keys(themes).forEach(function(t) { themeData[t] = { posts: 0, reactions: 0, comments: 0, shares: 0, views: 0 }; });
+    Object.keys(POST_THEMES).forEach(function(t) { themeData[t] = { posts: 0, reactions: 0, comments: 0, shares: 0, views: 0 }; });
     themeData['Other'] = { posts: 0, reactions: 0, comments: 0, shares: 0, views: 0 };
 
     data.allPosts.forEach(function(p) {
-        var text = (p.text || '').toLowerCase();
-        var matched = false;
-        Object.keys(themes).forEach(function(theme) {
-            var keywords = themes[theme];
-            for (var i = 0; i < keywords.length; i++) {
-                if (text.indexOf(keywords[i]) > -1) {
-                    themeData[theme].posts++;
-                    themeData[theme].reactions += p.reactions || 0;
-                    themeData[theme].comments += p.comments || 0;
-                    themeData[theme].shares += p.shares || 0;
-                    themeData[theme].views += p.views || 0;
-                    matched = true;
-                    return;
-                }
-            }
-        });
-        if (!matched) {
-            themeData['Other'].posts++;
-            themeData['Other'].reactions += p.reactions || 0;
-            themeData['Other'].comments += p.comments || 0;
-            themeData['Other'].shares += p.shares || 0;
-            themeData['Other'].views += p.views || 0;
-        }
+        var theme = p._theme || classifyPostTheme(p.text);
+        p._theme = theme;
+        if (!themeData[theme]) themeData[theme] = { posts: 0, reactions: 0, comments: 0, shares: 0, views: 0 };
+        themeData[theme].posts++;
+        themeData[theme].reactions += p.reactions || 0;
+        themeData[theme].comments += p.comments || 0;
+        themeData[theme].shares += p.shares || 0;
+        themeData[theme].views += p.views || 0;
     });
 
     // Filter to themes with at least 1 post, sort by total engagement
