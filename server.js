@@ -527,9 +527,9 @@ const BRANDS = {
 const EXCLUDED_DOMAINS = /(getagraph\.com|tickercrunch|marketbeat\.com\/stock-ideas|zacks\.com\/stock\/news|simplywall\.st|insidermonkey\.com|stockstotrade|stocknews\.com|stockinvest|nasdaq\.com\/articles\/.*stock|benzinga\.com\/quote|fool\.com\/quote)/i;
 
 // Strict energy/utility signal — for topical items to be accepted, their text must hit one of these.
-// This is more specific than generic keywords like "power" or "solar" alone to filter out political
-// coverage, non-utility news, and general Madison news.
-const TOPICAL_STRICT_SIGNALS = /\b(power outage|power outages|outage|outages|no power|blackout|blackouts|kilowatt|kwh|solar panels?|solar install\w*|solar array|rooftop solar|solar company|solar companies|solar energy|install solar|going solar|heat pump|heat pumps|ev charger|ev charging|electric vehicle charg\w+|utility bill|utility bills|electric bill|electric bills|gas bill|gas bills|rate increase|rate hike|rate case|net metering|time[- ]of[- ]use|tou rate|focus on energy|smart meter|smart meters|electric grid|substation|transformer|public service commission|psc wisconsin|natural gas|nuclear plant|point beach|kewaunee|wind farm|wind turbine|renewable energy|clean energy|energy efficiency|weatherization|energy assistance|liheap|shut off|shutoff|power restored|power restoration)\b/i;
+// Broad enough to catch industry trends (renewables, solar, grid mod, EVs, decarbonization)
+// but specific enough to filter out political/general news.
+const TOPICAL_STRICT_SIGNALS = /\b(power outage|power outages|outage|outages|no power|blackout|blackouts|kilowatt|kwh|megawatt|mwh|solar panels?|solar install\w*|solar array|rooftop solar|solar company|solar companies|solar energy|solar power|solar farm|solar farms|utility[- ]scale solar|community solar|solar rebate|solar incentive|solar tariff|install solar|going solar|heat pump|heat pumps|ev charger|ev chargers|ev charging|electric vehicle|electric vehicles|electric vehicle charg\w+|charging station\w*|utility bill|utility bills|electric bill|electric bills|gas bill|gas bills|rate increase|rate hike|rate case|rate filing|net metering|time[- ]of[- ]use|tou rate|focus on energy|smart meter|smart meters|smart grid|grid modern\w+|grid reliability|electric grid|substation|transformer|public service commission|psc wisconsin|natural gas|nuclear plant|point beach|kewaunee|small modular reactor|\bsmr\b|wind farm|wind farms|wind turbine|wind turbines|wind energy|wind power|offshore wind|renewable energy|renewable power|renewables|clean energy|clean power|green energy|energy efficiency|weatherization|energy assistance|liheap|shut off|shutoff|power restored|power restoration|battery storage|energy storage|grid[- ]scale battery|lithium battery|demand response|virtual power plant|distributed energy|distributed generation|microgrid|microgrids|electrification|beneficial electrification|net zero|net[- ]zero|decarbonization|decarboniz\w+|carbon capture|carbon neutral|clean hydrogen|hydrogen fuel|hydrogen power|power purchase agreement|\bppa\b|energy transition|green hydrogen|grid stability|peak demand|load shed\w+|inflation reduction act|ira tax credit|investment tax credit|production tax credit)\b/i;
 
 // Political/general-news noise — if topical text matches this AND doesn't have strong utility signal,
 // reject it (catches Tammy Baldwin, election coverage, general Madison news).
@@ -657,10 +657,12 @@ const REDDIT_QUERIES = [
   { url: 'https://www.reddit.com/search.json?q=%22We+Energies%22&sort=new&limit=20&t=year', tag: 'we_energies', requireBrand: true },
   // --- Topical (scoped to WI subs; surface for context even without brand name) ---
   { url: 'https://www.reddit.com/r/madisonwi+wisconsin+madison+milwaukee+greenbay/search.json?q=%22power+outage%22+OR+%22power+out%22+OR+blackout+OR+%22no+power%22&restrict_sr=1&sort=new&limit=20&t=month', tag: 'topical', requireBrand: false },
-  { url: 'https://www.reddit.com/r/madisonwi+wisconsin+madison+milwaukee/search.json?q=%22solar+energy%22+OR+%22solar+panels%22+OR+%22solar+company%22+OR+%22solar+install%22+OR+%22go+solar%22&restrict_sr=1&sort=new&limit=15&t=year', tag: 'topical', requireBrand: false },
-  { url: 'https://www.reddit.com/r/madisonwi+wisconsin+madison+milwaukee/search.json?q=%22renewable+energy%22+OR+%22clean+energy%22+OR+%22green+energy%22+OR+%22energy+efficiency%22&restrict_sr=1&sort=new&limit=15&t=year', tag: 'topical', requireBrand: false },
-  { url: 'https://www.reddit.com/r/madisonwi+wisconsin+madison+milwaukee/search.json?q=%22electric+bill%22+OR+%22gas+bill%22+OR+%22utility+bill%22+OR+%22rate+increase%22+OR+%22rate+hike%22&restrict_sr=1&sort=new&limit=15&t=year', tag: 'topical', requireBrand: false },
-  { url: 'https://www.reddit.com/r/madisonwi+wisconsin+madison+milwaukee/search.json?q=%22heat+pump%22+OR+%22EV+charger%22+OR+%22electric+vehicle%22+OR+%22focus+on+energy%22&restrict_sr=1&sort=new&limit=10&t=year', tag: 'topical', requireBrand: false }
+  { url: 'https://www.reddit.com/r/madisonwi+wisconsin+madison+milwaukee/search.json?q=%22solar+energy%22+OR+%22solar+panels%22+OR+%22solar+company%22+OR+%22solar+install%22+OR+%22go+solar%22+OR+%22rooftop+solar%22+OR+%22solar+farm%22+OR+%22community+solar%22&restrict_sr=1&sort=new&limit=20&t=year', tag: 'topical', requireBrand: false },
+  { url: 'https://www.reddit.com/r/madisonwi+wisconsin+madison+milwaukee/search.json?q=%22renewable+energy%22+OR+%22clean+energy%22+OR+%22green+energy%22+OR+%22energy+efficiency%22+OR+%22wind+energy%22+OR+%22wind+power%22+OR+%22wind+farm%22&restrict_sr=1&sort=new&limit=15&t=year', tag: 'topical', requireBrand: false },
+  { url: 'https://www.reddit.com/r/madisonwi+wisconsin+madison+milwaukee/search.json?q=%22electric+bill%22+OR+%22gas+bill%22+OR+%22utility+bill%22+OR+%22rate+increase%22+OR+%22rate+hike%22+OR+%22rate+case%22&restrict_sr=1&sort=new&limit=15&t=year', tag: 'topical', requireBrand: false },
+  { url: 'https://www.reddit.com/r/madisonwi+wisconsin+madison+milwaukee/search.json?q=%22heat+pump%22+OR+%22EV+charger%22+OR+%22electric+vehicle%22+OR+%22charging+station%22+OR+%22focus+on+energy%22&restrict_sr=1&sort=new&limit=15&t=year', tag: 'topical', requireBrand: false },
+  { url: 'https://www.reddit.com/r/madisonwi+wisconsin+madison+milwaukee/search.json?q=%22battery+storage%22+OR+%22energy+storage%22+OR+%22grid+modernization%22+OR+%22smart+meter%22+OR+%22net+metering%22+OR+%22decarbonization%22+OR+%22electrification%22&restrict_sr=1&sort=new&limit=10&t=year', tag: 'topical', requireBrand: false },
+  { url: 'https://www.reddit.com/r/madisonwi+wisconsin+madison+milwaukee/search.json?q=%22solar+installer%22+OR+%22solar+tax+credit%22+OR+%22solar+rebate%22+OR+%22Inflation+Reduction+Act%22+OR+%22clean+energy+jobs%22&restrict_sr=1&sort=new&limit=10&t=year', tag: 'topical', requireBrand: false }
 ];
 
 async function pollReddit() {
@@ -999,10 +1001,23 @@ const GOOGLE_NEWS_QUERIES = [
   // Competitors
   { q: '"Alliant Energy" Wisconsin', tag: 'alliant' },
   { q: '"We Energies"', tag: 'we_energies' },
-  // Topical WI utility industry
+  // Topical — Wisconsin energy/utility/renewable industry
   { q: 'Wisconsin utility rate case', tag: 'topical' },
   { q: 'Wisconsin Public Service Commission ruling', tag: 'topical' },
-  { q: 'Wisconsin renewable energy MGE', tag: 'topical' }
+  { q: 'Wisconsin renewable energy', tag: 'topical' },
+  { q: 'Wisconsin solar energy', tag: 'topical' },
+  { q: 'Madison solar energy', tag: 'topical' },
+  { q: 'Wisconsin solar panels', tag: 'topical' },
+  { q: 'Wisconsin community solar', tag: 'topical' },
+  { q: 'Wisconsin wind energy', tag: 'topical' },
+  { q: 'Wisconsin EV charging', tag: 'topical' },
+  { q: 'Wisconsin electric vehicle', tag: 'topical' },
+  { q: 'Wisconsin battery storage', tag: 'topical' },
+  { q: 'Wisconsin grid modernization', tag: 'topical' },
+  { q: 'Wisconsin heat pump', tag: 'topical' },
+  { q: 'Midwest utility renewable', tag: 'topical' },
+  { q: 'Midwest solar energy', tag: 'topical' },
+  { q: '"Focus on Energy" Wisconsin', tag: 'topical' }
 ];
 
 function gNewsRssUrl(q) {
@@ -1069,13 +1084,31 @@ const INDUSTRY_FEEDS = [
 
 async function pollIndustryNews() {
   const found = [];
+  let brandHits = 0, topicalHits = 0;
   for (const feed of INDUSTRY_FEEDS) {
     try {
       const data = await rssParser.parseURL(feed.url);
       for (const item of (data.items || [])) {
         const text = cleanHtml(item.title || '') + ' ' + cleanHtml(item.contentSnippet || item.content || '');
+        let brandTag, matchedKeyword, confidence;
+        // First try brand match (MGE, Alliant, We Energies)
         const m = matchesAnyBrand(text, item.link);
-        if (!m) continue;
+        if (m) {
+          brandTag = m.brand;
+          matchedKeyword = m.keyword;
+          confidence = m.confidence;
+          brandHits++;
+        } else if (TOPICAL_STRICT_SIGNALS.test(text)) {
+          // Industry pubs already pre-filter to utility topics, so accept any strict-signal match
+          // (renewables, solar, grid, EVs, decarb) without brand-name requirement
+          brandTag = 'topical';
+          const sig = text.match(TOPICAL_STRICT_SIGNALS);
+          matchedKeyword = sig ? sig[0] : 'industry trend';
+          confidence = 'topical';
+          topicalHits++;
+        } else {
+          continue;
+        }
         found.push({
           id: 'industry:' + (item.guid || item.link),
           source: 'industry_news',
@@ -1087,16 +1120,16 @@ async function pollIndustryNews() {
           author: item.creator || feed.name,
           publishedAt: item.isoDate || item.pubDate || new Date().toISOString(),
           thumbnail: imageFromRssItem(item),
-          brandTag: m.brand,
-          matchedKeyword: m.keyword,
-          confidence: m.confidence
+          brandTag: brandTag,
+          matchedKeyword: matchedKeyword,
+          confidence: confidence
         });
       }
     } catch (err) {
       console.warn(' [MENTIONS] Industry feed failed: ' + feed.name + ' (' + err.message + ')');
     }
   }
-  console.log(' [MENTIONS] Industry News: ' + INDUSTRY_FEEDS.length + ' feeds, ' + found.length + ' matches');
+  console.log(' [MENTIONS] Industry News: ' + INDUSTRY_FEEDS.length + ' feeds, ' + found.length + ' matches (' + brandHits + ' brand, ' + topicalHits + ' topical)');
   addMentions('industry_news', found);
 }
 
