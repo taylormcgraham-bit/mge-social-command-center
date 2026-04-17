@@ -773,6 +773,10 @@
         .mention-card.source-gdelt { border-left-color: #9333ea; }
         .mention-card.source-youtube_search { border-left-color: #ff0000; }
         .mention-card.source-local_news { border-left-color: #0ea5e9; }
+        .mention-card.source-google_news { border-left-color: #34a853; }
+        .mention-card.source-industry_news { border-left-color: #f59e0b; }
+        .mention-card.source-sec_filings { border-left-color: #1e293b; }
+        .mention-card.source-podcasts { border-left-color: #a855f7; }
 
         /* Brand-based card highlighting (overrides source border) */
         .mention-card.brand-mge {
@@ -852,6 +856,10 @@
         .mention-related-item.source-gdelt .rel-dot { background: #9333ea; }
         .mention-related-item.source-youtube_search .rel-dot { background: #ff0000; }
         .mention-related-item.source-local_news .rel-dot { background: #0ea5e9; }
+        .mention-related-item.source-google_news .rel-dot { background: #34a853; }
+        .mention-related-item.source-industry_news .rel-dot { background: #f59e0b; }
+        .mention-related-item.source-sec_filings .rel-dot { background: #1e293b; }
+        .mention-related-item.source-podcasts .rel-dot { background: #a855f7; }
         .mention-related-title-text {
             color: #1B2559; font-weight: 600;
         }
@@ -941,6 +949,10 @@
         .mention-card.source-gdelt .source-dot { background: #9333ea; }
         .mention-card.source-youtube_search .source-dot { background: #ff0000; }
         .mention-card.source-local_news .source-dot { background: #0ea5e9; }
+        .mention-card.source-google_news .source-dot { background: #34a853; }
+        .mention-card.source-industry_news .source-dot { background: #f59e0b; }
+        .mention-card.source-sec_filings .source-dot { background: #1e293b; }
+        .mention-card.source-podcasts .source-dot { background: #a855f7; }
 
         .mention-date-pill {
             display: inline-flex; align-items: center; gap: 6px;
@@ -1282,7 +1294,7 @@
         <div class="mentions-header">
             <div>
                 <div class="mentions-title">Media Monitoring</div>
-                <div class="mentions-subtitle">MGE &amp; Wisconsin utility mentions across Reddit, Google Alerts, GDELT, YouTube, and local news</div>
+                <div class="mentions-subtitle">MGE &amp; Wisconsin utility mentions across Reddit, Google News, local Wisconsin outlets, industry press, SEC filings, podcasts, Google Alerts, GDELT, and YouTube</div>
             </div>
             <button class="mentions-refresh-btn" id="mentionsRefreshBtn" onclick="refreshMentions()">Refresh</button>
         </div>
@@ -1303,10 +1315,14 @@
                 <div class="mentions-source-chips" id="mentionsSourceChips">
                     <button class="mentions-chip active" data-source="all" onclick="filterMentionsSource('all', this)">All</button>
                     <button class="mentions-chip" data-source="reddit" onclick="filterMentionsSource('reddit', this)">Reddit</button>
+                    <button class="mentions-chip" data-source="google_news" onclick="filterMentionsSource('google_news', this)">Google News</button>
+                    <button class="mentions-chip" data-source="local_news" onclick="filterMentionsSource('local_news', this)">Local News</button>
+                    <button class="mentions-chip" data-source="industry_news" onclick="filterMentionsSource('industry_news', this)">Industry</button>
+                    <button class="mentions-chip" data-source="sec_filings" onclick="filterMentionsSource('sec_filings', this)">SEC Filings</button>
+                    <button class="mentions-chip" data-source="podcasts" onclick="filterMentionsSource('podcasts', this)">Podcasts</button>
                     <button class="mentions-chip" data-source="google_alerts" onclick="filterMentionsSource('google_alerts', this)">Google Alerts</button>
                     <button class="mentions-chip" data-source="gdelt" onclick="filterMentionsSource('gdelt', this)">GDELT</button>
                     <button class="mentions-chip" data-source="youtube_search" onclick="filterMentionsSource('youtube_search', this)">YouTube</button>
-                    <button class="mentions-chip" data-source="local_news" onclick="filterMentionsSource('local_news', this)">Local News</button>
                 </div>
             </div>
             <div class="mentions-filter-row">
