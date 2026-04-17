@@ -801,6 +801,53 @@
         .mention-brand-badge.brand-xcel { background: #0071CE; }
         .mention-brand-badge.brand-topical { background: #7C3AED; }
 
+        /* Sentiment pill */
+        .mention-sentiment-pill {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 10px; border-radius: 999px;
+            font-size: 11px; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .mention-sentiment-pill.sent-positive {
+            background: #d1fae5; color: #065f46;
+        }
+        .mention-sentiment-pill.sent-negative {
+            background: #fee2e2; color: #991b1b;
+        }
+        .mention-sentiment-pill.sent-neutral {
+            background: #f1f5f9; color: #475569;
+        }
+        .mention-sentiment-pill .sent-dot {
+            width: 6px; height: 6px; border-radius: 50%; background: currentColor;
+        }
+
+        /* Keyword highlighting in titles and snippets */
+        .kw-hit {
+            background: linear-gradient(180deg, transparent 60%, rgba(0,101,83,0.25) 60%);
+            font-weight: 700; color: #003b29;
+            padding: 0 2px;
+        }
+
+        /* Sentiment filter chips */
+        .mentions-chip.sentiment-positive.active { background: #065f46; border-color: #065f46; }
+        .mentions-chip.sentiment-negative.active { background: #991b1b; border-color: #991b1b; }
+        .mentions-chip.sentiment-neutral.active { background: #475569; border-color: #475569; }
+
+        /* Sort control */
+        .mentions-sort-group {
+            display: inline-flex; align-items: center; gap: 4px;
+            background: #f1f5f9; border-radius: 999px; padding: 3px;
+        }
+        .mentions-sort-btn {
+            padding: 5px 12px; border-radius: 999px; background: transparent;
+            color: #475569; font-size: 12px; font-weight: 600; cursor: pointer;
+            border: none; transition: all 0.15s;
+        }
+        .mentions-sort-btn:hover { color: #1B2559; }
+        .mentions-sort-btn.active {
+            background: #006553; color: #fff;
+        }
+
         /* NEW badge for articles <7 days old */
         .mention-new-badge {
             display: inline-flex; align-items: center;
@@ -1224,6 +1271,15 @@
                 </div>
             </div>
             <div class="mentions-filter-row">
+                <span class="mentions-filter-label">Sentiment</span>
+                <div class="mentions-source-chips" id="mentionsSentimentChips">
+                    <button class="mentions-chip active" data-sent="all" onclick="filterMentionsSentiment('all', this)">All</button>
+                    <button class="mentions-chip sentiment-negative" data-sent="negative" onclick="filterMentionsSentiment('negative', this)"><span class="chip-dot-sm" style="background:#991b1b"></span>Negative</button>
+                    <button class="mentions-chip sentiment-neutral" data-sent="neutral" onclick="filterMentionsSentiment('neutral', this)"><span class="chip-dot-sm" style="background:#475569"></span>Neutral</button>
+                    <button class="mentions-chip sentiment-positive" data-sent="positive" onclick="filterMentionsSentiment('positive', this)"><span class="chip-dot-sm" style="background:#065f46"></span>Positive</button>
+                </div>
+            </div>
+            <div class="mentions-filter-row">
                 <span class="mentions-filter-label">Time</span>
                 <div class="mentions-source-chips" id="mentionsDatePresets">
                     <button class="mentions-date-preset" data-days="7" onclick="setMentionsDatePreset(7, this)">Last 7D</button>
@@ -1235,6 +1291,14 @@
                 <input type="date" class="mentions-date-input" id="mentionsDateFrom" onchange="applyMentionsCustomDate()" title="From">
                 <input type="date" class="mentions-date-input" id="mentionsDateTo" onchange="applyMentionsCustomDate()" title="To">
                 <input type="text" class="mentions-search-input" id="mentionsSearchInput" placeholder="Filter by keyword..." oninput="filterMentionsKeyword()">
+            </div>
+            <div class="mentions-filter-row">
+                <span class="mentions-filter-label">Sort</span>
+                <div class="mentions-sort-group" id="mentionsSortGroup">
+                    <button class="mentions-sort-btn active" data-sort="newest" onclick="setMentionsSort('newest', this)">Newest First</button>
+                    <button class="mentions-sort-btn" data-sort="engagement" onclick="setMentionsSort('engagement', this)">Most Engaged</button>
+                    <button class="mentions-sort-btn" data-sort="negative" onclick="setMentionsSort('negative', this)">Most Negative</button>
+                </div>
             </div>
         </div>
 
@@ -3317,6 +3381,8 @@ window.addEventListener('DOMContentLoaded', () => {
     let _mentionsState = {
         source: 'all',
         brands: new Set(ALL_BRANDS), // multi-toggle
+        sentiment: 'all',
+        sort: 'newest',
         keyword: '',
         days: 90, // default 3-month window
         customFrom: null,
@@ -3361,6 +3427,20 @@ window.addEventListener('DOMContentLoaded', () => {
                 c.classList.toggle('active', _mentionsState.brands.has(b));
             }
         });
+        renderMentions();
+    };
+
+    window.filterMentionsSentiment = function(sent, el) {
+        _mentionsState.sentiment = sent;
+        document.querySelectorAll('#mentionsSentimentChips .mentions-chip').forEach(c => c.classList.remove('active'));
+        if (el) el.classList.add('active');
+        renderMentions();
+    };
+
+    window.setMentionsSort = function(sort, el) {
+        _mentionsState.sort = sort;
+        document.querySelectorAll('#mentionsSortGroup .mentions-sort-btn').forEach(c => c.classList.remove('active'));
+        if (el) el.classList.add('active');
         renderMentions();
     };
 
@@ -3439,6 +3519,11 @@ window.addEventListener('DOMContentLoaded', () => {
             items = items.filter(m => _mentionsState.brands.has(m.brandTag || 'mge'));
         }
 
+        // Sentiment filter
+        if (_mentionsState.sentiment !== 'all') {
+            items = items.filter(m => (m.sentiment && m.sentiment.label) === _mentionsState.sentiment);
+        }
+
         // Date window
         const dw = getDateWindow();
         if (dw.from) items = items.filter(m => new Date(m.publishedAt) >= dw.from);
@@ -3447,6 +3532,25 @@ window.addEventListener('DOMContentLoaded', () => {
         if (_mentionsState.keyword) {
             const kw = _mentionsState.keyword;
             items = items.filter(m => (m.title || '').toLowerCase().includes(kw) || (m.snippet || '').toLowerCase().includes(kw));
+        }
+
+        // Sort
+        if (_mentionsState.sort === 'engagement') {
+            items.sort((a, b) => {
+                const aE = ((a.engagement && (a.engagement.score || 0)) + (a.engagement && (a.engagement.comments || 0))) || 0;
+                const bE = ((b.engagement && (b.engagement.score || 0)) + (b.engagement && (b.engagement.comments || 0))) || 0;
+                if (bE !== aE) return bE - aE;
+                return new Date(b.publishedAt) - new Date(a.publishedAt);
+            });
+        } else if (_mentionsState.sort === 'negative') {
+            items.sort((a, b) => {
+                const aS = (a.sentiment && a.sentiment.score) || 0;
+                const bS = (b.sentiment && b.sentiment.score) || 0;
+                if (aS !== bS) return aS - bS; // most negative first
+                return new Date(b.publishedAt) - new Date(a.publishedAt);
+            });
+        } else {
+            items.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
         }
 
         document.getElementById('mentionsStatTotal').textContent = data.total;
@@ -3474,6 +3578,11 @@ window.addEventListener('DOMContentLoaded', () => {
             const ago = timeAgo(m.publishedAt);
             const freshness = freshnessClass(m.publishedAt);
             const fullDate = pubDate ? pubDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + pubDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
+            const sentLabel = (m.sentiment && m.sentiment.label) || 'neutral';
+            const sentScore = (m.sentiment && typeof m.sentiment.score === 'number') ? m.sentiment.score : 0;
+            const sentTitle = 'Sentiment score: ' + sentScore + ' (pos ' + ((m.sentiment && m.sentiment.pos) || 0) + ', neg ' + ((m.sentiment && m.sentiment.neg) || 0) + ')';
+            const highlightedTitle = highlightKeyword(m.title || '(no title)', m.matchedKeyword);
+            const highlightedSnippet = m.snippet ? highlightKeyword(m.snippet, m.matchedKeyword) : '';
             const thumbHtml = hasThumb
                 ? '<div class="mention-thumb-wrap">' +
                   '    <img class="mention-thumb-img" src="' + escapeAttr(m.thumbnail) + '" alt="" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';">' +
@@ -3487,11 +3596,12 @@ window.addEventListener('DOMContentLoaded', () => {
                 '    <div class="mention-top-row">' +
                 '        <span class="mention-brand-badge brand-' + escapeHtml(brandTag) + '">' + escapeHtml(brandLabel) + '</span>' +
                 '        <span class="mention-source-pill"><span class="source-dot"></span>' + escapeHtml(sourceName) + '</span>' +
+                '        <span class="mention-sentiment-pill sent-' + sentLabel + '" title="' + escapeAttr(sentTitle) + '"><span class="sent-dot"></span>' + sentLabel + '</span>' +
                 (isNew ? '        <span class="mention-new-badge">NEW</span>' : '') +
                 '        <span class="mention-date-pill ' + freshness + '" title="' + escapeAttr(fullDate) + '">' + escapeHtml(ago) + (fullDate ? ' <span class="mention-date-full">\u00b7 ' + escapeHtml(fullDate) + '</span>' : '') + '</span>' +
                 '    </div>' +
-                '    <div class="mention-title"><a href="' + escapeAttr(m.url) + '" target="_blank" rel="noopener">' + escapeHtml(m.title || '(no title)') + '</a></div>' +
-                (m.snippet ? '    <div class="mention-snippet">' + escapeHtml(m.snippet) + '</div>' : '') +
+                '    <div class="mention-title"><a href="' + escapeAttr(m.url) + '" target="_blank" rel="noopener">' + highlightedTitle + '</a></div>' +
+                (m.snippet ? '    <div class="mention-snippet">' + highlightedSnippet + '</div>' : '') +
                 '    <div class="mention-meta">' +
                 (m.author ? '        <span class="meta-author">By ' + escapeHtml(m.author) + '</span>' : '') +
                 '        <span class="keyword-tag confidence-' + conf + '">' + escapeHtml(m.matchedKeyword) + ' \u00b7 ' + conf + '</span>' +
@@ -3501,6 +3611,21 @@ window.addEventListener('DOMContentLoaded', () => {
                 '</div>' +
                 '</div>';
         }).join('');
+    }
+
+    function highlightKeyword(text, keyword) {
+        const safe = escapeHtml(text);
+        if (!keyword) return safe;
+        const kw = String(keyword).trim();
+        if (!kw || kw.length < 2) return safe;
+        // Escape regex special chars in the keyword itself
+        const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        try {
+            const re = new RegExp('(' + escaped + ')', 'gi');
+            return safe.replace(re, '<span class="kw-hit">$1</span>');
+        } catch (e) {
+            return safe;
+        }
     }
 
     function freshnessClass(iso) {
