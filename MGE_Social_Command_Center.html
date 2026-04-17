@@ -801,37 +801,12 @@
         .mention-brand-badge.brand-xcel { background: #0071CE; }
         .mention-brand-badge.brand-topical { background: #7C3AED; }
 
-        /* Sentiment pill */
-        .mention-sentiment-pill {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 4px 10px; border-radius: 999px;
-            font-size: 11px; font-weight: 800; text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .mention-sentiment-pill.sent-positive {
-            background: #d1fae5; color: #065f46;
-        }
-        .mention-sentiment-pill.sent-negative {
-            background: #fee2e2; color: #991b1b;
-        }
-        .mention-sentiment-pill.sent-neutral {
-            background: #f1f5f9; color: #475569;
-        }
-        .mention-sentiment-pill .sent-dot {
-            width: 6px; height: 6px; border-radius: 50%; background: currentColor;
-        }
-
         /* Keyword highlighting in titles and snippets */
         .kw-hit {
             background: linear-gradient(180deg, transparent 60%, rgba(0,101,83,0.25) 60%);
             font-weight: 700; color: #003b29;
             padding: 0 2px;
         }
-
-        /* Sentiment filter chips */
-        .mentions-chip.sentiment-positive.active { background: #065f46; border-color: #065f46; }
-        .mentions-chip.sentiment-negative.active { background: #991b1b; border-color: #991b1b; }
-        .mentions-chip.sentiment-neutral.active { background: #475569; border-color: #475569; }
 
         /* Sort control */
         .mentions-sort-group {
@@ -1243,7 +1218,7 @@
         <div class="mentions-header">
             <div>
                 <div class="mentions-title">Media Monitoring</div>
-                <div class="mentions-subtitle">MGE &amp; Wisconsin utility mentions across Reddit, Google Alerts, GDELT, YouTube, and local news (3-month window)</div>
+                <div class="mentions-subtitle">MGE &amp; Wisconsin utility mentions across Reddit, Google Alerts, GDELT, YouTube, and local news</div>
             </div>
             <button class="mentions-refresh-btn" id="mentionsRefreshBtn" onclick="refreshMentions()">Refresh</button>
         </div>
@@ -1271,20 +1246,11 @@
                 </div>
             </div>
             <div class="mentions-filter-row">
-                <span class="mentions-filter-label">Sentiment</span>
-                <div class="mentions-source-chips" id="mentionsSentimentChips">
-                    <button class="mentions-chip active" data-sent="all" onclick="filterMentionsSentiment('all', this)">All</button>
-                    <button class="mentions-chip sentiment-negative" data-sent="negative" onclick="filterMentionsSentiment('negative', this)"><span class="chip-dot-sm" style="background:#991b1b"></span>Negative</button>
-                    <button class="mentions-chip sentiment-neutral" data-sent="neutral" onclick="filterMentionsSentiment('neutral', this)"><span class="chip-dot-sm" style="background:#475569"></span>Neutral</button>
-                    <button class="mentions-chip sentiment-positive" data-sent="positive" onclick="filterMentionsSentiment('positive', this)"><span class="chip-dot-sm" style="background:#065f46"></span>Positive</button>
-                </div>
-            </div>
-            <div class="mentions-filter-row">
                 <span class="mentions-filter-label">Time</span>
                 <div class="mentions-source-chips" id="mentionsDatePresets">
                     <button class="mentions-date-preset" data-days="7" onclick="setMentionsDatePreset(7, this)">Last 7D</button>
-                    <button class="mentions-date-preset" data-days="30" onclick="setMentionsDatePreset(30, this)">Last 30D</button>
-                    <button class="mentions-date-preset active" data-days="90" onclick="setMentionsDatePreset(90, this)">Last 90D</button>
+                    <button class="mentions-date-preset active" data-days="30" onclick="setMentionsDatePreset(30, this)">Last 30D</button>
+                    <button class="mentions-date-preset" data-days="90" onclick="setMentionsDatePreset(90, this)">Last 90D</button>
                     <button class="mentions-date-preset" data-days="365" onclick="setMentionsDatePreset(365, this)">Last Year</button>
                     <button class="mentions-date-preset" data-days="0" onclick="setMentionsDatePreset(0, this)">All</button>
                 </div>
@@ -1297,7 +1263,6 @@
                 <div class="mentions-sort-group" id="mentionsSortGroup">
                     <button class="mentions-sort-btn active" data-sort="newest" onclick="setMentionsSort('newest', this)">Newest First</button>
                     <button class="mentions-sort-btn" data-sort="engagement" onclick="setMentionsSort('engagement', this)">Most Engaged</button>
-                    <button class="mentions-sort-btn" data-sort="negative" onclick="setMentionsSort('negative', this)">Most Negative</button>
                 </div>
             </div>
         </div>
@@ -3381,20 +3346,21 @@ window.addEventListener('DOMContentLoaded', () => {
     let _mentionsState = {
         source: 'all',
         brands: new Set(ALL_BRANDS), // multi-toggle
-        sentiment: 'all',
         sort: 'newest',
         keyword: '',
-        days: 90, // default 3-month window
+        days: 30, // default 30-day window
         customFrom: null,
         customTo: null,
-        data: null
+        data: null,
+        loading: false,
+        autoRetryTimer: null
     };
 
     window.switchView = function(view) {
         document.querySelectorAll('.view-nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
         document.getElementById('dashboardView').classList.toggle('active', view === 'dashboard');
         document.getElementById('mentionsView').classList.toggle('active', view === 'mentions');
-        if (view === 'mentions' && !_mentionsState.data) loadMentions();
+        if (view === 'mentions' && !_mentionsState.data) loadMentionsWithAutoRefresh();
     };
 
     window.filterMentionsSource = function(source, el) {
@@ -3427,13 +3393,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 c.classList.toggle('active', _mentionsState.brands.has(b));
             }
         });
-        renderMentions();
-    };
-
-    window.filterMentionsSentiment = function(sent, el) {
-        _mentionsState.sentiment = sent;
-        document.querySelectorAll('#mentionsSentimentChips .mentions-chip').forEach(c => c.classList.remove('active'));
-        if (el) el.classList.add('active');
         renderMentions();
     };
 
@@ -3485,9 +3444,42 @@ window.addEventListener('DOMContentLoaded', () => {
             const data = await resp.json();
             _mentionsState.data = data;
             renderMentions();
+            return data;
         } catch (err) {
             document.getElementById('mentionsFeed').innerHTML = '<div class="mentions-empty"><div class="big">Failed to load</div><div class="small">' + (err.message || 'Unknown error') + '</div></div>';
+            return null;
         }
+    }
+
+    // First-load flow: show progress UI and auto-trigger refresh if cache is empty,
+    // then retry every few seconds until items populate (Render free tier + poller stagger
+    // can take 30-90s on a cold start).
+    async function loadMentionsWithAutoRefresh() {
+        const feed = document.getElementById('mentionsFeed');
+        feed.innerHTML = '<div class="mentions-empty"><div class="big">Loading mentions...</div><div class="small">Fetching the latest articles. This may take up to 60 seconds on first load.</div></div>';
+        const data = await loadMentions();
+        if (data && data.total > 0) return; // already has data
+        // Cache is empty — kick off a fresh poll on the server
+        try { await fetch('/api/mentions/refresh', { method: 'POST' }); } catch (e) {}
+        let attempts = 0;
+        const maxAttempts = 20; // ~2 minutes of retries (20 * 6s)
+        if (_mentionsState.autoRetryTimer) clearInterval(_mentionsState.autoRetryTimer);
+        _mentionsState.autoRetryTimer = setInterval(async () => {
+            attempts++;
+            const d = await loadMentions();
+            if (d && d.total > 0) {
+                clearInterval(_mentionsState.autoRetryTimer);
+                _mentionsState.autoRetryTimer = null;
+                return;
+            }
+            if (attempts >= maxAttempts) {
+                clearInterval(_mentionsState.autoRetryTimer);
+                _mentionsState.autoRetryTimer = null;
+                feed.innerHTML = '<div class="mentions-empty"><div class="big">No mentions yet</div><div class="small">Pollers are still warming up. Hit Refresh in a minute.</div></div>';
+            } else {
+                feed.innerHTML = '<div class="mentions-empty"><div class="big">Loading mentions...</div><div class="small">Still fetching... (' + (attempts * 6) + 's elapsed)</div></div>';
+            }
+        }, 6000);
     }
 
     function getDateWindow() {
@@ -3519,11 +3511,6 @@ window.addEventListener('DOMContentLoaded', () => {
             items = items.filter(m => _mentionsState.brands.has(m.brandTag || 'mge'));
         }
 
-        // Sentiment filter
-        if (_mentionsState.sentiment !== 'all') {
-            items = items.filter(m => (m.sentiment && m.sentiment.label) === _mentionsState.sentiment);
-        }
-
         // Date window
         const dw = getDateWindow();
         if (dw.from) items = items.filter(m => new Date(m.publishedAt) >= dw.from);
@@ -3540,13 +3527,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 const aE = ((a.engagement && (a.engagement.score || 0)) + (a.engagement && (a.engagement.comments || 0))) || 0;
                 const bE = ((b.engagement && (b.engagement.score || 0)) + (b.engagement && (b.engagement.comments || 0))) || 0;
                 if (bE !== aE) return bE - aE;
-                return new Date(b.publishedAt) - new Date(a.publishedAt);
-            });
-        } else if (_mentionsState.sort === 'negative') {
-            items.sort((a, b) => {
-                const aS = (a.sentiment && a.sentiment.score) || 0;
-                const bS = (b.sentiment && b.sentiment.score) || 0;
-                if (aS !== bS) return aS - bS; // most negative first
                 return new Date(b.publishedAt) - new Date(a.publishedAt);
             });
         } else {
@@ -3578,9 +3558,6 @@ window.addEventListener('DOMContentLoaded', () => {
             const ago = timeAgo(m.publishedAt);
             const freshness = freshnessClass(m.publishedAt);
             const fullDate = pubDate ? pubDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + pubDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
-            const sentLabel = (m.sentiment && m.sentiment.label) || 'neutral';
-            const sentScore = (m.sentiment && typeof m.sentiment.score === 'number') ? m.sentiment.score : 0;
-            const sentTitle = 'Sentiment score: ' + sentScore + ' (pos ' + ((m.sentiment && m.sentiment.pos) || 0) + ', neg ' + ((m.sentiment && m.sentiment.neg) || 0) + ')';
             const highlightedTitle = highlightKeyword(m.title || '(no title)', m.matchedKeyword);
             const highlightedSnippet = m.snippet ? highlightKeyword(m.snippet, m.matchedKeyword) : '';
             const thumbHtml = hasThumb
@@ -3596,7 +3573,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 '    <div class="mention-top-row">' +
                 '        <span class="mention-brand-badge brand-' + escapeHtml(brandTag) + '">' + escapeHtml(brandLabel) + '</span>' +
                 '        <span class="mention-source-pill"><span class="source-dot"></span>' + escapeHtml(sourceName) + '</span>' +
-                '        <span class="mention-sentiment-pill sent-' + sentLabel + '" title="' + escapeAttr(sentTitle) + '"><span class="sent-dot"></span>' + sentLabel + '</span>' +
                 (isNew ? '        <span class="mention-new-badge">NEW</span>' : '') +
                 '        <span class="mention-date-pill ' + freshness + '" title="' + escapeAttr(fullDate) + '">' + escapeHtml(ago) + (fullDate ? ' <span class="mention-date-full">\u00b7 ' + escapeHtml(fullDate) + '</span>' : '') + '</span>' +
                 '    </div>' +
