@@ -610,6 +610,14 @@ function addMentions(source, incoming) {
   incoming = incoming.filter(m => !isJobListing(m));
   const jobSkipped = beforeJob - incoming.length;
   if (jobSkipped > 0) console.log(' [MENTIONS] ' + source + ': filtered ' + jobSkipped + ' job listing(s)');
+  // Dedupe within incoming by id (the same item can match multiple poll queries)
+  const seen = new Set();
+  incoming = incoming.filter(i => {
+    if (!i || !i.id) return false;
+    if (seen.has(i.id)) return false;
+    seen.add(i.id);
+    return true;
+  });
   const existing = new Set(MENTIONS.items.map(m => m.id));
   const additions = incoming.filter(i => !existing.has(i.id));
   if (additions.length === 0) return 0;
@@ -725,6 +733,14 @@ async function pollReddit() {
           thumb = d.url_overridden_by_dest;
         }
 
+        // External URL: if this is a link post (not self-post), store where it points
+        let extUrl = null;
+        if (d.url_overridden_by_dest &&
+            !d.url_overridden_by_dest.startsWith('https://www.reddit.com') &&
+            !d.url_overridden_by_dest.startsWith('https://reddit.com') &&
+            !d.url_overridden_by_dest.startsWith('/r/')) {
+          extUrl = d.url_overridden_by_dest;
+        }
         found.push({
           id: 'reddit:' + d.id,
           source: 'reddit',
@@ -733,6 +749,7 @@ async function pollReddit() {
           title: d.title || '',
           snippet: (d.selftext || '').substring(0, 300),
           url: 'https://www.reddit.com' + d.permalink,
+          externalUrl: extUrl,
           author: 'u/' + (d.author || 'unknown'),
           publishedAt: new Date((d.created_utc || Date.now() / 1000) * 1000).toISOString(),
           thumbnail: thumb,
