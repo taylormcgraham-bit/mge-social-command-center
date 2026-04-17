@@ -597,7 +597,7 @@ function matchesBrand(text) {
 const MENTIONS = {
   items: [],
   lastPoll: {},
-  stats: { reddit: 0, google_alerts: 0, gdelt: 0, youtube_search: 0, local_news: 0 },
+  stats: { reddit: 0, google_alerts: 0, gdelt: 0, youtube_search: 0, local_news: 0, google_news: 0, industry_news: 0, sec_filings: 0, podcasts: 0 },
   brandStats: { mge: 0, alliant: 0, we_energies: 0, topical: 0 },
   maxSize: 800
 };
@@ -912,25 +912,53 @@ async function pollYouTubeMentions() {
   }
 }
 
-// --- 5. Local news RSS ---
+// --- 5. Local news RSS (Wisconsin outlets — TV, print, radio, college) ---
 const LOCAL_NEWS_FEEDS = [
-  { url: 'https://www.channel3000.com/feed/', name: 'Channel 3000' },
-  { url: 'https://www.nbc15.com/arc/outboundfeeds/rss/', name: 'NBC 15' },
+  // Madison TV
+  { url: 'https://www.channel3000.com/feed/', name: 'Channel 3000 (WISC-TV)' },
+  { url: 'https://www.nbc15.com/arc/outboundfeeds/rss/', name: 'NBC 15 (WMTV)' },
+  { url: 'https://www.wkow.com/search/?f=rss&t=article&l=50&s=start_time&sd=desc', name: 'WKOW 27 (ABC Madison)' },
+  { url: 'https://fox47.com/feed/', name: 'FOX 47 Madison' },
+  // Madison print / magazine
   { url: 'https://madison.com/search/?f=rss&t=article&l=50&s=start_time&sd=desc', name: 'Wisconsin State Journal' },
-  { url: 'https://isthmus.com/feed/', name: 'Isthmus' },
   { url: 'https://captimes.com/search/?f=rss&t=article&l=50&s=start_time&sd=desc', name: 'Cap Times' },
-  { url: 'https://www.jsonline.com/rss/', name: 'Milwaukee Journal Sentinel' }
+  { url: 'https://isthmus.com/feed/', name: 'Isthmus' },
+  { url: 'https://www.dailycardinal.com/feeds/main.xml', name: 'The Daily Cardinal (UW-Madison)' },
+  { url: 'https://badgerherald.com/feed/', name: 'The Badger Herald (UW-Madison)' },
+  // Milwaukee
+  { url: 'https://www.jsonline.com/rss/', name: 'Milwaukee Journal Sentinel' },
+  { url: 'https://urbanmilwaukee.com/feed/', name: 'Urban Milwaukee' },
+  { url: 'https://www.tmj4.com/feed', name: 'TMJ4 Milwaukee' },
+  { url: 'https://www.cbs58.com/rss', name: 'CBS 58 Milwaukee' },
+  { url: 'https://www.fox6now.com/feed', name: 'FOX6 Milwaukee' },
+  { url: 'https://www.wisn.com/topstories-rss', name: 'WISN 12 Milwaukee' },
+  // Green Bay / Fox Valley
+  { url: 'https://www.wbay.com/arc/outboundfeeds/rss/', name: 'WBAY Green Bay' },
+  { url: 'https://www.nbc26.com/feed', name: 'NBC 26 Green Bay' },
+  { url: 'https://www.wfrv.com/feed/', name: 'WFRV 5 Green Bay' },
+  // Statewide / public media / advocacy
+  { url: 'https://wisconsinexaminer.com/feed/', name: 'Wisconsin Examiner' },
+  { url: 'https://www.wpr.org/rss.xml', name: 'Wisconsin Public Radio' },
+  { url: 'https://www.wuwm.com/rss.xml', name: 'WUWM 89.7 (Milwaukee NPR)' },
+  { url: 'https://wisbusiness.com/feed/', name: 'WisBusiness' },
+  { url: 'https://www.biztimes.com/feed/', name: 'BizTimes Milwaukee' }
 ];
 
 async function pollLocalNews() {
   const found = [];
+  const feedStats = [];
   for (const feed of LOCAL_NEWS_FEEDS) {
+    let feedStatus = 'ok';
+    let itemsInFeed = 0;
+    let matched = 0;
     try {
       const data = await rssParser.parseURL(feed.url);
+      itemsInFeed = (data.items || []).length;
       for (const item of (data.items || [])) {
         const text = cleanHtml(item.title || '') + ' ' + cleanHtml(item.contentSnippet || item.content || '');
         const m = matchesAnyBrand(text, item.link);
         if (!m) continue;
+        matched++;
         found.push({
           id: 'news:' + (item.guid || item.link),
           source: 'local_news',
@@ -948,24 +976,240 @@ async function pollLocalNews() {
         });
       }
     } catch (err) {
-      console.warn(' [MENTIONS] RSS feed failed: ' + feed.name + ' (' + err.message + ')');
+      feedStatus = 'ERROR:' + (err.code || err.message || 'unknown').substring(0, 40);
+    }
+    feedStats.push(feed.name + ' [' + feedStatus + '] items=' + itemsInFeed + ' matched=' + matched);
+  }
+  console.log(' [MENTIONS] Local News: ' + LOCAL_NEWS_FEEDS.length + ' feeds, ' + found.length + ' total matches');
+  for (const s of feedStats) console.log('   \u2514 ' + s);
+  addMentions('local_news', found);
+}
+
+// --- 6. Google News RSS (aggregator — broadest single source, covers thousands of outlets) ---
+const GOOGLE_NEWS_QUERIES = [
+  // Brand mentions
+  { q: '"Madison Gas and Electric"', tag: 'mge' },
+  { q: '"MG&E" Wisconsin utility', tag: 'mge' },
+  { q: '"MGE Energy" Wisconsin', tag: 'mge' },
+  // PSC (Wisconsin Public Service Commission) site-scoped — regulatory filings, press releases
+  { q: 'site:psc.wi.gov "Madison Gas and Electric"', tag: 'mge' },
+  { q: 'site:psc.wi.gov MGE rate', tag: 'mge' },
+  { q: '"Madison Gas and Electric" rate case', tag: 'mge' },
+  { q: '"Madison Gas and Electric" PSC docket', tag: 'mge' },
+  // Competitors
+  { q: '"Alliant Energy" Wisconsin', tag: 'alliant' },
+  { q: '"We Energies"', tag: 'we_energies' },
+  // Topical WI utility industry
+  { q: 'Wisconsin utility rate case', tag: 'topical' },
+  { q: 'Wisconsin Public Service Commission ruling', tag: 'topical' },
+  { q: 'Wisconsin renewable energy MGE', tag: 'topical' }
+];
+
+function gNewsRssUrl(q) {
+  return 'https://news.google.com/rss/search?q=' + encodeURIComponent(q) + '&hl=en-US&gl=US&ceid=US:en';
+}
+
+async function pollGoogleNews() {
+  const found = [];
+  for (const { q, tag } of GOOGLE_NEWS_QUERIES) {
+    try {
+      const feed = await rssParser.parseURL(gNewsRssUrl(q));
+      for (const item of (feed.items || [])) {
+        const text = cleanHtml(item.title || '') + ' ' + cleanHtml(item.contentSnippet || item.content || '');
+        const m = matchesAnyBrand(text, item.link);
+        if (!m) continue;
+        // For topical queries, still require the strict energy signal so we don't drown in noise
+        if (tag === 'topical' && m.brand === 'mge') {
+          // brand matched — fine, keep
+        } else if (tag === 'topical') {
+          if (!verifyTopicalContent(text)) continue;
+        }
+        // Google News source is usually embedded in the title as "Headline - Source Name"
+        let srcName = 'Google News';
+        const src = item.source && (typeof item.source === 'string' ? item.source : (item.source._ || item.source.name));
+        if (src) srcName = String(src);
+        else {
+          // Fallback: extract from title trailing " - Source"
+          const match = (item.title || '').match(/\s-\s([^-]+)$/);
+          if (match) srcName = match[1].trim();
+        }
+        found.push({
+          id: 'gnews:' + (item.guid || item.link),
+          source: 'google_news',
+          sourceDisplay: 'Google News \u00b7 ' + srcName,
+          sourceName: srcName,
+          title: cleanHtml(item.title || '').replace(/\s-\s[^-]+$/, ''), // strip trailing " - Source"
+          snippet: cleanHtml(item.contentSnippet || '').substring(0, 300),
+          url: item.link,
+          author: srcName,
+          publishedAt: item.isoDate || item.pubDate || new Date().toISOString(),
+          thumbnail: imageFromRssItem(item),
+          brandTag: m.brand,
+          matchedKeyword: m.keyword,
+          confidence: m.confidence
+        });
+      }
+    } catch (err) {
+      console.warn(' [MENTIONS] Google News query failed (' + q + '):', err.message);
     }
   }
-  addMentions('local_news', found);
+  console.log(' [MENTIONS] Google News: ' + GOOGLE_NEWS_QUERIES.length + ' queries, ' + found.length + ' matches');
+  addMentions('google_news', found);
+}
+
+// --- 7. Industry trade publications (energy/utility vertical press) ---
+const INDUSTRY_FEEDS = [
+  { url: 'https://www.utilitydive.com/feeds/news/', name: 'Utility Dive' },
+  { url: 'https://www.canarymedia.com/rss/feed', name: 'Canary Media' },
+  { url: 'https://energynews.us/feed/', name: 'Energy News Network' },
+  { url: 'https://www.renewableenergyworld.com/feed/', name: 'Renewable Energy World' },
+  { url: 'https://www.tdworld.com/rss.xml', name: 'T&D World' },
+  { url: 'https://www.powermag.com/feed/', name: 'POWER Magazine' }
+];
+
+async function pollIndustryNews() {
+  const found = [];
+  for (const feed of INDUSTRY_FEEDS) {
+    try {
+      const data = await rssParser.parseURL(feed.url);
+      for (const item of (data.items || [])) {
+        const text = cleanHtml(item.title || '') + ' ' + cleanHtml(item.contentSnippet || item.content || '');
+        const m = matchesAnyBrand(text, item.link);
+        if (!m) continue;
+        found.push({
+          id: 'industry:' + (item.guid || item.link),
+          source: 'industry_news',
+          sourceDisplay: feed.name,
+          sourceName: feed.name,
+          title: cleanHtml(item.title || ''),
+          snippet: cleanHtml(item.contentSnippet || '').substring(0, 300),
+          url: item.link,
+          author: item.creator || feed.name,
+          publishedAt: item.isoDate || item.pubDate || new Date().toISOString(),
+          thumbnail: imageFromRssItem(item),
+          brandTag: m.brand,
+          matchedKeyword: m.keyword,
+          confidence: m.confidence
+        });
+      }
+    } catch (err) {
+      console.warn(' [MENTIONS] Industry feed failed: ' + feed.name + ' (' + err.message + ')');
+    }
+  }
+  console.log(' [MENTIONS] Industry News: ' + INDUSTRY_FEEDS.length + ' feeds, ' + found.length + ' matches');
+  addMentions('industry_news', found);
+}
+
+// --- 8. SEC EDGAR filings (MGE Energy holding co + Madison Gas and Electric subsidiary) ---
+// Every 8-K / 10-Q / 10-K / proxy statement shows up here. Atom feed, public domain, no auth.
+const SEC_COMPANIES = [
+  { cik: '0001141591', name: 'MGE Energy, Inc.', ticker: 'MGEE' }, // holding company (publicly traded)
+  { cik: '0000061339', name: 'Madison Gas and Electric Company', ticker: null } // operating utility
+];
+
+function secAtomUrl(cik) {
+  return 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=' + cik + '&type=&dateb=&owner=include&count=40&output=atom';
+}
+
+async function pollSECFilings() {
+  const found = [];
+  for (const company of SEC_COMPANIES) {
+    try {
+      const feed = await rssParser.parseURL(secAtomUrl(company.cik));
+      for (const item of (feed.items || [])) {
+        // Extract form type from title (EDGAR titles are like "8-K - Current Report")
+        const formMatch = (item.title || '').match(/^([\dA-Z\-]+)/);
+        const formType = formMatch ? formMatch[1] : 'Filing';
+        found.push({
+          id: 'sec:' + company.cik + ':' + (item.guid || item.link),
+          source: 'sec_filings',
+          sourceDisplay: 'SEC EDGAR \u00b7 ' + company.name,
+          sourceName: company.name + (company.ticker ? ' (' + company.ticker + ')' : ''),
+          title: cleanHtml(item.title || ''),
+          snippet: cleanHtml(item.contentSnippet || item.content || '').substring(0, 300),
+          url: item.link,
+          author: company.name,
+          publishedAt: item.isoDate || item.pubDate || item.updated || new Date().toISOString(),
+          thumbnail: null,
+          brandTag: 'mge',
+          matchedKeyword: formType,
+          confidence: 'high'
+        });
+      }
+    } catch (err) {
+      console.warn(' [MENTIONS] SEC EDGAR failed for ' + company.name + ':', err.message);
+    }
+  }
+  console.log(' [MENTIONS] SEC Filings: ' + SEC_COMPANIES.length + ' companies, ' + found.length + ' filings');
+  addMentions('sec_filings', found);
+}
+
+// --- 9. Apple Podcasts (iTunes Search API — free, no auth) ---
+const PODCAST_QUERIES = [
+  'Madison Gas and Electric',
+  'MGE Energy Wisconsin',
+  'Wisconsin utility',
+  'Wisconsin energy'
+];
+
+async function pollPodcasts() {
+  const found = [];
+  for (const q of PODCAST_QUERIES) {
+    try {
+      const url = 'https://itunes.apple.com/search?term=' + encodeURIComponent(q) + '&media=podcast&entity=podcast&limit=15';
+      const resp = await fetch(url, { headers: { 'User-Agent': 'MGE-Social-Command-Center/1.0' } });
+      if (!resp.ok) continue;
+      const data = await resp.json();
+      for (const p of (data.results || [])) {
+        const title = p.collectionName || p.trackName || '';
+        const description = p.description || p.shortDescription || '';
+        const text = title + ' ' + description;
+        const m = matchesAnyBrand(text, p.collectionViewUrl || p.trackViewUrl);
+        if (!m) continue;
+        found.push({
+          id: 'podcast:' + (p.collectionId || p.trackId || title),
+          source: 'podcasts',
+          sourceDisplay: 'Apple Podcasts \u00b7 ' + (p.artistName || 'Unknown'),
+          sourceName: p.artistName || 'Apple Podcasts',
+          title: title,
+          snippet: description.substring(0, 300),
+          url: p.collectionViewUrl || p.trackViewUrl,
+          author: p.artistName || 'Unknown',
+          publishedAt: p.releaseDate || new Date().toISOString(),
+          thumbnail: p.artworkUrl600 || p.artworkUrl100 || null,
+          brandTag: m.brand,
+          matchedKeyword: m.keyword,
+          confidence: m.confidence
+        });
+      }
+    } catch (err) {
+      console.warn(' [MENTIONS] Podcasts query failed (' + q + '):', err.message);
+    }
+  }
+  console.log(' [MENTIONS] Podcasts: ' + PODCAST_QUERIES.length + ' queries, ' + found.length + ' matches');
+  addMentions('podcasts', found);
 }
 
 // --- Staggered schedulers (spread API calls, stay well under rate limits) ---
 function startMentionPollers() {
-  console.log(' [MENTIONS] Starting pollers (5 sources, staggered)...');
+  console.log(' [MENTIONS] Starting pollers (9 sources, staggered)...');
   setTimeout(pollReddit, 5000);
   setTimeout(pollLocalNews, 20000);
-  setTimeout(pollGoogleAlerts, 35000);
-  setTimeout(pollGDELT, 60000);
-  setTimeout(pollYouTubeMentions, 90000);
+  setTimeout(pollGoogleNews, 35000);
+  setTimeout(pollGoogleAlerts, 50000);
+  setTimeout(pollGDELT, 70000);
+  setTimeout(pollSECFilings, 85000);
+  setTimeout(pollIndustryNews, 105000);
+  setTimeout(pollPodcasts, 130000);
+  setTimeout(pollYouTubeMentions, 150000);
   setInterval(pollReddit, 30 * 60 * 1000);
   setInterval(pollLocalNews, 30 * 60 * 1000);
+  setInterval(pollGoogleNews, 45 * 60 * 1000);
   setInterval(pollGoogleAlerts, 60 * 60 * 1000);
   setInterval(pollGDELT, 120 * 60 * 1000);
+  setInterval(pollSECFilings, 360 * 60 * 1000); // SEC filings slow, every 6h
+  setInterval(pollIndustryNews, 180 * 60 * 1000);
+  setInterval(pollPodcasts, 720 * 60 * 1000); // Podcasts slow, every 12h
   setInterval(pollYouTubeMentions, 240 * 60 * 1000);
 }
 
@@ -1007,8 +1251,18 @@ app.post('/api/mentions/refresh', (req, res) => {
     return res.json({ error: true, message: 'Please wait at least 60 seconds between manual refreshes.' });
   }
   _lastManualMentionsRefresh = now;
-  Promise.all([pollReddit(), pollLocalNews(), pollGoogleAlerts(), pollGDELT(), pollYouTubeMentions()]).catch(() => {});
-  res.json({ ok: true, message: 'Refresh triggered across all 5 sources. New mentions will appear within ~30 seconds.' });
+  Promise.all([
+    pollReddit(),
+    pollLocalNews(),
+    pollGoogleNews(),
+    pollGoogleAlerts(),
+    pollGDELT(),
+    pollSECFilings(),
+    pollIndustryNews(),
+    pollPodcasts(),
+    pollYouTubeMentions()
+  ]).catch(() => {});
+  res.json({ ok: true, message: 'Refresh triggered across all 9 sources. New mentions will appear within ~60 seconds.' });
 });
 
 if (process.env.NODE_ENV === 'production' || process.env.ENABLE_MENTIONS === 'true') {
