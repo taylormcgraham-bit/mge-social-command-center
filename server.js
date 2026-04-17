@@ -431,8 +431,64 @@ app.get('/api/all-data', async (req, res) => {
 const Parser = require('rss-parser');
 const rssParser = new Parser({
   timeout: 15000,
-  headers: { 'User-Agent': 'MGE-Social-Command-Center/1.0 (Madison Gas and Electric brand monitoring)' }
+  headers: { 'User-Agent': 'MGE-Social-Command-Center/1.0 (Madison Gas and Electric brand monitoring)' },
+  customFields: {
+    item: [
+      ['media:thumbnail', 'mediaThumbnail'],
+      ['media:content', 'mediaContent'],
+      ['content:encoded', 'contentEncoded'],
+      ['og:image', 'ogImage']
+    ]
+  }
 });
+
+// --- Image/thumbnail extraction helpers ---
+function firstImgFromHtml(html) {
+  if (!html) return null;
+  const m = String(html).match(/<img[^>]+src=["']([^"']+)["']/i);
+  return m ? m[1] : null;
+}
+
+function imageFromRssItem(item) {
+  // enclosure (standard)
+  if (item.enclosure && item.enclosure.url && (!item.enclosure.type || /^image\//i.test(item.enclosure.type))) {
+    return item.enclosure.url;
+  }
+  // media:thumbnail and media:content (rss-parser exposes attributes as $ object)
+  const mt = item.mediaThumbnail;
+  if (mt) {
+    if (typeof mt === 'string') return mt;
+    if (mt.$ && mt.$.url) return mt.$.url;
+    if (Array.isArray(mt) && mt[0] && mt[0].$) return mt[0].$.url;
+  }
+  const mc = item.mediaContent;
+  if (mc) {
+    if (typeof mc === 'string') return mc;
+    if (mc.$ && mc.$.url && (!mc.$.medium || mc.$.medium === 'image')) return mc.$.url;
+    if (Array.isArray(mc)) {
+      for (const c of mc) {
+        if (c && c.$ && c.$.url && (!c.$.medium || c.$.medium === 'image')) return c.$.url;
+      }
+    }
+  }
+  // Inline <img> in content:encoded or content
+  const img = firstImgFromHtml(item.contentEncoded) || firstImgFromHtml(item.content);
+  if (img) return img;
+  return null;
+}
+
+// --- Job listing filters (exclude MGE job postings/career listings) ---
+const JOB_URL_PATTERNS = /(jobs?\.mge|careers?\.mge|\/careers?\/|\/jobs?\/|\/job-openings|indeed\.com|glassdoor\.com\/job|ziprecruiter\.com|monster\.com|simplyhired\.com|linkedin\.com\/jobs|jobvite\.com|myworkdayjobs\.com|greenhouse\.io|lever\.co|icims\.com|taleo\.net|ultipro\.com|paylocity\.com|adp\.com\/careers|smartrecruiters\.com|bamboohr\.com\/jobs|recruiting\.\w+\.(com|org))/i;
+const JOB_TEXT_PATTERNS = /\b(apply (now|today|online|here)|job (opening|openings|posting|postings|description|id)|now hiring|we'?re hiring|hiring for|currently hiring|open position|open positions|current openings|join (our|the) team|career opportunit(y|ies)|employment opportunit(y|ies)|full[- ]?time position|part[- ]?time position|equal opportunity employer|competitive (salary|benefits|pay)|salary range|compensation range|pay range: \$|\$\d+[\s\S]{0,20}per (hour|year))\b/i;
+
+function isJobListing(m) {
+  try {
+    if (m.url && JOB_URL_PATTERNS.test(m.url)) return true;
+  } catch {}
+  const text = (m.title || '') + ' ' + (m.snippet || '');
+  if (JOB_TEXT_PATTERNS.test(text)) return true;
+  return false;
+}
 
 // --- Brand keyword matching with Wisconsin geo-disambiguation ---
 const BRAND_EXACT = [
@@ -472,6 +528,11 @@ const MENTIONS = {
 function addMentions(source, incoming) {
   MENTIONS.lastPoll[source] = new Date().toISOString();
   if (!incoming || incoming.length === 0) return 0;
+  // Filter out job postings/careers listings
+  const beforeJob = incoming.length;
+  incoming = incoming.filter(m => !isJobListing(m));
+  const jobSkipped = beforeJob - incoming.length;
+  if (jobSkipped > 0) console.log(' [MENTIONS] ' + source + ': filtered ' + jobSkipped + ' job listing(s)');
   const existing = new Set(MENTIONS.items.map(m => m.id));
   const additions = incoming.filter(i => !existing.has(i.id));
   if (additions.length === 0) return 0;
@@ -509,15 +570,29 @@ async function pollReddit() {
         const text = (d.title || '') + ' ' + (d.selftext || '');
         const m = matchesBrand(text);
         if (!m) continue;
+        // Reddit thumbnail extraction
+        let thumb = null;
+        if (d.thumbnail && !/^(self|default|nsfw|spoiler|image|)$/.test(d.thumbnail) && /^https?:/.test(d.thumbnail)) {
+          thumb = d.thumbnail;
+        }
+        if (!thumb && d.preview && d.preview.images && d.preview.images[0]) {
+          const src = d.preview.images[0].source && d.preview.images[0].source.url;
+          if (src) thumb = String(src).replace(/&amp;/g, '&');
+        }
+        if (!thumb && d.url_overridden_by_dest && /\.(jpe?g|png|gif|webp)(\?|$)/i.test(d.url_overridden_by_dest)) {
+          thumb = d.url_overridden_by_dest;
+        }
         found.push({
           id: 'reddit:' + d.id,
           source: 'reddit',
           sourceDisplay: 'Reddit \u00b7 r/' + d.subreddit,
+          sourceName: 'r/' + d.subreddit,
           title: d.title || '',
           snippet: (d.selftext || '').substring(0, 300),
           url: 'https://www.reddit.com' + d.permalink,
           author: 'u/' + (d.author || 'unknown'),
           publishedAt: new Date((d.created_utc || Date.now() / 1000) * 1000).toISOString(),
+          thumbnail: thumb,
           matchedKeyword: m.keyword,
           confidence: m.confidence,
           engagement: { score: d.score || 0, comments: d.num_comments || 0 }
@@ -554,11 +629,13 @@ async function pollGoogleAlerts() {
           id: 'galerts:' + (item.guid || actualUrl),
           source: 'google_alerts',
           sourceDisplay: 'Google Alerts \u00b7 ' + domain,
+          sourceName: domain,
           title: cleanHtml(item.title || ''),
           snippet: cleanHtml(item.contentSnippet || item.content || '').substring(0, 300),
           url: actualUrl,
           author: domain,
           publishedAt: item.isoDate || item.pubDate || new Date().toISOString(),
+          thumbnail: imageFromRssItem(item),
           matchedKeyword: m.keyword,
           confidence: m.confidence
         });
@@ -594,11 +671,13 @@ async function pollGDELT() {
           id: 'gdelt:' + (a.url || a.documentidentifier || a.title),
           source: 'gdelt',
           sourceDisplay: 'GDELT \u00b7 ' + (a.domain || 'news'),
+          sourceName: a.domain || 'News',
           title: a.title || '',
           snippet: '',
           url: a.url,
           author: a.domain || 'Unknown',
           publishedAt: parseGdeltDate(a.seendate) || new Date().toISOString(),
+          thumbnail: a.socialimage || null,
           matchedKeyword: m.keyword,
           confidence: m.confidence
         });
@@ -626,15 +705,19 @@ async function pollYouTubeMentions() {
         const s = v.snippet || {};
         const m = matchesBrand((s.title || '') + ' ' + (s.description || ''));
         if (!m) continue;
+        const thumbs = s.thumbnails || {};
+        const thumb = (thumbs.high && thumbs.high.url) || (thumbs.medium && thumbs.medium.url) || (thumbs.default && thumbs.default.url) || null;
         found.push({
           id: 'youtube:' + (v.id && v.id.videoId),
           source: 'youtube_search',
           sourceDisplay: 'YouTube \u00b7 ' + (s.channelTitle || 'Search'),
+          sourceName: s.channelTitle || 'YouTube',
           title: s.title || '',
           snippet: (s.description || '').substring(0, 300),
           url: 'https://www.youtube.com/watch?v=' + (v.id && v.id.videoId),
           author: s.channelTitle || 'YouTube',
           publishedAt: s.publishedAt || new Date().toISOString(),
+          thumbnail: thumb,
           matchedKeyword: m.keyword,
           confidence: m.confidence
         });
@@ -669,11 +752,13 @@ async function pollLocalNews() {
           id: 'news:' + (item.guid || item.link),
           source: 'local_news',
           sourceDisplay: feed.name,
+          sourceName: feed.name,
           title: cleanHtml(item.title || ''),
           snippet: cleanHtml(item.contentSnippet || '').substring(0, 300),
           url: item.link,
           author: item.creator || feed.name,
           publishedAt: item.isoDate || item.pubDate || new Date().toISOString(),
+          thumbnail: imageFromRssItem(item),
           matchedKeyword: m.keyword,
           confidence: m.confidence
         });
