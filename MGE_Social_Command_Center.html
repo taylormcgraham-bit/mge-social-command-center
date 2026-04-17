@@ -14,7 +14,7 @@
 
         /* --- Header --- */
         header {
-            background: linear-gradient(135deg, #003B71 0%, #004B8F 100%);
+            background: linear-gradient(135deg, #006553 0%, #00805E 100%);
             color: white; padding: 18px 36px;
             box-shadow: 0 2px 12px rgba(0,0,0,0.1);
             display: flex; justify-content: space-between; align-items: center;
@@ -40,7 +40,7 @@
         /* --- Loading bar --- */
         .loading-bar {
             position: fixed; top: 0; left: 0; height: 3px;
-            background: linear-gradient(90deg, #003B71, #00A651, #003B71);
+            background: linear-gradient(90deg, #006553, #00A651, #006553);
             width: 0%; z-index: 1000; transition: none;
         }
         .loading-bar.active { animation: loading 1.5s ease-in-out; }
@@ -395,7 +395,7 @@
         .foll-badge.li { background: linear-gradient(135deg, #0A66C2 0%, #004182 70%, #002D5E 100%); }
         .foll-badge.yt { background: linear-gradient(135deg, #FF0000 0%, #CC0000 70%, #8B0000 100%); }
         .foll-badge-icon { font-size: 22px; margin-bottom: 4px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
-        .foll-badge-val { font-size: 26px; font-weight: 900; letter-spacing: -0.5px; text-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+        .foll-badge-val { font-size: 22px; font-weight: 900; letter-spacing: -0.3px; font-variant-numeric: tabular-nums; text-shadow: 0 2px 8px rgba(0,0,0,0.3); }
         .foll-badge-label { font-size: 9px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; opacity: 0.9; }
         .foll-badge-mom { font-size: 10px; font-weight: 700; background: rgba(255,255,255,0.25); padding: 2px 10px; border-radius: 12px; margin-top: 3px; backdrop-filter: blur(4px); }
         @media (max-width: 700px) { .kpi-followers-row { grid-template-columns: 1fr 1fr; } }
@@ -696,21 +696,51 @@
         .mentions-filters {
             background: #fff; padding: 14px 16px; border-radius: 10px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.06); margin-bottom: 16px;
+            display: flex; flex-direction: column; gap: 12px;
+        }
+        .mentions-filter-row {
             display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+        }
+        .mentions-filter-label {
+            font-size: 11px; font-weight: 800; letter-spacing: 0.8px;
+            text-transform: uppercase; color: #64748B; margin-right: 2px;
         }
         .mentions-source-chips { display: flex; gap: 6px; flex-wrap: wrap; }
         .mentions-chip {
             padding: 6px 14px; border-radius: 999px; background: #f3f4f6;
             color: #4b5563; font-size: 13px; font-weight: 500; cursor: pointer;
             border: 1px solid transparent; transition: all 0.15s;
+            display: inline-flex; align-items: center; gap: 6px;
         }
         .mentions-chip:hover { background: #e5e7eb; }
         .mentions-chip.active {
-            background: #1B2559; color: #fff; border-color: #1B2559;
+            background: #006553; color: #fff; border-color: #006553;
         }
+        .mentions-chip .chip-dot-sm { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+        /* Brand-specific chip styling */
+        .mentions-chip.brand-mge.active { background: #006553; border-color: #006553; }
+        .mentions-chip.brand-alliant.active { background: #0A3F67; border-color: #0A3F67; }
+        .mentions-chip.brand-we_energies.active { background: #DA291C; border-color: #DA291C; }
+        .mentions-chip.brand-xcel.active { background: #0071CE; border-color: #0071CE; }
+        .mentions-chip.brand-topical.active { background: #7C3AED; border-color: #7C3AED; }
+
         .mentions-search-input {
             flex: 1; min-width: 180px; padding: 8px 12px;
             border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;
+        }
+        .mentions-date-input {
+            padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px;
+            font-size: 13px; color: #1B2559; background: #fff;
+        }
+        .mentions-date-preset {
+            padding: 6px 12px; border-radius: 999px; background: #f3f4f6;
+            color: #4b5563; font-size: 12px; font-weight: 600; cursor: pointer;
+            border: 1px solid transparent; transition: all 0.15s;
+        }
+        .mentions-date-preset:hover { background: #e5e7eb; }
+        .mentions-date-preset.active {
+            background: #006553; color: #fff; border-color: #006553;
         }
 
         .mentions-summary {
@@ -743,6 +773,48 @@
         .mention-card.source-gdelt { border-left-color: #9333ea; }
         .mention-card.source-youtube_search { border-left-color: #ff0000; }
         .mention-card.source-local_news { border-left-color: #0ea5e9; }
+
+        /* Brand-based card highlighting (overrides source border) */
+        .mention-card.brand-mge {
+            border-left: 6px solid #006553;
+            box-shadow: 0 0 0 1px rgba(0,101,83,0.25), 0 4px 14px rgba(0,101,83,0.18);
+            background: linear-gradient(180deg, #ffffff 0%, #f0fbf6 100%);
+        }
+        .mention-card.brand-mge:hover {
+            box-shadow: 0 0 0 2px rgba(0,101,83,0.4), 0 8px 24px rgba(0,101,83,0.25);
+        }
+        .mention-card.brand-alliant { border-left: 6px solid #0A3F67; }
+        .mention-card.brand-we_energies { border-left: 6px solid #DA291C; }
+        .mention-card.brand-xcel { border-left: 6px solid #0071CE; }
+        .mention-card.brand-topical { border-left: 6px solid #7C3AED; }
+
+        /* Brand badge pill shown on card */
+        .mention-brand-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 10px; border-radius: 999px;
+            font-size: 11px; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 0.6px; color: #fff;
+        }
+        .mention-brand-badge.brand-mge { background: #006553; }
+        .mention-brand-badge.brand-alliant { background: #0A3F67; }
+        .mention-brand-badge.brand-we_energies { background: #DA291C; }
+        .mention-brand-badge.brand-xcel { background: #0071CE; }
+        .mention-brand-badge.brand-topical { background: #7C3AED; }
+
+        /* NEW badge for articles <7 days old */
+        .mention-new-badge {
+            display: inline-flex; align-items: center;
+            padding: 3px 10px; border-radius: 999px;
+            background: linear-gradient(135deg, #00A651 0%, #006553 100%);
+            color: #fff; font-size: 11px; font-weight: 800;
+            letter-spacing: 0.8px; text-transform: uppercase;
+            box-shadow: 0 0 12px rgba(0,166,81,0.5);
+            animation: newPulse 2s ease-in-out infinite;
+        }
+        @keyframes newPulse {
+            0%, 100% { box-shadow: 0 0 12px rgba(0,166,81,0.5); }
+            50% { box-shadow: 0 0 20px rgba(0,166,81,0.8); }
+        }
 
         .mention-thumb-wrap {
             width: 180px; height: 100%; min-height: 140px;
@@ -882,8 +954,8 @@
 </header>
 
 <div class="view-nav">
-    <button class="view-nav-btn active" data-view="dashboard" onclick="switchView('dashboard')">Channel Performance</button>
-    <button class="view-nav-btn" data-view="mentions" onclick="switchView('mentions')">Media Monitoring &amp; Mentions</button>
+    <button class="view-nav-btn active" data-view="dashboard" onclick="switchView('dashboard')">Social Performance</button>
+    <button class="view-nav-btn" data-view="mentions" onclick="switchView('mentions')">Media Monitoring</button>
 </div>
 
 <div id="dashboardView" class="view-panel active">
@@ -1123,22 +1195,48 @@
     <div class="mentions-wrap">
         <div class="mentions-header">
             <div>
-                <div class="mentions-title">Media Monitoring &amp; Mentions</div>
-                <div class="mentions-subtitle">Brand mentions across Reddit, Google Alerts, GDELT, YouTube, and local news</div>
+                <div class="mentions-title">Media Monitoring</div>
+                <div class="mentions-subtitle">MGE &amp; Wisconsin utility mentions across Reddit, Google Alerts, GDELT, YouTube, and local news (3-month window)</div>
             </div>
             <button class="mentions-refresh-btn" id="mentionsRefreshBtn" onclick="refreshMentions()">Refresh</button>
         </div>
 
         <div class="mentions-filters">
-            <div class="mentions-source-chips" id="mentionsSourceChips">
-                <button class="mentions-chip active" data-source="all" onclick="filterMentionsSource('all', this)">All</button>
-                <button class="mentions-chip" data-source="reddit" onclick="filterMentionsSource('reddit', this)">Reddit</button>
-                <button class="mentions-chip" data-source="google_alerts" onclick="filterMentionsSource('google_alerts', this)">Google Alerts</button>
-                <button class="mentions-chip" data-source="gdelt" onclick="filterMentionsSource('gdelt', this)">GDELT</button>
-                <button class="mentions-chip" data-source="youtube_search" onclick="filterMentionsSource('youtube_search', this)">YouTube</button>
-                <button class="mentions-chip" data-source="local_news" onclick="filterMentionsSource('local_news', this)">Local News</button>
+            <div class="mentions-filter-row">
+                <span class="mentions-filter-label">Brand</span>
+                <div class="mentions-source-chips" id="mentionsBrandChips">
+                    <button class="mentions-chip active" data-brand="all" onclick="filterMentionsBrand('all', this)">All</button>
+                    <button class="mentions-chip brand-mge active" data-brand="mge" onclick="filterMentionsBrand('mge', this)"><span class="chip-dot-sm" style="background:#006553"></span>MGE</button>
+                    <button class="mentions-chip brand-alliant" data-brand="alliant" onclick="filterMentionsBrand('alliant', this)"><span class="chip-dot-sm" style="background:#0A3F67"></span>Alliant Energy</button>
+                    <button class="mentions-chip brand-we_energies" data-brand="we_energies" onclick="filterMentionsBrand('we_energies', this)"><span class="chip-dot-sm" style="background:#DA291C"></span>We Energies</button>
+                    <button class="mentions-chip brand-xcel" data-brand="xcel" onclick="filterMentionsBrand('xcel', this)"><span class="chip-dot-sm" style="background:#0071CE"></span>Xcel Energy</button>
+                    <button class="mentions-chip brand-topical" data-brand="topical" onclick="filterMentionsBrand('topical', this)"><span class="chip-dot-sm" style="background:#7C3AED"></span>Topical (WI)</button>
+                </div>
             </div>
-            <input type="text" class="mentions-search-input" id="mentionsSearchInput" placeholder="Filter by keyword..." oninput="filterMentionsKeyword()">
+            <div class="mentions-filter-row">
+                <span class="mentions-filter-label">Source</span>
+                <div class="mentions-source-chips" id="mentionsSourceChips">
+                    <button class="mentions-chip active" data-source="all" onclick="filterMentionsSource('all', this)">All</button>
+                    <button class="mentions-chip" data-source="reddit" onclick="filterMentionsSource('reddit', this)">Reddit</button>
+                    <button class="mentions-chip" data-source="google_alerts" onclick="filterMentionsSource('google_alerts', this)">Google Alerts</button>
+                    <button class="mentions-chip" data-source="gdelt" onclick="filterMentionsSource('gdelt', this)">GDELT</button>
+                    <button class="mentions-chip" data-source="youtube_search" onclick="filterMentionsSource('youtube_search', this)">YouTube</button>
+                    <button class="mentions-chip" data-source="local_news" onclick="filterMentionsSource('local_news', this)">Local News</button>
+                </div>
+            </div>
+            <div class="mentions-filter-row">
+                <span class="mentions-filter-label">Time</span>
+                <div class="mentions-source-chips" id="mentionsDatePresets">
+                    <button class="mentions-date-preset" data-days="7" onclick="setMentionsDatePreset(7, this)">Last 7D</button>
+                    <button class="mentions-date-preset" data-days="30" onclick="setMentionsDatePreset(30, this)">Last 30D</button>
+                    <button class="mentions-date-preset active" data-days="90" onclick="setMentionsDatePreset(90, this)">Last 90D</button>
+                    <button class="mentions-date-preset" data-days="365" onclick="setMentionsDatePreset(365, this)">Last Year</button>
+                    <button class="mentions-date-preset" data-days="0" onclick="setMentionsDatePreset(0, this)">All</button>
+                </div>
+                <input type="date" class="mentions-date-input" id="mentionsDateFrom" onchange="applyMentionsCustomDate()" title="From">
+                <input type="date" class="mentions-date-input" id="mentionsDateTo" onchange="applyMentionsCustomDate()" title="To">
+                <input type="text" class="mentions-search-input" id="mentionsSearchInput" placeholder="Filter by keyword..." oninput="filterMentionsKeyword()">
+            </div>
         </div>
 
         <div class="mentions-summary" id="mentionsSummary">
@@ -1943,7 +2041,7 @@ function renderKPIs(data) {
             const momStr = (momPct === null || isNaN(momPct)) ? null : ((momPct > 0 ? '+' : '') + momPct.toFixed(1) + '%');
             return '<div class="foll-badge ' + p.cls + '">'
                 + '<div class="foll-badge-icon">' + p.icon + '</div>'
-                + '<div class="foll-badge-val">' + (f > 0 ? fmtNum(f) : '--') + '</div>'
+                + '<div class="foll-badge-val">' + (f > 0 ? f.toLocaleString() : '--') + '</div>'
                 + '<div class="foll-badge-label">' + p.name + '</div>'
                 + (momStr ? '<div class="foll-badge-mom">' + momStr + ' MoM</div>' : '')
                 + '</div>';
@@ -2924,7 +3022,7 @@ function renderFollowerGrowthChart(data) {
             const momCls = momPct === null ? 'neu' : (momPct > 0 ? 'pos' : (momPct < 0 ? 'neg' : 'neu'));
             return '<div class="foll-sum-tile ' + p.cls + '">'
                 + '<div class="foll-sum-plat">' + p.label + '</div>'
-                + '<div class="foll-sum-val">' + (f > 0 ? fmtNum(f) : '--') + '</div>'
+                + '<div class="foll-sum-val">' + (f > 0 ? f.toLocaleString() : '--') + '</div>'
                 + '<div class="foll-sum-delta ' + momCls + '">' + (momStr ? momStr + ' MoM' : 'Baseline set') + '</div>'
                 + '</div>';
         }).join('');
@@ -3210,7 +3308,23 @@ window.addEventListener('DOMContentLoaded', () => {
 // Media Monitoring & Mentions — Tab switching + feed rendering
 // =================================================================
 (function() {
-    let _mentionsState = { source: 'all', keyword: '', data: null };
+    const ALL_BRANDS = ['mge', 'alliant', 'we_energies', 'xcel', 'topical'];
+    const BRAND_LABELS = {
+        mge: 'MGE',
+        alliant: 'Alliant Energy',
+        we_energies: 'We Energies',
+        xcel: 'Xcel Energy',
+        topical: 'Topical'
+    };
+    let _mentionsState = {
+        source: 'all',
+        brands: new Set(ALL_BRANDS), // multi-toggle
+        keyword: '',
+        days: 90, // default 3-month window
+        customFrom: null,
+        customTo: null,
+        data: null
+    };
 
     window.switchView = function(view) {
         document.querySelectorAll('.view-nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
@@ -3226,6 +3340,55 @@ window.addEventListener('DOMContentLoaded', () => {
         renderMentions();
     };
 
+    window.filterMentionsBrand = function(brand, el) {
+        if (brand === 'all') {
+            _mentionsState.brands = new Set(ALL_BRANDS);
+        } else {
+            // Multi-toggle: click adds/removes the brand
+            if (_mentionsState.brands.has(brand)) {
+                _mentionsState.brands.delete(brand);
+                if (_mentionsState.brands.size === 0) {
+                    _mentionsState.brands = new Set(ALL_BRANDS);
+                }
+            } else {
+                _mentionsState.brands.add(brand);
+            }
+        }
+        // Update chip active states
+        document.querySelectorAll('#mentionsBrandChips .mentions-chip').forEach(c => {
+            const b = c.dataset.brand;
+            if (b === 'all') {
+                c.classList.toggle('active', _mentionsState.brands.size === ALL_BRANDS.length);
+            } else {
+                c.classList.toggle('active', _mentionsState.brands.has(b));
+            }
+        });
+        renderMentions();
+    };
+
+    window.setMentionsDatePreset = function(days, el) {
+        _mentionsState.days = days;
+        _mentionsState.customFrom = null;
+        _mentionsState.customTo = null;
+        document.getElementById('mentionsDateFrom').value = '';
+        document.getElementById('mentionsDateTo').value = '';
+        document.querySelectorAll('#mentionsDatePresets .mentions-date-preset').forEach(c => c.classList.remove('active'));
+        if (el) el.classList.add('active');
+        renderMentions();
+    };
+
+    window.applyMentionsCustomDate = function() {
+        const from = document.getElementById('mentionsDateFrom').value;
+        const to = document.getElementById('mentionsDateTo').value;
+        if (from || to) {
+            _mentionsState.customFrom = from || null;
+            _mentionsState.customTo = to || null;
+            _mentionsState.days = -1;
+            document.querySelectorAll('#mentionsDatePresets .mentions-date-preset').forEach(c => c.classList.remove('active'));
+        }
+        renderMentions();
+    };
+
     window.filterMentionsKeyword = function() {
         _mentionsState.keyword = (document.getElementById('mentionsSearchInput').value || '').toLowerCase().trim();
         renderMentions();
@@ -3235,7 +3398,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const btn = document.getElementById('mentionsRefreshBtn');
         btn.disabled = true; btn.textContent = 'Refreshing...';
         try { await fetch('/api/mentions/refresh', { method: 'POST' }); } catch (e) {}
-        setTimeout(async () => { await loadMentions(); btn.disabled = false; btn.textContent = 'Refresh'; }, 8000);
+        setTimeout(async () => { await loadMentions(); btn.disabled = false; btn.textContent = 'Refresh'; }, 12000);
     };
 
     async function loadMentions() {
@@ -3249,6 +3412,19 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function getDateWindow() {
+        if (_mentionsState.customFrom || _mentionsState.customTo) {
+            return {
+                from: _mentionsState.customFrom ? new Date(_mentionsState.customFrom + 'T00:00:00') : null,
+                to: _mentionsState.customTo ? new Date(_mentionsState.customTo + 'T23:59:59') : null
+            };
+        }
+        if (_mentionsState.days > 0) {
+            return { from: new Date(Date.now() - _mentionsState.days * 86400000), to: null };
+        }
+        return { from: null, to: null };
+    }
+
     function renderMentions() {
         const data = _mentionsState.data;
         if (!data) return;
@@ -3256,6 +3432,17 @@ window.addEventListener('DOMContentLoaded', () => {
 
         let items = data.items.slice();
         if (_mentionsState.source !== 'all') items = items.filter(m => m.source === _mentionsState.source);
+
+        // Brand filter (multi-select)
+        if (_mentionsState.brands.size < ALL_BRANDS.length) {
+            items = items.filter(m => _mentionsState.brands.has(m.brandTag || 'mge'));
+        }
+
+        // Date window
+        const dw = getDateWindow();
+        if (dw.from) items = items.filter(m => new Date(m.publishedAt) >= dw.from);
+        if (dw.to) items = items.filter(m => new Date(m.publishedAt) <= dw.to);
+
         if (_mentionsState.keyword) {
             const kw = _mentionsState.keyword;
             items = items.filter(m => (m.title || '').toLowerCase().includes(kw) || (m.snippet || '').toLowerCase().includes(kw));
@@ -3267,16 +3454,22 @@ window.addEventListener('DOMContentLoaded', () => {
         document.getElementById('mentionsStatUpdated').textContent = latestPoll ? timeAgo(latestPoll) : 'Never';
 
         if (items.length === 0) {
-            feed.innerHTML = '<div class="mentions-empty"><div class="big">No mentions yet</div><div class="small">' + (data.total === 0 ? 'Pollers are still populating the cache. Check back in a few minutes.' : 'Try clearing the filters above.') + '</div></div>';
+            feed.innerHTML = '<div class="mentions-empty"><div class="big">No mentions found</div><div class="small">' + (data.total === 0 ? 'Pollers are still populating the cache. Check back in a few minutes.' : 'Try widening the date range or toggling more brands.') + '</div></div>';
             return;
         }
 
+        const weekAgoMs = Date.now() - 7 * 86400000;
+
         feed.innerHTML = items.map(m => {
             const conf = (m.confidence || 'medium').toLowerCase();
+            const brandTag = m.brandTag || 'mge';
+            const brandLabel = BRAND_LABELS[brandTag] || brandTag;
             const sourceName = m.sourceName || m.sourceDisplay || m.source;
             const hasThumb = !!m.thumbnail;
             const thumbInitial = (sourceName || 'M').replace(/^[^a-zA-Z0-9]+/, '').charAt(0).toUpperCase() || 'M';
             const pubDate = m.publishedAt ? new Date(m.publishedAt) : null;
+            const pubMs = pubDate ? pubDate.getTime() : 0;
+            const isNew = pubMs > weekAgoMs;
             const ago = timeAgo(m.publishedAt);
             const freshness = freshnessClass(m.publishedAt);
             const fullDate = pubDate ? pubDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + pubDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
@@ -3287,11 +3480,13 @@ window.addEventListener('DOMContentLoaded', () => {
                   '</div>'
                 : '<div class="mention-thumb-wrap"><div class="mention-thumb-fallback">' + escapeHtml(thumbInitial) + '</div></div>';
             return '' +
-                '<div class="mention-card source-' + escapeHtml(m.source) + (hasThumb ? '' : '') + '">' +
+                '<div class="mention-card source-' + escapeHtml(m.source) + ' brand-' + escapeHtml(brandTag) + '">' +
                 thumbHtml +
                 '<div class="mention-body">' +
                 '    <div class="mention-top-row">' +
+                '        <span class="mention-brand-badge brand-' + escapeHtml(brandTag) + '">' + escapeHtml(brandLabel) + '</span>' +
                 '        <span class="mention-source-pill"><span class="source-dot"></span>' + escapeHtml(sourceName) + '</span>' +
+                (isNew ? '        <span class="mention-new-badge">NEW</span>' : '') +
                 '        <span class="mention-date-pill ' + freshness + '" title="' + escapeAttr(fullDate) + '">' + escapeHtml(ago) + (fullDate ? ' <span class="mention-date-full">\u00b7 ' + escapeHtml(fullDate) + '</span>' : '') + '</span>' +
                 '    </div>' +
                 '    <div class="mention-title"><a href="' + escapeAttr(m.url) + '" target="_blank" rel="noopener">' + escapeHtml(m.title || '(no title)') + '</a></div>' +
