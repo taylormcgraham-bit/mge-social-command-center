@@ -801,6 +801,70 @@
         .mention-brand-badge.brand-xcel { background: #0071CE; }
         .mention-brand-badge.brand-topical { background: #7C3AED; }
 
+        /* Related / grouped mentions */
+        .mention-related-toggle {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 11px; border-radius: 999px;
+            background: #e0f2fe; color: #075985;
+            font-size: 11px; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 0.5px; cursor: pointer; user-select: none;
+            border: 1px solid #bae6fd; transition: all 0.15s;
+        }
+        .mention-related-toggle:hover {
+            background: #bae6fd; color: #0c4a6e;
+        }
+        .mention-related-toggle .chevron {
+            display: inline-block; transition: transform 0.2s;
+            font-size: 9px;
+        }
+        .mention-card.expanded .mention-related-toggle .chevron {
+            transform: rotate(180deg);
+        }
+        .mention-related {
+            display: none;
+            margin-top: 12px; padding-top: 12px;
+            border-top: 1px dashed #cbd5e1;
+        }
+        .mention-card.expanded .mention-related { display: block; }
+        .mention-related-title {
+            font-size: 11px; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 0.8px; color: #64748B; margin-bottom: 8px;
+        }
+        .mention-related-item {
+            display: grid; grid-template-columns: auto 1fr auto; gap: 10px;
+            align-items: start;
+            padding: 8px 10px; border-radius: 8px;
+            background: #f8fafc; margin-bottom: 6px;
+            font-size: 13px; line-height: 1.4;
+        }
+        .mention-related-item:last-child { margin-bottom: 0; }
+        .mention-related-source {
+            font-weight: 700; color: #1B2559;
+            font-size: 12px; white-space: nowrap;
+        }
+        .mention-related-source .rel-dot {
+            display: inline-block; width: 6px; height: 6px;
+            border-radius: 50%; background: #00a84f; margin-right: 5px;
+            vertical-align: middle;
+        }
+        .mention-related-item.source-reddit .rel-dot { background: #ff4500; }
+        .mention-related-item.source-google_alerts .rel-dot { background: #4285f4; }
+        .mention-related-item.source-gdelt .rel-dot { background: #9333ea; }
+        .mention-related-item.source-youtube_search .rel-dot { background: #ff0000; }
+        .mention-related-item.source-local_news .rel-dot { background: #0ea5e9; }
+        .mention-related-title-text {
+            color: #1B2559; font-weight: 600;
+        }
+        .mention-related-title-text a { color: inherit; text-decoration: none; }
+        .mention-related-title-text a:hover { color: #003B71; text-decoration: underline; }
+        .mention-related-meta {
+            font-size: 11px; color: #64748B; margin-top: 2px;
+        }
+        .mention-related-date {
+            font-size: 11px; color: #94a3b8;
+            font-weight: 600; white-space: nowrap;
+        }
+
         /* Keyword highlighting in titles and snippets */
         .kw-hit {
             background: linear-gradient(180deg, transparent 60%, rgba(0,101,83,0.25) 60%);
@@ -3521,11 +3585,15 @@ window.addEventListener('DOMContentLoaded', () => {
             items = items.filter(m => (m.title || '').toLowerCase().includes(kw) || (m.snippet || '').toLowerCase().includes(kw));
         }
 
+        // Group by thread/article so multiple Reddit posts or news items covering the same
+        // story collapse into one card with "+N related" expansion
+        items = groupRelated(items);
+
         // Sort
         if (_mentionsState.sort === 'engagement') {
             items.sort((a, b) => {
-                const aE = ((a.engagement && (a.engagement.score || 0)) + (a.engagement && (a.engagement.comments || 0))) || 0;
-                const bE = ((b.engagement && (b.engagement.score || 0)) + (b.engagement && (b.engagement.comments || 0))) || 0;
+                const aE = totalEngagement(a);
+                const bE = totalEngagement(b);
                 if (bE !== aE) return bE - aE;
                 return new Date(b.publishedAt) - new Date(a.publishedAt);
             });
@@ -3566,6 +3634,31 @@ window.addEventListener('DOMContentLoaded', () => {
                   '    <div class="mention-thumb-fallback" style="display:none;">' + escapeHtml(thumbInitial) + '</div>' +
                   '</div>'
                 : '<div class="mention-thumb-wrap"><div class="mention-thumb-fallback">' + escapeHtml(thumbInitial) + '</div></div>';
+            const relatedCount = (m._related && m._related.length) || 0;
+            const relatedToggleHtml = relatedCount > 0
+                ? '        <span class="mention-related-toggle" onclick="toggleRelated(this)" title="Show related mentions in this thread">+ ' + relatedCount + ' related <span class="chevron">\u25BC</span></span>'
+                : '';
+            const relatedListHtml = relatedCount > 0
+                ? '    <div class="mention-related">' +
+                  '        <div class="mention-related-title">' + relatedCount + ' more mention' + (relatedCount === 1 ? '' : 's') + ' of this thread/article</div>' +
+                  m._related.map(function(r) {
+                      const rSrc = r.sourceName || r.sourceDisplay || r.source;
+                      const rDate = r.publishedAt ? new Date(r.publishedAt) : null;
+                      const rAgo = timeAgo(r.publishedAt);
+                      const rFullDate = rDate ? rDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+                      return '<div class="mention-related-item source-' + escapeHtml(r.source) + '">' +
+                          '<div class="mention-related-source"><span class="rel-dot"></span>' + escapeHtml(rSrc) + '</div>' +
+                          '<div>' +
+                              '<div class="mention-related-title-text"><a href="' + escapeAttr(r.url) + '" target="_blank" rel="noopener">' + escapeHtml(r.title || '(no title)') + '</a></div>' +
+                              '<div class="mention-related-meta">' + (r.author ? 'By ' + escapeHtml(r.author) + ' \u00b7 ' : '') +
+                                  (r.engagement ? '\u25B2 ' + (r.engagement.score || 0) + ' \u00b7 ' + (r.engagement.comments || 0) + ' comments' : '') +
+                              '</div>' +
+                          '</div>' +
+                          '<div class="mention-related-date" title="' + escapeAttr(rFullDate) + '">' + escapeHtml(rAgo) + '</div>' +
+                      '</div>';
+                  }).join('') +
+                  '    </div>'
+                : '';
             return '' +
                 '<div class="mention-card source-' + escapeHtml(m.source) + ' brand-' + escapeHtml(brandTag) + '">' +
                 thumbHtml +
@@ -3574,6 +3667,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 '        <span class="mention-brand-badge brand-' + escapeHtml(brandTag) + '">' + escapeHtml(brandLabel) + '</span>' +
                 '        <span class="mention-source-pill"><span class="source-dot"></span>' + escapeHtml(sourceName) + '</span>' +
                 (isNew ? '        <span class="mention-new-badge">NEW</span>' : '') +
+                relatedToggleHtml +
                 '        <span class="mention-date-pill ' + freshness + '" title="' + escapeAttr(fullDate) + '">' + escapeHtml(ago) + (fullDate ? ' <span class="mention-date-full">\u00b7 ' + escapeHtml(fullDate) + '</span>' : '') + '</span>' +
                 '    </div>' +
                 '    <div class="mention-title"><a href="' + escapeAttr(m.url) + '" target="_blank" rel="noopener">' + highlightedTitle + '</a></div>' +
@@ -3584,10 +3678,79 @@ window.addEventListener('DOMContentLoaded', () => {
                 (m.engagement ? '        <span class="engagement-chip">\u25B2 ' + (m.engagement.score || 0) + ' \u00b7 ' + (m.engagement.comments || 0) + ' comments</span>' : '') +
                 '        <a class="link-out" href="' + escapeAttr(m.url) + '" target="_blank" rel="noopener">Open \u2197</a>' +
                 '    </div>' +
+                relatedListHtml +
                 '</div>' +
                 '</div>';
         }).join('');
     }
+
+    // --- Grouping helpers ---
+    function normalizeUrl(u) {
+        if (!u) return '';
+        try {
+            const parsed = new URL(u);
+            return (parsed.hostname + parsed.pathname).replace(/\/+$/,'').toLowerCase();
+        } catch (e) {
+            return String(u).toLowerCase();
+        }
+    }
+
+    function normalizeTitle(t) {
+        return String(t || '').toLowerCase()
+            .replace(/[^a-z0-9 ]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .substring(0, 80);
+    }
+
+    function dedupKey(m) {
+        // Group Reddit link-posts (and news items) by the external article URL
+        if (m.externalUrl) return 'url:' + normalizeUrl(m.externalUrl);
+        if (m.source !== 'reddit' && m.url) return 'url:' + normalizeUrl(m.url);
+        // Reddit self-posts and anything else: group by normalized title
+        const t = normalizeTitle(m.title);
+        return t ? 'title:' + t : 'id:' + (m.id || Math.random());
+    }
+
+    function totalEngagement(m) {
+        if (!m.engagement) return 0;
+        return (m.engagement.score || 0) + (m.engagement.comments || 0);
+    }
+
+    function groupRelated(items) {
+        const groups = new Map();
+        for (const m of items) {
+            const key = dedupKey(m);
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(m);
+        }
+        const leads = [];
+        for (const [key, members] of groups.entries()) {
+            if (members.length === 1) {
+                members[0]._related = [];
+                members[0]._groupKey = key;
+                leads.push(members[0]);
+                continue;
+            }
+            // Pick lead: most engaged, tiebreak by recency
+            members.sort((a, b) => {
+                const aE = totalEngagement(a);
+                const bE = totalEngagement(b);
+                if (bE !== aE) return bE - aE;
+                return new Date(b.publishedAt) - new Date(a.publishedAt);
+            });
+            const lead = members[0];
+            lead._related = members.slice(1);
+            lead._groupKey = key;
+            leads.push(lead);
+        }
+        return leads;
+    }
+
+    window.toggleRelated = function(btn) {
+        const card = btn.closest('.mention-card');
+        if (card) card.classList.toggle('expanded');
+    };
 
     function highlightKeyword(text, keyword) {
         const safe = escapeHtml(text);
