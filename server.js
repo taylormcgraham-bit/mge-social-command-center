@@ -1190,8 +1190,8 @@ async function pollIndustryNews() {
 // --- 8. SEC EDGAR filings (MGE Energy holding co + Madison Gas and Electric subsidiary) ---
 // Every 8-K / 10-Q / 10-K / proxy statement shows up here. Atom feed, public domain, no auth.
 const SEC_COMPANIES = [
-  { cik: '0001141591', name: 'MGE Energy, Inc.', ticker: 'MGEE' }, // holding company (publicly traded)
-  { cik: '0000061339', name: 'Madison Gas and Electric Company', ticker: null } // operating utility
+  { cik: '0001161728', name: 'MGE Energy, Inc.', ticker: 'MGEE' }, // holding company (publicly traded, ticker MGEE)
+  { cik: '0000061339', name: 'Madison Gas and Electric Company', ticker: null } // operating utility subsidiary
 ];
 
 function secAtomUrl(cik) {
