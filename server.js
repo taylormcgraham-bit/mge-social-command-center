@@ -549,26 +549,62 @@ function verifyTopicalContent(text) {
 
 // Identify which brand a piece of text matches (if any)
 // Returns { brand, keyword, confidence } or null
-function matchesAnyBrand(text, url) {
+//
+// Signature: matchesAnyBrand(text, url, [title])
+//   - text: full text (usually title + body combined)
+//   - url: source URL for domain blacklist check
+//   - title: (optional) when provided, enables title-aware mode for news feeds.
+//            Title match = high confidence, single pass. Body-only match requires
+//            2+ mentions to filter out "related articles" footer-link noise.
+//            When omitted (Reddit, YouTube), old single-pass behavior applies.
+function matchesAnyBrand(text, url, title) {
   if (!text) return null;
   // Domain exclusion first — skip stock-signal and low-quality sources entirely
   if (url && EXCLUDED_DOMAINS.test(url)) return null;
+
+  const titleAware = (typeof title === 'string' && title.length > 0);
+  const titleText = titleAware ? title : '';
 
   for (const [tag, cfg] of Object.entries(BRANDS)) {
     if (cfg.negative && cfg.negative.test(text)) continue;
 
     // Exact match (strong brand signal)
     for (const p of cfg.exact) {
-      const m = text.match(p);
-      if (m) {
-        // Even for exact matches, some brands require context (Xcel) to filter out arena/stock noise
+      let matchedKeyword = null;
+      let matchConfidence = 'high';
+      let matchedInTitle = false;
+
+      if (titleAware) {
+        // Title-aware mode: title match is authoritative.
+        const tm = titleText.match(p);
+        if (tm) {
+          matchedKeyword = tm[0];
+          matchedInTitle = true;
+        } else {
+          // Not in title — require 2+ occurrences in full text to accept
+          // (single body match is usually a footer/related-articles link)
+          const globalP = new RegExp(p.source, 'gi');
+          const allMatches = text.match(globalP) || [];
+          if (allMatches.length >= 2) {
+            matchedKeyword = allMatches[0];
+            matchConfidence = 'medium';
+          }
+        }
+      } else {
+        // Legacy single-match mode (Reddit self-posts, YouTube descriptions)
+        const m = text.match(p);
+        if (m) matchedKeyword = m[0];
+      }
+
+      if (matchedKeyword) {
+        // Some brands (Xcel) require context — still enforce
         if (cfg.requiresContext && cfg.contextRegex) {
           const u = UTILITY_CONTEXT.test(text);
           const g = cfg.contextRegex.test(text);
           if (!u && !g) continue;
-          return { brand: tag, keyword: m[0], confidence: (u && g) ? 'high' : 'medium' };
+          return { brand: tag, keyword: matchedKeyword, confidence: (u && g) ? 'high' : matchConfidence };
         }
-        return { brand: tag, keyword: m[0], confidence: 'high' };
+        return { brand: tag, keyword: matchedKeyword, confidence: matchConfidence };
       }
     }
 
@@ -578,6 +614,16 @@ function matchesAnyBrand(text, url) {
       const ctxRegex = cfg.contextRegex || WISCONSIN_GEO;
       const g = ctxRegex.test(text);
       if (u || g) {
+        // In title-aware mode, also require that the ambiguous term appears in title
+        // OR multiple times in body (single body mention is almost always a footer link)
+        if (titleAware) {
+          const inTitle = cfg.ambiguous.test(titleText);
+          if (!inTitle) {
+            const globalA = new RegExp(cfg.ambiguous.source, 'gi');
+            const allMatches = text.match(globalA) || [];
+            if (allMatches.length < 2) continue;
+          }
+        }
         const keyword = (text.match(cfg.ambiguous) || [tag])[0];
         return { brand: tag, keyword: keyword, confidence: (u && g) ? 'high' : 'medium' };
       }
@@ -787,8 +833,10 @@ async function pollGoogleAlerts() {
       const feed = await rssParser.parseURL(url);
       for (const item of (feed.items || [])) {
         const actualUrl = extractGalertUrl(item.link) || item.link;
-        const text = cleanHtml(item.title || '') + ' ' + cleanHtml(item.contentSnippet || item.content || '');
-        const m = matchesAnyBrand(text, actualUrl);
+        const titleText = cleanHtml(item.title || '');
+        const bodyText = cleanHtml(item.contentSnippet || item.content || '');
+        const text = titleText + ' ' + bodyText;
+        const m = matchesAnyBrand(text, actualUrl, titleText);
         if (!m) continue;
         let domain = 'Google Alerts';
         try { domain = new URL(actualUrl).hostname.replace(/^www\./, ''); } catch {}
@@ -957,8 +1005,10 @@ async function pollLocalNews() {
       const data = await rssParser.parseURL(feed.url);
       itemsInFeed = (data.items || []).length;
       for (const item of (data.items || [])) {
-        const text = cleanHtml(item.title || '') + ' ' + cleanHtml(item.contentSnippet || item.content || '');
-        const m = matchesAnyBrand(text, item.link);
+        const titleText = cleanHtml(item.title || '');
+        const bodyText = cleanHtml(item.contentSnippet || item.content || '');
+        const text = titleText + ' ' + bodyText;
+        const m = matchesAnyBrand(text, item.link, titleText);
         if (!m) continue;
         matched++;
         found.push({
@@ -1030,8 +1080,10 @@ async function pollGoogleNews() {
     try {
       const feed = await rssParser.parseURL(gNewsRssUrl(q));
       for (const item of (feed.items || [])) {
-        const text = cleanHtml(item.title || '') + ' ' + cleanHtml(item.contentSnippet || item.content || '');
-        const m = matchesAnyBrand(text, item.link);
+        const titleText = cleanHtml(item.title || '');
+        const bodyText = cleanHtml(item.contentSnippet || item.content || '');
+        const text = titleText + ' ' + bodyText;
+        const m = matchesAnyBrand(text, item.link, titleText);
         if (!m) continue;
         // For topical queries, still require the strict energy signal so we don't drown in noise
         if (tag === 'topical' && m.brand === 'mge') {
@@ -1089,10 +1141,12 @@ async function pollIndustryNews() {
     try {
       const data = await rssParser.parseURL(feed.url);
       for (const item of (data.items || [])) {
-        const text = cleanHtml(item.title || '') + ' ' + cleanHtml(item.contentSnippet || item.content || '');
+        const titleText = cleanHtml(item.title || '');
+        const bodyText = cleanHtml(item.contentSnippet || item.content || '');
+        const text = titleText + ' ' + bodyText;
         let brandTag, matchedKeyword, confidence;
-        // First try brand match (MGE, Alliant, We Energies)
-        const m = matchesAnyBrand(text, item.link);
+        // First try brand match (MGE, Alliant, We Energies) — title-aware to kill footer links
+        const m = matchesAnyBrand(text, item.link, titleText);
         if (m) {
           brandTag = m.brand;
           matchedKeyword = m.keyword;
