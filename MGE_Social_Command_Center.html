@@ -777,6 +777,8 @@
         .mention-card.source-industry_news { border-left-color: #f59e0b; }
         .mention-card.source-sec_filings { border-left-color: #1e293b; }
         .mention-card.source-podcasts { border-left-color: #a855f7; }
+        .mention-card.source-facebook_tagged { border-left-color: #1877F2; }
+        .mention-card.source-instagram_tagged { border-left-color: #E1306C; }
 
         /* Brand-based card highlighting (overrides source border) */
         .mention-card.brand-mge {
@@ -860,6 +862,8 @@
         .mention-related-item.source-industry_news .rel-dot { background: #f59e0b; }
         .mention-related-item.source-sec_filings .rel-dot { background: #1e293b; }
         .mention-related-item.source-podcasts .rel-dot { background: #a855f7; }
+        .mention-related-item.source-facebook_tagged .rel-dot { background: #1877F2; }
+        .mention-related-item.source-instagram_tagged .rel-dot { background: #E1306C; }
         .mention-related-title-text {
             color: #1B2559; font-weight: 600;
         }
@@ -953,6 +957,8 @@
         .mention-card.source-industry_news .source-dot { background: #f59e0b; }
         .mention-card.source-sec_filings .source-dot { background: #1e293b; }
         .mention-card.source-podcasts .source-dot { background: #a855f7; }
+        .mention-card.source-facebook_tagged .source-dot { background: #1877F2; }
+        .mention-card.source-instagram_tagged .source-dot { background: #E1306C; }
 
         .mention-date-pill {
             display: inline-flex; align-items: center; gap: 6px;
@@ -1294,7 +1300,7 @@
         <div class="mentions-header">
             <div>
                 <div class="mentions-title">Media Monitoring</div>
-                <div class="mentions-subtitle">MGE &amp; Wisconsin utility mentions across Reddit, Google News, local Wisconsin outlets, industry press, SEC filings, podcasts, Google Alerts, GDELT, and YouTube</div>
+                <div class="mentions-subtitle">MGE &amp; Wisconsin utility mentions across Facebook &amp; Instagram tags, Reddit, Google News, local Wisconsin outlets, industry press, SEC filings, podcasts, Google Alerts, GDELT, and YouTube</div>
             </div>
             <button class="mentions-refresh-btn" id="mentionsRefreshBtn" onclick="refreshMentions()">Refresh</button>
         </div>
@@ -1314,6 +1320,8 @@
                 <span class="mentions-filter-label">Source</span>
                 <div class="mentions-source-chips" id="mentionsSourceChips">
                     <button class="mentions-chip active" data-source="all" onclick="filterMentionsSource('all', this)">All</button>
+                    <button class="mentions-chip" data-source="facebook_tagged" onclick="filterMentionsSource('facebook_tagged', this)">Facebook Tagged</button>
+                    <button class="mentions-chip" data-source="instagram_tagged" onclick="filterMentionsSource('instagram_tagged', this)">Instagram Tagged</button>
                     <button class="mentions-chip" data-source="reddit" onclick="filterMentionsSource('reddit', this)">Reddit</button>
                     <button class="mentions-chip" data-source="google_news" onclick="filterMentionsSource('google_news', this)">Google News</button>
                     <button class="mentions-chip" data-source="local_news" onclick="filterMentionsSource('local_news', this)">Local News</button>
