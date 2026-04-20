@@ -1198,11 +1198,26 @@ function secAtomUrl(cik) {
   return 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=' + cik + '&type=&dateb=&owner=include&count=40&output=atom';
 }
 
+// SEC requires a descriptive User-Agent with contact info per their fair-use policy
+// (https://www.sec.gov/developer). Generic UAs get blocked.
+const SEC_USER_AGENT = 'MGE Social Command Center taylormcgraham@gmail.com';
+
 async function pollSECFilings() {
   const found = [];
   for (const company of SEC_COMPANIES) {
     try {
-      const feed = await rssParser.parseURL(secAtomUrl(company.cik));
+      const resp = await fetch(secAtomUrl(company.cik), {
+        headers: {
+          'User-Agent': SEC_USER_AGENT,
+          'Accept': 'application/atom+xml,application/xml,text/xml'
+        }
+      });
+      if (!resp.ok) {
+        console.warn(' [MENTIONS] SEC ' + resp.status + ' for ' + company.name + ' (' + company.cik + ')');
+        continue;
+      }
+      const body = await resp.text();
+      const feed = await rssParser.parseString(body);
       for (const item of (feed.items || [])) {
         // Extract form type from title (EDGAR titles are like "8-K - Current Report")
         const formMatch = (item.title || '').match(/^([\dA-Z\-]+)/);
@@ -1425,6 +1440,80 @@ app.get('/api/mentions', (req, res) => {
     brandStats: MENTIONS.brandStats,
     items
   });
+});
+
+// Diagnostic endpoint — tests each low-yield source and reports the raw API response.
+// Use when FB/IG/SEC/Podcasts show 0 counts to see WHY (permissions? bad token? truly empty?).
+app.get('/api/mentions/diagnose', async (req, res) => {
+  const results = {};
+
+  // Facebook tagged
+  try {
+    const fbToken = process.env.FACEBOOK_PAGE_TOKEN || (typeof config !== 'undefined' && config.facebook && config.facebook.pageAccessToken) || '';
+    const fbPageId = process.env.FACEBOOK_PAGE_ID || (typeof config !== 'undefined' && config.facebook && config.facebook.pageId) || '';
+    if (!fbToken || !fbPageId) {
+      results.facebook_tagged = { error: 'Missing FACEBOOK_PAGE_TOKEN or FACEBOOK_PAGE_ID' };
+    } else {
+      const url = `${META_BASE}/${fbPageId}/tagged?fields=id,message,created_time,from{name}&limit=3&access_token=${fbToken}`;
+      const r = await fetch(url);
+      const body = await r.text();
+      results.facebook_tagged = {
+        pageId: fbPageId,
+        tokenLen: fbToken.length,
+        status: r.status,
+        ok: r.ok,
+        body: body.substring(0, 800)
+      };
+    }
+  } catch (e) { results.facebook_tagged = { error: e.message }; }
+
+  // Instagram tagged
+  try {
+    const igToken = process.env.INSTAGRAM_TOKEN || process.env.FACEBOOK_PAGE_TOKEN || (typeof config !== 'undefined' && config.instagram && config.instagram.accessToken) || '';
+    const igUserId = process.env.INSTAGRAM_USER_ID || (typeof config !== 'undefined' && config.instagram && config.instagram.igUserId) || '';
+    if (!igToken || !igUserId) {
+      results.instagram_tagged = { error: 'Missing INSTAGRAM_TOKEN or INSTAGRAM_USER_ID' };
+    } else {
+      const url = `${META_BASE}/${igUserId}/tags?fields=id,caption,username,permalink&limit=3&access_token=${igToken}`;
+      const r = await fetch(url);
+      const body = await r.text();
+      results.instagram_tagged = {
+        userId: igUserId,
+        tokenLen: igToken.length,
+        status: r.status,
+        ok: r.ok,
+        body: body.substring(0, 800)
+      };
+    }
+  } catch (e) { results.instagram_tagged = { error: e.message }; }
+
+  // SEC EDGAR (MGE Energy)
+  try {
+    const url = secAtomUrl('0001141591');
+    const r = await fetch(url, {
+      headers: { 'User-Agent': SEC_USER_AGENT, 'Accept': 'application/atom+xml,application/xml,text/xml' }
+    });
+    const body = await r.text();
+    results.sec_filings = {
+      status: r.status,
+      ok: r.ok,
+      bodyLen: body.length,
+      preview: body.substring(0, 500)
+    };
+  } catch (e) { results.sec_filings = { error: e.message }; }
+
+  // Apple Podcasts
+  try {
+    const r = await fetch('https://itunes.apple.com/search?term=Madison+Gas+and+Electric&media=podcast&entity=podcast&limit=3');
+    const data = await r.json();
+    results.podcasts = {
+      status: r.status,
+      resultCount: data.resultCount,
+      titles: (data.results || []).map(p => (p.collectionName || p.trackName || '').substring(0, 60))
+    };
+  } catch (e) { results.podcasts = { error: e.message }; }
+
+  res.json(results);
 });
 
 let _lastManualMentionsRefresh = 0;
