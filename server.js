@@ -643,7 +643,7 @@ function matchesBrand(text) {
 const MENTIONS = {
   items: [],
   lastPoll: {},
-  stats: { reddit: 0, google_alerts: 0, gdelt: 0, youtube_search: 0, local_news: 0, google_news: 0, industry_news: 0, sec_filings: 0, podcasts: 0, facebook_tagged: 0, instagram_tagged: 0 },
+  stats: { reddit: 0, google_alerts: 0, gdelt: 0, youtube_search: 0, local_news: 0, google_news: 0, industry_news: 0, sec_filings: 0, podcasts: 0, facebook_visitor: 0 },
   brandStats: { mge: 0, alliant: 0, we_energies: 0, topical: 0 },
   maxSize: 800
 };
@@ -1292,53 +1292,63 @@ async function pollPodcasts() {
   addMentions('podcasts', found);
 }
 
-// --- 10. Facebook tagged posts (people tagging MGE page in their own posts) ---
-async function pollFacebookTagged() {
+// --- 10. Facebook visitor posts (people posting on MGE's Page wall) ---
+// Uses /visitor_posts endpoint which needs pages_read_user_content (already granted,
+// since we're reading user-generated comments elsewhere). /tagged endpoint was dropped
+// because it requires "Page Public Content Access" app-level feature via Meta App Review.
+async function pollFacebookVisitorPosts() {
   const token = process.env.FACEBOOK_PAGE_TOKEN || (typeof config !== 'undefined' && config.facebook && config.facebook.pageAccessToken) || '';
   const pageId = process.env.FACEBOOK_PAGE_ID || (typeof config !== 'undefined' && config.facebook && config.facebook.pageId) || '';
   if (!token || !pageId) {
-    MENTIONS.lastPoll.facebook_tagged = new Date().toISOString();
+    MENTIONS.lastPoll.facebook_visitor = new Date().toISOString();
     return;
   }
   try {
-    const url = `${META_BASE}/${pageId}/tagged?fields=id,message,story,created_time,from{id,name,picture},permalink_url,full_picture,type&limit=50&access_token=${token}`;
+    const url = `${META_BASE}/${pageId}/visitor_posts?fields=id,message,story,created_time,from{id,name,picture},permalink_url,full_picture,type&limit=50&access_token=${token}`;
     const resp = await fetch(url);
     if (!resp.ok) {
       const body = await resp.text();
-      console.warn(' [MENTIONS] Facebook tagged ' + resp.status + ':', body.substring(0, 300));
-      MENTIONS.lastPoll.facebook_tagged = new Date().toISOString();
+      console.warn(' [MENTIONS] Facebook visitor posts ' + resp.status + ':', body.substring(0, 300));
+      MENTIONS.lastPoll.facebook_visitor = new Date().toISOString();
       return;
     }
     const data = await resp.json();
     const posts = data.data || [];
-    const found = posts.map(p => {
-      const msg = (p.message || p.story || 'Facebook post').trim();
-      const fromName = (p.from && p.from.name) || 'Facebook User';
-      return {
-        id: 'fbtag:' + p.id,
-        source: 'facebook_tagged',
-        sourceDisplay: 'Facebook \u00b7 ' + fromName,
-        sourceName: fromName,
-        title: msg.length > 90 ? msg.substring(0, 87) + '...' : msg,
-        snippet: msg.substring(0, 300),
-        url: p.permalink_url || ('https://www.facebook.com/' + p.id),
-        author: fromName,
-        publishedAt: p.created_time || new Date().toISOString(),
-        thumbnail: p.full_picture || null,
-        brandTag: 'mge',
-        matchedKeyword: '@Madison Gas and Electric tag',
-        confidence: 'high'
-      };
-    });
-    console.log(' [MENTIONS] Facebook tagged: ' + found.length + ' tagged posts');
-    addMentions('facebook_tagged', found);
+    const found = posts
+      .filter(p => {
+        // Safety net: drop MGE's own posts if the endpoint ever returns them
+        const fromId = p.from && p.from.id;
+        return !fromId || fromId !== pageId;
+      })
+      .map(p => {
+        const msg = (p.message || p.story || 'Facebook post').trim();
+        const fromName = (p.from && p.from.name) || 'Facebook User';
+        return {
+          id: 'fbvisit:' + p.id,
+          source: 'facebook_visitor',
+          sourceDisplay: 'Facebook Wall \u00b7 ' + fromName,
+          sourceName: fromName,
+          title: msg.length > 90 ? msg.substring(0, 87) + '...' : msg,
+          snippet: msg.substring(0, 300),
+          url: p.permalink_url || ('https://www.facebook.com/' + p.id),
+          author: fromName,
+          publishedAt: p.created_time || new Date().toISOString(),
+          thumbnail: p.full_picture || null,
+          brandTag: 'mge',
+          matchedKeyword: 'Posted on MGE wall',
+          confidence: 'high'
+        };
+      });
+    console.log(' [MENTIONS] Facebook visitor posts: ' + found.length + ' wall posts');
+    addMentions('facebook_visitor', found);
   } catch (err) {
-    console.warn(' [MENTIONS] Facebook tagged error:', err.message);
-    MENTIONS.lastPoll.facebook_tagged = new Date().toISOString();
+    console.warn(' [MENTIONS] Facebook visitor posts error:', err.message);
+    MENTIONS.lastPoll.facebook_visitor = new Date().toISOString();
   }
 }
 
-// --- 11. Instagram tagged posts (people @mentioning the MGE IG account) ---
+// --- 11. Instagram tagged posts (DISABLED — endpoint requires instagram_manage_insights
+// which needs Meta App Review. Function kept for easy re-enable later.) ---
 async function pollInstagramTagged() {
   const token = process.env.INSTAGRAM_TOKEN || process.env.FACEBOOK_PAGE_TOKEN || (typeof config !== 'undefined' && config.instagram && config.instagram.accessToken) || '';
   const userId = process.env.INSTAGRAM_USER_ID || (typeof config !== 'undefined' && config.instagram && config.instagram.igUserId) || '';
@@ -1386,22 +1396,20 @@ async function pollInstagramTagged() {
 
 // --- Staggered schedulers (spread API calls, stay well under rate limits) ---
 function startMentionPollers() {
-  console.log(' [MENTIONS] Starting pollers (11 sources, staggered)...');
+  console.log(' [MENTIONS] Starting pollers (10 sources, staggered)...');
   setTimeout(pollReddit, 5000);
-  setTimeout(pollFacebookTagged, 15000);
+  setTimeout(pollFacebookVisitorPosts, 15000);
   setTimeout(pollLocalNews, 25000);
-  setTimeout(pollInstagramTagged, 40000);
-  setTimeout(pollGoogleNews, 55000);
-  setTimeout(pollGoogleAlerts, 70000);
-  setTimeout(pollGDELT, 90000);
-  setTimeout(pollSECFilings, 105000);
-  setTimeout(pollIndustryNews, 125000);
-  setTimeout(pollPodcasts, 150000);
-  setTimeout(pollYouTubeMentions, 175000);
+  setTimeout(pollGoogleNews, 45000);
+  setTimeout(pollGoogleAlerts, 65000);
+  setTimeout(pollGDELT, 85000);
+  setTimeout(pollSECFilings, 100000);
+  setTimeout(pollIndustryNews, 120000);
+  setTimeout(pollPodcasts, 145000);
+  setTimeout(pollYouTubeMentions, 170000);
   setInterval(pollReddit, 30 * 60 * 1000);
-  setInterval(pollFacebookTagged, 20 * 60 * 1000); // FB tagged — fresh-ish every 20min
+  setInterval(pollFacebookVisitorPosts, 20 * 60 * 1000);
   setInterval(pollLocalNews, 30 * 60 * 1000);
-  setInterval(pollInstagramTagged, 30 * 60 * 1000);
   setInterval(pollGoogleNews, 45 * 60 * 1000);
   setInterval(pollGoogleAlerts, 60 * 60 * 1000);
   setInterval(pollGDELT, 120 * 60 * 1000);
@@ -1409,6 +1417,8 @@ function startMentionPollers() {
   setInterval(pollIndustryNews, 180 * 60 * 1000);
   setInterval(pollPodcasts, 720 * 60 * 1000); // Podcasts slow, every 12h
   setInterval(pollYouTubeMentions, 240 * 60 * 1000);
+  // pollInstagramTagged() is defined but not scheduled — requires instagram_manage_insights
+  // via Meta App Review. Enable by adding a setInterval when permission is granted.
 }
 
 // --- API endpoints ---
@@ -1447,17 +1457,17 @@ app.get('/api/mentions', (req, res) => {
 app.get('/api/mentions/diagnose', async (req, res) => {
   const results = {};
 
-  // Facebook tagged
+  // Facebook visitor posts
   try {
     const fbToken = process.env.FACEBOOK_PAGE_TOKEN || (typeof config !== 'undefined' && config.facebook && config.facebook.pageAccessToken) || '';
     const fbPageId = process.env.FACEBOOK_PAGE_ID || (typeof config !== 'undefined' && config.facebook && config.facebook.pageId) || '';
     if (!fbToken || !fbPageId) {
-      results.facebook_tagged = { error: 'Missing FACEBOOK_PAGE_TOKEN or FACEBOOK_PAGE_ID' };
+      results.facebook_visitor = { error: 'Missing FACEBOOK_PAGE_TOKEN or FACEBOOK_PAGE_ID' };
     } else {
-      const url = `${META_BASE}/${fbPageId}/tagged?fields=id,message,created_time,from{name}&limit=3&access_token=${fbToken}`;
+      const url = `${META_BASE}/${fbPageId}/visitor_posts?fields=id,message,created_time,from{name}&limit=3&access_token=${fbToken}`;
       const r = await fetch(url);
       const body = await r.text();
-      results.facebook_tagged = {
+      results.facebook_visitor = {
         pageId: fbPageId,
         tokenLen: fbToken.length,
         status: r.status,
@@ -1465,27 +1475,7 @@ app.get('/api/mentions/diagnose', async (req, res) => {
         body: body.substring(0, 800)
       };
     }
-  } catch (e) { results.facebook_tagged = { error: e.message }; }
-
-  // Instagram tagged
-  try {
-    const igToken = process.env.INSTAGRAM_TOKEN || process.env.FACEBOOK_PAGE_TOKEN || (typeof config !== 'undefined' && config.instagram && config.instagram.accessToken) || '';
-    const igUserId = process.env.INSTAGRAM_USER_ID || (typeof config !== 'undefined' && config.instagram && config.instagram.igUserId) || '';
-    if (!igToken || !igUserId) {
-      results.instagram_tagged = { error: 'Missing INSTAGRAM_TOKEN or INSTAGRAM_USER_ID' };
-    } else {
-      const url = `${META_BASE}/${igUserId}/tags?fields=id,caption,username,permalink&limit=3&access_token=${igToken}`;
-      const r = await fetch(url);
-      const body = await r.text();
-      results.instagram_tagged = {
-        userId: igUserId,
-        tokenLen: igToken.length,
-        status: r.status,
-        ok: r.ok,
-        body: body.substring(0, 800)
-      };
-    }
-  } catch (e) { results.instagram_tagged = { error: e.message }; }
+  } catch (e) { results.facebook_visitor = { error: e.message }; }
 
   // SEC EDGAR (MGE Energy)
   try {
@@ -1525,8 +1515,7 @@ app.post('/api/mentions/refresh', (req, res) => {
   _lastManualMentionsRefresh = now;
   Promise.all([
     pollReddit(),
-    pollFacebookTagged(),
-    pollInstagramTagged(),
+    pollFacebookVisitorPosts(),
     pollLocalNews(),
     pollGoogleNews(),
     pollGoogleAlerts(),
@@ -1536,7 +1525,7 @@ app.post('/api/mentions/refresh', (req, res) => {
     pollPodcasts(),
     pollYouTubeMentions()
   ]).catch(() => {});
-  res.json({ ok: true, message: 'Refresh triggered across all 11 sources. New mentions will appear within ~60 seconds.' });
+  res.json({ ok: true, message: 'Refresh triggered across all 10 sources. New mentions will appear within ~60 seconds.' });
 });
 
 if (process.env.NODE_ENV === 'production' || process.env.ENABLE_MENTIONS === 'true') {
