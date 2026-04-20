@@ -643,7 +643,7 @@ function matchesBrand(text) {
 const MENTIONS = {
   items: [],
   lastPoll: {},
-  stats: { reddit: 0, google_alerts: 0, gdelt: 0, youtube_search: 0, local_news: 0, google_news: 0, industry_news: 0, sec_filings: 0, podcasts: 0 },
+  stats: { reddit: 0, google_alerts: 0, gdelt: 0, youtube_search: 0, local_news: 0, google_news: 0, industry_news: 0, sec_filings: 0, podcasts: 0, facebook_tagged: 0, instagram_tagged: 0 },
   brandStats: { mge: 0, alliant: 0, we_energies: 0, topical: 0 },
   maxSize: 800
 };
@@ -1277,20 +1277,116 @@ async function pollPodcasts() {
   addMentions('podcasts', found);
 }
 
+// --- 10. Facebook tagged posts (people tagging MGE page in their own posts) ---
+async function pollFacebookTagged() {
+  const token = process.env.FACEBOOK_PAGE_TOKEN || (typeof config !== 'undefined' && config.facebook && config.facebook.pageAccessToken) || '';
+  const pageId = process.env.FACEBOOK_PAGE_ID || (typeof config !== 'undefined' && config.facebook && config.facebook.pageId) || '';
+  if (!token || !pageId) {
+    MENTIONS.lastPoll.facebook_tagged = new Date().toISOString();
+    return;
+  }
+  try {
+    const url = `${META_BASE}/${pageId}/tagged?fields=id,message,story,created_time,from{id,name,picture},permalink_url,full_picture,type&limit=50&access_token=${token}`;
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      const body = await resp.text();
+      console.warn(' [MENTIONS] Facebook tagged ' + resp.status + ':', body.substring(0, 300));
+      MENTIONS.lastPoll.facebook_tagged = new Date().toISOString();
+      return;
+    }
+    const data = await resp.json();
+    const posts = data.data || [];
+    const found = posts.map(p => {
+      const msg = (p.message || p.story || 'Facebook post').trim();
+      const fromName = (p.from && p.from.name) || 'Facebook User';
+      return {
+        id: 'fbtag:' + p.id,
+        source: 'facebook_tagged',
+        sourceDisplay: 'Facebook \u00b7 ' + fromName,
+        sourceName: fromName,
+        title: msg.length > 90 ? msg.substring(0, 87) + '...' : msg,
+        snippet: msg.substring(0, 300),
+        url: p.permalink_url || ('https://www.facebook.com/' + p.id),
+        author: fromName,
+        publishedAt: p.created_time || new Date().toISOString(),
+        thumbnail: p.full_picture || null,
+        brandTag: 'mge',
+        matchedKeyword: '@Madison Gas and Electric tag',
+        confidence: 'high'
+      };
+    });
+    console.log(' [MENTIONS] Facebook tagged: ' + found.length + ' tagged posts');
+    addMentions('facebook_tagged', found);
+  } catch (err) {
+    console.warn(' [MENTIONS] Facebook tagged error:', err.message);
+    MENTIONS.lastPoll.facebook_tagged = new Date().toISOString();
+  }
+}
+
+// --- 11. Instagram tagged posts (people @mentioning the MGE IG account) ---
+async function pollInstagramTagged() {
+  const token = process.env.INSTAGRAM_TOKEN || process.env.FACEBOOK_PAGE_TOKEN || (typeof config !== 'undefined' && config.instagram && config.instagram.accessToken) || '';
+  const userId = process.env.INSTAGRAM_USER_ID || (typeof config !== 'undefined' && config.instagram && config.instagram.igUserId) || '';
+  if (!token || !userId) {
+    MENTIONS.lastPoll.instagram_tagged = new Date().toISOString();
+    return;
+  }
+  try {
+    const url = `${META_BASE}/${userId}/tags?fields=id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,username,like_count,comments_count&limit=50&access_token=${token}`;
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      const body = await resp.text();
+      console.warn(' [MENTIONS] Instagram tagged ' + resp.status + ':', body.substring(0, 300));
+      MENTIONS.lastPoll.instagram_tagged = new Date().toISOString();
+      return;
+    }
+    const data = await resp.json();
+    const found = (data.data || []).map(m => {
+      const cap = (m.caption || 'Instagram post').trim();
+      const user = m.username || 'user';
+      return {
+        id: 'igtag:' + m.id,
+        source: 'instagram_tagged',
+        sourceDisplay: 'Instagram \u00b7 @' + user,
+        sourceName: '@' + user,
+        title: cap.length > 90 ? cap.substring(0, 87) + '...' : cap,
+        snippet: cap.substring(0, 300),
+        url: m.permalink,
+        author: '@' + user,
+        publishedAt: m.timestamp || new Date().toISOString(),
+        thumbnail: m.media_url || m.thumbnail_url || null,
+        brandTag: 'mge',
+        matchedKeyword: '@MGE tag',
+        confidence: 'high',
+        engagement: (m.like_count || m.comments_count) ? { score: m.like_count || 0, comments: m.comments_count || 0 } : null
+      };
+    });
+    console.log(' [MENTIONS] Instagram tagged: ' + found.length + ' tagged posts');
+    addMentions('instagram_tagged', found);
+  } catch (err) {
+    console.warn(' [MENTIONS] Instagram tagged error:', err.message);
+    MENTIONS.lastPoll.instagram_tagged = new Date().toISOString();
+  }
+}
+
 // --- Staggered schedulers (spread API calls, stay well under rate limits) ---
 function startMentionPollers() {
-  console.log(' [MENTIONS] Starting pollers (9 sources, staggered)...');
+  console.log(' [MENTIONS] Starting pollers (11 sources, staggered)...');
   setTimeout(pollReddit, 5000);
-  setTimeout(pollLocalNews, 20000);
-  setTimeout(pollGoogleNews, 35000);
-  setTimeout(pollGoogleAlerts, 50000);
-  setTimeout(pollGDELT, 70000);
-  setTimeout(pollSECFilings, 85000);
-  setTimeout(pollIndustryNews, 105000);
-  setTimeout(pollPodcasts, 130000);
-  setTimeout(pollYouTubeMentions, 150000);
+  setTimeout(pollFacebookTagged, 15000);
+  setTimeout(pollLocalNews, 25000);
+  setTimeout(pollInstagramTagged, 40000);
+  setTimeout(pollGoogleNews, 55000);
+  setTimeout(pollGoogleAlerts, 70000);
+  setTimeout(pollGDELT, 90000);
+  setTimeout(pollSECFilings, 105000);
+  setTimeout(pollIndustryNews, 125000);
+  setTimeout(pollPodcasts, 150000);
+  setTimeout(pollYouTubeMentions, 175000);
   setInterval(pollReddit, 30 * 60 * 1000);
+  setInterval(pollFacebookTagged, 20 * 60 * 1000); // FB tagged — fresh-ish every 20min
   setInterval(pollLocalNews, 30 * 60 * 1000);
+  setInterval(pollInstagramTagged, 30 * 60 * 1000);
   setInterval(pollGoogleNews, 45 * 60 * 1000);
   setInterval(pollGoogleAlerts, 60 * 60 * 1000);
   setInterval(pollGDELT, 120 * 60 * 1000);
@@ -1340,6 +1436,8 @@ app.post('/api/mentions/refresh', (req, res) => {
   _lastManualMentionsRefresh = now;
   Promise.all([
     pollReddit(),
+    pollFacebookTagged(),
+    pollInstagramTagged(),
     pollLocalNews(),
     pollGoogleNews(),
     pollGoogleAlerts(),
@@ -1349,7 +1447,7 @@ app.post('/api/mentions/refresh', (req, res) => {
     pollPodcasts(),
     pollYouTubeMentions()
   ]).catch(() => {});
-  res.json({ ok: true, message: 'Refresh triggered across all 9 sources. New mentions will appear within ~60 seconds.' });
+  res.json({ ok: true, message: 'Refresh triggered across all 11 sources. New mentions will appear within ~60 seconds.' });
 });
 
 if (process.env.NODE_ENV === 'production' || process.env.ENABLE_MENTIONS === 'true') {
