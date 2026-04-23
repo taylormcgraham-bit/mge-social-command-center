@@ -30,6 +30,8 @@ services:
         sync: false
       - key: GOOGLE_ALERTS_RSS_URLS
         sync: false
+      - key: GEMINI_API_KEY
+        sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: INSIGHTS_MODEL
