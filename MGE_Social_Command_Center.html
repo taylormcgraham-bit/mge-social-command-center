@@ -81,6 +81,112 @@
         }
         .quota-banner.visible { display: block; }
 
+        /* --- AI Insights panel --- */
+        .insights-strip {
+            max-width: 1600px; margin: 28px auto 0; padding: 0 36px;
+        }
+        .insights-strip > .insights-header,
+        .insights-strip > .insights-body,
+        .insights-strip > .insights-footer { box-sizing: border-box; }
+        .insights-strip .insights-header {
+            display: flex; justify-content: space-between; align-items: center;
+            gap: 12px; flex-wrap: wrap;
+            background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%);
+            color: #F8FAFC;
+            border-radius: 14px 14px 0 0;
+            padding: 14px 22px;
+        }
+        .insights-strip .insights-title {
+            display: flex; align-items: center; gap: 12px;
+            font-size: 15px; font-weight: 700; letter-spacing: 0.2px;
+        }
+        .insights-strip .insights-badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #F59E0B, #F43F5E);
+            color: white; font-size: 11px; font-weight: 800; letter-spacing: 0.5px;
+            padding: 3px 9px; border-radius: 6px; text-transform: uppercase;
+            box-shadow: 0 1px 3px rgba(244,63,94,0.35);
+        }
+        .insights-strip .insights-range {
+            color: #CBD5E1; font-weight: 500; font-size: 13px;
+        }
+        .insights-strip .insights-actions {
+            display: flex; align-items: center; gap: 12px;
+        }
+        .insights-strip .insights-status {
+            font-size: 12px; color: #94A3B8; font-style: italic;
+        }
+        .insights-strip .insights-refresh {
+            background: rgba(255,255,255,0.1); color: #F8FAFC;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 600;
+            cursor: pointer; transition: background 0.15s;
+        }
+        .insights-strip .insights-refresh:hover { background: rgba(255,255,255,0.2); }
+        .insights-strip .insights-refresh:disabled { opacity: 0.5; cursor: not-allowed; }
+        .insights-strip .insights-body {
+            background: white;
+            padding: 20px 24px;
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+            border-left: 1px solid #E2E8F0;
+            border-right: 1px solid #E2E8F0;
+        }
+        @media (max-width: 960px) {
+            .insights-strip .insights-body { grid-template-columns: 1fr; }
+        }
+        .insights-strip .insights-section { min-width: 0; }
+        .insights-strip .insights-section-title {
+            font-size: 11px; font-weight: 800; letter-spacing: 1px;
+            color: #475569; text-transform: uppercase;
+            margin-bottom: 10px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .insights-strip .insights-section-title .sec-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+        }
+        .insights-strip .insights-section.what-happened .sec-dot { background: #3B82F6; }
+        .insights-strip .insights-section.whats-working .sec-dot { background: #22C55E; }
+        .insights-strip .insights-section.what-to-try   .sec-dot { background: #F59E0B; }
+        .insights-strip .insights-section p {
+            margin: 0 0 10px; font-size: 13px; line-height: 1.55; color: #1E293B;
+        }
+        .insights-strip .insights-section ul {
+            margin: 0; padding-left: 0; list-style: none;
+        }
+        .insights-strip .insights-section li {
+            font-size: 13px; line-height: 1.55; color: #1E293B;
+            padding: 7px 0 7px 20px; position: relative;
+            border-top: 1px solid #F1F5F9;
+        }
+        .insights-strip .insights-section li:first-child { border-top: none; }
+        .insights-strip .insights-section li::before {
+            content: ''; position: absolute; left: 0; top: 14px;
+            width: 10px; height: 2px; background: #CBD5E1; border-radius: 1px;
+        }
+        .insights-strip .insights-section.whats-working li::before { background: #22C55E; }
+        .insights-strip .insights-section.what-to-try li::before   { background: #F59E0B; }
+        .insights-strip .insights-footer {
+            background: #F8FAFC; border: 1px solid #E2E8F0; border-top: none;
+            border-radius: 0 0 14px 14px;
+            padding: 10px 22px;
+            display: flex; justify-content: space-between; align-items: center;
+            gap: 12px; flex-wrap: wrap;
+            font-size: 11px; color: #64748B;
+        }
+        .insights-strip .insights-timestamp { font-weight: 600; color: #475569; }
+        .insights-strip .insights-placeholder {
+            grid-column: 1 / -1; text-align: center; padding: 24px 12px; color: #64748B;
+        }
+        .insights-strip .insights-placeholder-title {
+            font-weight: 700; color: #1E293B; margin-bottom: 6px; font-size: 14px;
+        }
+        .insights-strip .insights-placeholder-sub { font-size: 12px; }
+        .insights-strip.is-loading .insights-refresh { pointer-events: none; opacity: 0.5; }
+        .insights-strip.is-error .insights-body {
+            background: #FEF2F2; border-color: #FECACA;
+        }
+        .insights-strip.is-error .insights-placeholder-title { color: #991B1B; }
+
         /* --- Two-column layout --- */
         .main-grid {
             display: grid; grid-template-columns: 1fr 1fr;
@@ -1094,6 +1200,31 @@
     [!] API quota limit reached for one or more platforms. Some data may be incomplete. Quotas typically reset at midnight Pacific Time.
 </div>
 
+<!-- AI Insights — full width, narrative summary of the selected window -->
+<div class="insights-strip" id="insightsStrip">
+    <div class="insights-header">
+        <div class="insights-title">
+            <span class="insights-badge">AI</span>
+            Insights for this window
+            <span class="insights-range" id="insightsRange"></span>
+        </div>
+        <div class="insights-actions">
+            <span class="insights-status" id="insightsStatus"></span>
+            <button class="insights-refresh" id="insightsRefreshBtn" title="Regenerate the insights summary">&#x21bb; Refresh</button>
+        </div>
+    </div>
+    <div class="insights-body" id="insightsBody">
+        <div class="insights-placeholder">
+            <div class="insights-placeholder-title">Waiting for data</div>
+            <div class="insights-placeholder-sub">Insights will generate automatically once this session's posts and comments finish loading.</div>
+        </div>
+    </div>
+    <div class="insights-footer">
+        <span>Generated by Claude from posts, performance metrics, and audience comments in the selected window.</span>
+        <span class="insights-timestamp" id="insightsTimestamp"></span>
+    </div>
+</div>
+
 <!-- Main two-column grid -->
 <div class="main-grid">
 
@@ -2069,22 +2200,41 @@ function getFollowerMoMChange(platformKey, currentFollowers) {
 
 // ============================================================
 // AHS HISTORY (localStorage, monthly composite scores for timeline chart)
+// Also snapshots monthly engagement totals and sentiment scores so the
+// chart can show all three lines even when the API only returns recent data.
 // ============================================================
-var AHS_HISTORY_KEY = 'mge_ahs_history_v2';
+var AHS_HISTORY_KEY = 'mge_ahs_history_v3';
 function getAhsHistory() {
     try {
         var raw = localStorage.getItem(AHS_HISTORY_KEY);
-        return raw ? JSON.parse(raw) : {};
+        var parsed = raw ? JSON.parse(raw) : {};
+        // One-time migration: pull forward any v2 history on first load of v3
+        if (!raw) {
+            try {
+                var legacyRaw = localStorage.getItem('mge_ahs_history_v2');
+                if (legacyRaw) {
+                    parsed = JSON.parse(legacyRaw);
+                    localStorage.setItem(AHS_HISTORY_KEY, JSON.stringify(parsed));
+                }
+            } catch (e) {}
+        }
+        return parsed;
     } catch (e) { return {}; }
+}
+function currentYmKey() {
+    var now = new Date();
+    return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
 }
 function saveAhsScore(overallScore, perPlatform) {
     if (overallScore === null) return;
     var history = getAhsHistory();
-    var now = new Date();
-    var ymKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    var ymKey = currentYmKey();
+    var existing = history[ymKey] || { platforms: {} };
     history[ymKey] = {
-        ts: now.toISOString(),
+        ts: new Date().toISOString(),
         score: overallScore,
+        engagement: existing.engagement != null ? existing.engagement : null,
+        sentiment:  existing.sentiment  != null ? existing.sentiment  : null,
         platforms: {}
     };
     if (perPlatform) {
@@ -2099,6 +2249,19 @@ function saveAhsScore(overallScore, perPlatform) {
             }
         });
     }
+    try { localStorage.setItem(AHS_HISTORY_KEY, JSON.stringify(history)); } catch (e) {}
+}
+// Stamp the current month's engagement total and sentiment score. Called from
+// renderSentimentTimeline so the chart has month-over-month data even when the
+// dashboard's date filter is short (e.g. 7-day window).
+function saveMonthlyMetrics(engagementTotal, sentimentScore) {
+    var history = getAhsHistory();
+    var ymKey = currentYmKey();
+    var row = history[ymKey] || { ts: new Date().toISOString(), score: null, platforms: {} };
+    if (engagementTotal != null && !isNaN(engagementTotal)) row.engagement = Math.round(engagementTotal);
+    if (sentimentScore  != null && !isNaN(sentimentScore))  row.sentiment  = Math.round(sentimentScore);
+    row.ts = new Date().toISOString();
+    history[ymKey] = row;
     try { localStorage.setItem(AHS_HISTORY_KEY, JSON.stringify(history)); } catch (e) {}
 }
 
@@ -2931,7 +3094,7 @@ function renderSentimentTimeline(rawOrData, processedData) {
         if (commentMap[key]) commentMap[key].push(c.text || '');
     });
 
-    // Bucket engagement by month from posts
+    // Bucket engagement by month from posts (live, this session)
     var engMap = {};
     rolling.forEach(function(m) { engMap[m.key] = 0; });
     allPosts.forEach(function(p) {
@@ -2946,18 +3109,39 @@ function renderSentimentTimeline(rawOrData, processedData) {
 
     var labels = rolling.map(function(m) { return m.label; });
     var commentVolumes = rolling.map(function(m) { return commentMap[m.key].length; });
-    var engVolumes = rolling.map(function(m) { return engMap[m.key]; });
+
+    // Compute current-month sentiment from raw comments (not filtered by date window)
+    var thisMonthKey = currentYmKey();
+    var thisMonthSentiment = null;
+    if (commentMap[thisMonthKey] && commentMap[thisMonthKey].length > 0) {
+        var thisMonthTexts = commentMap[thisMonthKey].join(' ');
+        if (thisMonthTexts.trim()) {
+            thisMonthSentiment = analyzeSentiment(thisMonthTexts).score;
+        }
+    }
+    // Stamp current month's engagement + sentiment so the trend builds over time
+    // (previous months are frozen; we only ever update the live month).
+    saveMonthlyMetrics(engMap[thisMonthKey] || 0, thisMonthSentiment);
+
+    // Now pull ALL three metric series from localStorage history, so the chart
+    // shows month-over-month data regardless of the currently selected date window.
+    var ahsHistory = getAhsHistory();
+    var engVolumes = rolling.map(function(m) {
+        var entry = ahsHistory[m.key];
+        return entry && entry.engagement != null ? entry.engagement : 0;
+    });
     var sentimentScores = rolling.map(function(m) {
-        var texts = commentMap[m.key].join(' ');
+        var entry = ahsHistory[m.key];
+        if (entry && entry.sentiment != null) return entry.sentiment;
+        // Fallback: if no stored sentiment but we have live comments for this month,
+        // compute from those. Keeps the chart useful the very first month.
+        var texts = (commentMap[m.key] || []).join(' ');
         if (!texts.trim()) return null;
         return analyzeSentiment(texts).score;
     });
-
-    // AHS composite scores from localStorage history
-    var ahsHistory = getAhsHistory();
     var ahsScores = rolling.map(function(m) {
         var entry = ahsHistory[m.key];
-        return entry ? entry.score : null;
+        return entry && entry.score != null ? entry.score : null;
     });
 
     // --- Stats row (above chart) ---
@@ -3404,6 +3588,8 @@ async function runDashboard() {
         renderPostsFeed(data);
         // Audience Health Over Time runs against raw (unfiltered) data for rolling 12-month window
         renderSentimentTimeline(raw, data);
+        // AI Insights panel — narrative summary of the selected window
+        try { renderInsightsPanel(data, previousPeriodData); } catch (e) { console.warn('Insights panel failed:', e); }
     }
     document.getElementById('lastUpdated').textContent =
         'Updated: ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
@@ -3453,7 +3639,241 @@ function initDateRangePicker() {
 window.addEventListener('DOMContentLoaded', () => {
     initDateRangePicker();
     runDashboard();
+    initInsightsPanel();
 });
+
+// ============================================================
+// AI INSIGHTS PANEL
+// Generates a narrative summary of the selected window by calling
+// /api/insights (which proxies to Claude). Results are cached in
+// sessionStorage keyed by a data fingerprint so we don't re-call on
+// every render cycle — only when data meaningfully changes or the
+// user clicks Refresh.
+// ============================================================
+var INSIGHTS_CACHE_KEY = 'mge_insights_cache_v1';
+var _insightsLatestFingerprint = null;
+
+function initInsightsPanel() {
+    var btn = document.getElementById('insightsRefreshBtn');
+    if (btn) {
+        btn.addEventListener('click', function() {
+            sessionStorage.removeItem(INSIGHTS_CACHE_KEY);
+            _insightsLatestFingerprint = null;
+            // Re-render using last data snapshot
+            if (window._insightsLastData) {
+                renderInsightsPanel(window._insightsLastData.data, window._insightsLastData.prev, /*force*/ true);
+            }
+        });
+    }
+}
+
+function buildInsightsPayload(data, previousData) {
+    if (!data) return null;
+    // Pull top-engaging posts (cap at 20 to keep payload small)
+    var posts = Array.isArray(data.posts) ? data.posts.slice() : [];
+    posts.sort(function(a, b) { return (b.engagement || 0) - (a.engagement || 0); });
+    var topPosts = posts.slice(0, 20).map(function(p) {
+        return {
+            platform: p.platform || p.source || 'unknown',
+            date: p.time || p.date || '',
+            engagement: p.engagement || 0,
+            reach: p.reach || null,
+            impressions: p.impressions || null,
+            comments: p.commentCount != null ? p.commentCount : (p.comments || 0),
+            likes: p.likes || null,
+            shares: p.shares || null,
+            type: p.mediaType || p.type || '',
+            text: (p.text || p.caption || p.message || p.title || '').slice(0, 400)
+        };
+    });
+
+    // Sample a representative mix of comments (positive, neutral, negative)
+    var allComments = [];
+    if (Array.isArray(data.comments)) {
+        allComments = data.comments;
+    } else if (data.platformComments) {
+        ['fb','ig','li','yt'].forEach(function(k) {
+            var arr = data.platformComments[k] || [];
+            arr.forEach(function(c) { allComments.push(c); });
+        });
+    }
+    // Keep short comments only and cap at 40
+    var sampled = allComments
+        .filter(function(c) { return c && (c.text || c.message); })
+        .map(function(c) {
+            var txt = (c.text || c.message || '').slice(0, 220);
+            var s = (typeof analyzeSentiment === 'function') ? analyzeSentiment(txt) : null;
+            return {
+                platform: c.platform || c.source || '',
+                text: txt,
+                score: s ? s.score : null
+            };
+        })
+        .slice(0, 40);
+
+    // Headline metrics
+    var metrics = {
+        dateRange: (data.dateRange || data.window || ''),
+        postCount: posts.length,
+        commentCount: allComments.length,
+        totalEngagement: posts.reduce(function(s, p) { return s + (p.engagement || 0); }, 0),
+        totalReach: posts.reduce(function(s, p) { return s + (p.reach || 0); }, 0),
+        platforms: {}
+    };
+    ['fb','ig','li','yt'].forEach(function(k) {
+        var arr = posts.filter(function(p) { return (p.platform || p.source) === k; });
+        if (arr.length) {
+            metrics.platforms[k] = {
+                posts: arr.length,
+                engagement: arr.reduce(function(s, p) { return s + (p.engagement || 0); }, 0)
+            };
+        }
+    });
+
+    // Compare to previous period if we have it
+    var prior = null;
+    if (previousData && Array.isArray(previousData.posts)) {
+        prior = {
+            postCount: previousData.posts.length,
+            totalEngagement: previousData.posts.reduce(function(s, p) { return s + (p.engagement || 0); }, 0),
+            totalReach: previousData.posts.reduce(function(s, p) { return s + (p.reach || 0); }, 0)
+        };
+    }
+
+    return {
+        metrics: metrics,
+        prior: prior,
+        topPosts: topPosts,
+        commentSample: sampled
+    };
+}
+
+function insightsFingerprint(payload) {
+    if (!payload || !payload.metrics) return '';
+    var m = payload.metrics;
+    return [m.dateRange || '', m.postCount, m.commentCount, m.totalEngagement, (payload.topPosts[0] || {}).text || ''].join('|');
+}
+
+function renderInsightsBody(html) {
+    var body = document.getElementById('insightsBody');
+    if (body) body.innerHTML = html;
+}
+
+function insightsPlaceholder(title, sub, isError) {
+    return '<div class="insights-placeholder">' +
+        '<div class="insights-placeholder-title">' + escapeHtml(title) + '</div>' +
+        '<div class="insights-placeholder-sub">' + escapeHtml(sub) + '</div>' +
+        '</div>';
+}
+
+function formatInsightsSections(result) {
+    if (!result) return insightsPlaceholder('No insights', 'The model returned an empty response.', true);
+    function sectionHtml(cls, title, body) {
+        return '<div class="insights-section ' + cls + '">' +
+               '<div class="insights-section-title"><span class="sec-dot"></span>' + escapeHtml(title) + '</div>' +
+               body + '</div>';
+    }
+    function toList(arr) {
+        if (!arr || !arr.length) return '<p style="color:#94A3B8;font-style:italic;">No items.</p>';
+        return '<ul>' + arr.map(function(s) { return '<li>' + escapeHtml(String(s)) + '</li>'; }).join('') + '</ul>';
+    }
+    var whatHappened = result.whatHappened || result.summary || '';
+    var whatsWorking = result.whatsWorking || result.working || [];
+    var whatToTry = result.whatToTry || result.recommendations || [];
+    return sectionHtml('what-happened', 'What happened', '<p>' + escapeHtml(whatHappened) + '</p>') +
+           sectionHtml('whats-working', "What's working", toList(whatsWorking)) +
+           sectionHtml('what-to-try', 'What to try next', toList(whatToTry));
+}
+
+async function renderInsightsPanel(data, previousData, force) {
+    var strip = document.getElementById('insightsStrip');
+    var body = document.getElementById('insightsBody');
+    var rangeEl = document.getElementById('insightsRange');
+    var statusEl = document.getElementById('insightsStatus');
+    var timestampEl = document.getElementById('insightsTimestamp');
+    if (!strip || !body) return;
+
+    // Remember latest data for Refresh button
+    window._insightsLastData = { data: data, prev: previousData };
+
+    // Update the range label up top from the date picker
+    try {
+        var disp = document.getElementById('dateRangeDisplay');
+        if (rangeEl && disp) rangeEl.textContent = '\u00b7 ' + disp.textContent;
+    } catch (e) {}
+
+    var payload = buildInsightsPayload(data, previousData);
+    if (!payload || !payload.metrics || payload.metrics.postCount === 0) {
+        strip.classList.remove('is-loading', 'is-error');
+        renderInsightsBody(insightsPlaceholder('Not enough data', 'Load posts and comments in this window to generate insights.'));
+        return;
+    }
+
+    var fingerprint = insightsFingerprint(payload);
+    var cached = null;
+    try {
+        var rawCache = sessionStorage.getItem(INSIGHTS_CACHE_KEY);
+        if (rawCache) cached = JSON.parse(rawCache);
+    } catch (e) {}
+
+    if (!force && cached && cached.fingerprint === fingerprint && cached.result) {
+        strip.classList.remove('is-loading', 'is-error');
+        renderInsightsBody(formatInsightsSections(cached.result));
+        if (statusEl) statusEl.textContent = 'Cached';
+        if (timestampEl && cached.ts) timestampEl.textContent = 'Generated ' + new Date(cached.ts).toLocaleString();
+        return;
+    }
+
+    // Same fingerprint as our last successful render? Skip to avoid re-calling.
+    if (!force && _insightsLatestFingerprint === fingerprint) return;
+    _insightsLatestFingerprint = fingerprint;
+
+    strip.classList.remove('is-error');
+    strip.classList.add('is-loading');
+    if (statusEl) statusEl.textContent = 'Generating…';
+    renderInsightsBody(insightsPlaceholder('Analyzing posts and comments', 'Generating a narrative summary for this window…'));
+
+    try {
+        var resp = await fetch('/api/insights', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (!resp.ok) {
+            var errText = await resp.text();
+            throw new Error('HTTP ' + resp.status + ': ' + errText.slice(0, 200));
+        }
+        var result = await resp.json();
+        if (result && result.error) throw new Error(result.error);
+
+        strip.classList.remove('is-loading');
+        renderInsightsBody(formatInsightsSections(result));
+        if (statusEl) statusEl.textContent = '';
+        var nowIso = new Date().toISOString();
+        if (timestampEl) timestampEl.textContent = 'Generated ' + new Date(nowIso).toLocaleString();
+        try {
+            sessionStorage.setItem(INSIGHTS_CACHE_KEY, JSON.stringify({
+                fingerprint: fingerprint, result: result, ts: nowIso
+            }));
+        } catch (e) {}
+    } catch (err) {
+        strip.classList.remove('is-loading');
+        strip.classList.add('is-error');
+        if (statusEl) statusEl.textContent = 'Error';
+        var msg = (err && err.message) || 'Unknown error';
+        // Detect the "no API key" case so we show a helpful message instead of a red error
+        if (/ANTHROPIC_API_KEY|missing.*key|not configured/i.test(msg)) {
+            strip.classList.remove('is-error');
+            renderInsightsBody(insightsPlaceholder(
+                'Insights not configured',
+                'Add ANTHROPIC_API_KEY to Render env vars to enable AI-generated insights.'
+            ));
+        } else {
+            renderInsightsBody(insightsPlaceholder('Insights failed', msg));
+        }
+        console.warn('[insights] ' + msg);
+    }
+}
 </script>
 
 <script>
@@ -3672,7 +4092,7 @@ window.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const weekAgoMs = Date.now() - 7 * 86400000;
+        const freshMs = Date.now() - 2 * 86400000; // NEW pill = posted within last 48 hours
 
         feed.innerHTML = items.map(m => {
             const conf = (m.confidence || 'medium').toLowerCase();
@@ -3683,7 +4103,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const thumbInitial = (sourceName || 'M').replace(/^[^a-zA-Z0-9]+/, '').charAt(0).toUpperCase() || 'M';
             const pubDate = m.publishedAt ? new Date(m.publishedAt) : null;
             const pubMs = pubDate ? pubDate.getTime() : 0;
-            const isNew = pubMs > weekAgoMs;
+            const isNew = pubMs > freshMs;
             const ago = timeAgo(m.publishedAt);
             const freshness = freshnessClass(m.publishedAt);
             const fullDate = pubDate ? pubDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + pubDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
@@ -3778,7 +4198,37 @@ window.addEventListener('DOMContentLoaded', () => {
         return (m.engagement.score || 0) + (m.engagement.comments || 0);
     }
 
+    // --- Near-duplicate detection (Jaccard over title tokens) ---
+    // Collapses wire-service reprints and SEC/earnings stories that get repeated
+    // across outlets with slightly different URLs and titles.
+    const TITLE_STOP_WORDS = new Set([
+        'the','a','an','and','or','of','to','in','on','for','with','at','by','from',
+        'as','is','are','was','were','be','been','it','this','that','these','those',
+        'about','into','over','after','before','than','then','so','but','if','while',
+        'new','says','said','breaking','exclusive','update','updated','report','reports',
+        'just','also','very','more','most','amid','via','per','inc','llc','corp','co'
+    ]);
+    function titleTokenSet(t) {
+        const out = new Set();
+        String(t || '').toLowerCase()
+            .replace(/[^a-z0-9 ]/g, ' ')
+            .split(/\s+/)
+            .forEach(w => {
+                if (w.length >= 3 && !TITLE_STOP_WORDS.has(w)) out.add(w);
+            });
+        return out;
+    }
+    function jaccard(aSet, bSet) {
+        if (!aSet.size || !bSet.size) return 0;
+        let inter = 0;
+        for (const t of aSet) if (bSet.has(t)) inter++;
+        const union = aSet.size + bSet.size - inter;
+        return union === 0 ? 0 : inter / union;
+    }
+    const TITLE_SIMILARITY_THRESHOLD = 0.70; // 0.60 = aggressive, 0.80 = light
+
     function groupRelated(items) {
+        // Pass 1: exact group by URL or normalized title (existing behavior — cheap & safe)
         const groups = new Map();
         for (const m of items) {
             const key = dedupKey(m);
@@ -3793,7 +4243,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 leads.push(members[0]);
                 continue;
             }
-            // Pick lead: most engaged, tiebreak by recency
             members.sort((a, b) => {
                 const aE = totalEngagement(a);
                 const bE = totalEngagement(b);
@@ -3805,7 +4254,38 @@ window.addEventListener('DOMContentLoaded', () => {
             lead._groupKey = key;
             leads.push(lead);
         }
-        return leads;
+
+        // Pass 2: near-duplicate clustering by title Jaccard.
+        // Collapses SEC/wire-service reprints that pass-1 dedup misses.
+        // We cache the token set on each lead to keep this O(n^2 / 2) in set ops.
+        leads.forEach(l => { l._titleSet = titleTokenSet(l.title); });
+        const absorbed = new Set();
+        for (let i = 0; i < leads.length; i++) {
+            if (absorbed.has(i)) continue;
+            for (let j = i + 1; j < leads.length; j++) {
+                if (absorbed.has(j)) continue;
+                const sim = jaccard(leads[i]._titleSet, leads[j]._titleSet);
+                if (sim >= TITLE_SIMILARITY_THRESHOLD) {
+                    // Decide which becomes the lead: higher engagement wins, tiebreak recency
+                    const iScore = totalEngagement(leads[i]);
+                    const jScore = totalEngagement(leads[j]);
+                    let keep = i, drop = j;
+                    if (jScore > iScore ||
+                        (jScore === iScore && new Date(leads[j].publishedAt) > new Date(leads[i].publishedAt))) {
+                        keep = j; drop = i;
+                    }
+                    // Merge drop (and its related items) into keep
+                    leads[keep]._related = (leads[keep]._related || [])
+                        .concat([leads[drop]])
+                        .concat(leads[drop]._related || []);
+                    absorbed.add(drop);
+                    if (drop === i) break; // i was absorbed — move to next i
+                }
+            }
+        }
+        const finalLeads = leads.filter((_, idx) => !absorbed.has(idx));
+        finalLeads.forEach(l => { delete l._titleSet; });
+        return finalLeads;
     }
 
     window.toggleRelated = function(btn) {
