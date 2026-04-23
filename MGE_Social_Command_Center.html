@@ -81,9 +81,55 @@
         }
         .quota-banner.visible { display: block; }
 
+        /* --- AI Insights toggle button (in platform strip) --- */
+        .ai-toggle-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            margin-left: 10px;
+            padding: 5px 12px;
+            font-size: 12px; font-weight: 700; letter-spacing: 0.3px;
+            color: white;
+            background: linear-gradient(135deg, #1E3A8A 0%, #7C3AED 60%, #F43F5E 100%);
+            background-size: 200% 200%;
+            background-position: 0% 50%;
+            border: 0; border-radius: 999px;
+            cursor: pointer;
+            transition: background-position 0.4s ease, transform 0.15s, box-shadow 0.2s;
+            box-shadow: 0 1px 3px rgba(124,58,237,0.35);
+        }
+        .ai-toggle-btn:hover {
+            background-position: 100% 50%;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(124,58,237,0.45);
+        }
+        .ai-toggle-btn .ai-toggle-icon { font-size: 13px; }
+        .ai-toggle-btn .ai-toggle-label { font-weight: 700; }
+        .ai-toggle-btn .ai-toggle-state {
+            font-size: 10px; font-weight: 600; opacity: 0.85;
+            padding: 0 2px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .ai-toggle-btn .ai-toggle-chevron {
+            display: inline-block; transition: transform 0.2s ease;
+            font-size: 10px; opacity: 0.8;
+        }
+        .ai-toggle-btn[aria-expanded="true"] .ai-toggle-chevron {
+            transform: rotate(180deg);
+        }
+        .ai-toggle-btn[aria-expanded="true"] {
+            box-shadow: 0 2px 6px rgba(124,58,237,0.55), inset 0 0 0 1px rgba(255,255,255,0.18);
+        }
+
         /* --- AI Insights panel --- */
         .insights-strip {
             max-width: 1600px; margin: 28px auto 0; padding: 0 36px;
+            overflow: hidden;
+            transition: max-height 0.3s ease, margin 0.3s ease, opacity 0.2s ease;
+        }
+        .insights-strip.collapsed {
+            max-height: 0;
+            margin-top: 0;
+            opacity: 0;
+            pointer-events: none;
         }
         .insights-strip > .insights-header,
         .insights-strip > .insights-body,
@@ -1185,6 +1231,12 @@
         <span class="platform-chip off" id="chipIG"><span class="chip-dot"></span> Instagram</span>
         <span class="platform-chip off" id="chipLI"><span class="chip-dot"></span> LinkedIn</span>
         <span class="platform-chip off" id="chipYT"><span class="chip-dot"></span> YouTube</span>
+        <button type="button" class="ai-toggle-btn" id="insightsToggleBtn" onclick="toggleInsightsPanel()" aria-expanded="false">
+            <span class="ai-toggle-icon">&#x2728;</span>
+            <span class="ai-toggle-label">AI Insights</span>
+            <span class="ai-toggle-state" id="insightsToggleState"></span>
+            <span class="ai-toggle-chevron" aria-hidden="true">&#x25BE;</span>
+        </button>
     </div>
     <div class="strip-divider"></div>
     <div class="strip-right" id="dateRangeBar">
@@ -1209,12 +1261,12 @@
     [!] API quota limit reached for one or more platforms. Some data may be incomplete. Quotas typically reset at midnight Pacific Time.
 </div>
 
-<!-- AI Insights — full width, narrative summary of the selected window -->
-<div class="insights-strip" id="insightsStrip">
+<!-- AI Insights — full width, narrative summary of the selected window. Collapsed by default; toggled via the AI Insights button in the platform strip. -->
+<div class="insights-strip collapsed" id="insightsStrip" aria-hidden="true">
     <div class="insights-header">
         <div class="insights-title">
             <span class="insights-badge">AI</span>
-            Insights for this window
+            Insights from MGE platforms
             <span class="insights-range" id="insightsRange"></span>
             <span class="insights-provider-pill" id="insightsProviderPill" style="display:none;"></span>
         </div>
@@ -3681,6 +3733,47 @@ function initInsightsPanel() {
             }
         });
     }
+    // Panel starts collapsed — make sure the toggle button reflects that
+    updateInsightsToggleLabel('idle');
+}
+
+// Expose toggle globally since the button uses an inline onclick
+window.toggleInsightsPanel = function() {
+    var strip = document.getElementById('insightsStrip');
+    var btn = document.getElementById('insightsToggleBtn');
+    if (!strip || !btn) return;
+    var wasCollapsed = strip.classList.contains('collapsed');
+    if (wasCollapsed) {
+        // Expanding — allow max-height to grow naturally
+        strip.classList.remove('collapsed');
+        strip.style.maxHeight = '800px'; // generous cap to let CSS transition run
+        strip.setAttribute('aria-hidden', 'false');
+        btn.setAttribute('aria-expanded', 'true');
+        // Lazy-generate: if we have data but haven't rendered yet, kick off generation now
+        if (window._insightsLastData && window._insightsLastData.data) {
+            renderInsightsPanel(window._insightsLastData.data, window._insightsLastData.prev);
+        }
+        updateInsightsToggleLabel('open');
+    } else {
+        strip.classList.add('collapsed');
+        strip.style.maxHeight = '';
+        strip.setAttribute('aria-hidden', 'true');
+        btn.setAttribute('aria-expanded', 'false');
+        updateInsightsToggleLabel(window._insightsLatestResult ? 'ready' : 'idle');
+    }
+};
+
+function updateInsightsToggleLabel(state) {
+    var el = document.getElementById('insightsToggleState');
+    if (!el) return;
+    var map = {
+        idle:     '',
+        open:     'Open',
+        ready:    'Ready',
+        loading:  'Generating',
+        error:    'Error'
+    };
+    el.textContent = map[state] || '';
 }
 
 function buildInsightsPayload(data, previousData) {
@@ -3862,8 +3955,28 @@ async function renderInsightsPanel(data, previousData, force) {
     var timestampEl = document.getElementById('insightsTimestamp');
     if (!strip || !body) return;
 
-    // Remember latest data for Refresh button
+    // Remember latest data for Refresh button and lazy-generate on first open
     window._insightsLastData = { data: data, prev: previousData };
+
+    // If the panel is collapsed and this call isn't a user-forced refresh,
+    // skip generation to save API quota — we'll kick off the call when the
+    // user clicks "AI Insights" to expand. Still check cache so the toggle
+    // button can show "Ready" when a matching summary is already available.
+    if (!force && strip.classList.contains('collapsed')) {
+        try {
+            var probePayload = buildInsightsPayload(data, previousData);
+            if (probePayload) {
+                var probeFp = insightsFingerprint(probePayload);
+                var probeRaw = sessionStorage.getItem(INSIGHTS_CACHE_KEY);
+                var probeCache = probeRaw ? JSON.parse(probeRaw) : null;
+                if (probeCache && probeCache.fingerprint === probeFp && probeCache.result) {
+                    window._insightsLatestResult = probeCache.result;
+                }
+            }
+        } catch (e) {}
+        updateInsightsToggleLabel(window._insightsLatestResult ? 'ready' : 'idle');
+        return;
+    }
 
     // Update the range label up top from the date picker
     try {
@@ -3901,6 +4014,7 @@ async function renderInsightsPanel(data, previousData, force) {
 
     strip.classList.remove('is-error');
     strip.classList.add('is-loading');
+    updateInsightsToggleLabel('loading');
     if (statusEl) statusEl.textContent = 'Generating…';
     renderInsightsBody(insightsPlaceholder('Analyzing posts and comments', 'Generating a narrative summary for this window…'));
 
@@ -3920,6 +4034,8 @@ async function renderInsightsPanel(data, previousData, force) {
         strip.classList.remove('is-loading');
         renderInsightsBody(formatInsightsSections(result));
         updateInsightsProviderBadge(result._provider);
+        window._insightsLatestResult = result;
+        updateInsightsToggleLabel('open');
         if (statusEl) statusEl.textContent = '';
         var nowIso = new Date().toISOString();
         if (timestampEl) timestampEl.textContent = 'Generated ' + new Date(nowIso).toLocaleString();
@@ -3931,6 +4047,7 @@ async function renderInsightsPanel(data, previousData, force) {
     } catch (err) {
         strip.classList.remove('is-loading');
         strip.classList.add('is-error');
+        updateInsightsToggleLabel('error');
         if (statusEl) statusEl.textContent = 'Error';
         var msg = (err && err.message) || 'Unknown error';
         // Detect the "no API key" case so we show a helpful message instead of a red error
