@@ -1026,36 +1026,58 @@ async function pollYouTubeMentions() {
 }
 
 // --- 5. Local news RSS (Wisconsin outlets — TV, print, radio, college) ---
-// Feed URLs checked and updated 2026-04-23 after an audit found 10/23 failing.
-// 429-blocked feeds now use the resilient fetcher with browser-like UA + retry.
-// 404-broken URLs have been updated where confident, flagged with TODO otherwise.
+// Audited 2026-04-23. Many direct RSS feeds were failing: TownNews/Cloudflare
+// sites block automated requests (429) and several outlets removed or moved
+// their public RSS (404). For those, we fall back to Google News "site:" RSS
+// searches — Google already indexes these outlets, the feed shape matches
+// everything else we parse, and it bypasses Cloudflare entirely.
+//
+// Helper: build a Google News RSS URL scoped to a single outlet's domain.
+// Optional extraTerms scopes to energy-relevant content to cut general noise.
+function gNewsSiteFeed(domain, extraTerms) {
+  var q = 'site:' + domain;
+  if (extraTerms) q += ' (' + extraTerms + ')';
+  return 'https://news.google.com/rss/search?q=' + encodeURIComponent(q) + '&hl=en-US&gl=US&ceid=US:en';
+}
+// Energy-relevant query we apply to outlet-site searches so we don't ingest
+// every article from a general-interest paper (keeps the Topical feed focused).
+var LOCAL_ENERGY_TERMS =
+  'solar OR wind OR "wind farm" OR "solar farm" OR energy OR electric OR utility OR ' +
+  '"heat pump" OR "electric vehicle" OR "EV charging" OR renewable OR "power outage" OR ' +
+  '"rate case" OR grid OR "battery storage" OR MGE OR Alliant OR "We Energies"';
+
 const LOCAL_NEWS_FEEDS = [
-  // Madison TV
+  // ========== Madison TV ==========
   { url: 'https://www.channel3000.com/feed/', name: 'Channel 3000 (WISC-TV)' },
-  { url: 'https://www.nbc15.com/rss/', name: 'NBC 15 (WMTV)' }, // was /arc/outboundfeeds/rss/ (404)
-  { url: 'https://www.wkow.com/search/?f=rss&t=article&l=50&s=start_time&sd=desc', name: 'WKOW 27 (ABC Madison)' },
-  // FOX 47 Madison removed — fox47.com is not the Madison affiliate. Madison's FOX is WMSN-TV; no public RSS found.
-  // Madison print / magazine
+  { url: gNewsSiteFeed('wkow.com', LOCAL_ENERGY_TERMS), name: 'WKOW 27 (via Google News)' },            // direct 429 (Cloudflare)
+  { url: gNewsSiteFeed('nbc15.com', LOCAL_ENERGY_TERMS), name: 'NBC 15 / WMTV (via Google News)' },    // direct 404
+  // Madison's FOX affiliate (WMSN) doesn't publish a public RSS. Use Google News site-search.
+  { url: gNewsSiteFeed('fox47.com', LOCAL_ENERGY_TERMS), name: 'FOX 47 Madison (via Google News)' },
+
+  // ========== Madison print / magazine ==========
   { url: 'https://madison.com/search/?f=rss&t=article&l=50&s=start_time&sd=desc', name: 'Wisconsin State Journal' },
-  { url: 'https://captimes.com/search/?f=rss&t=article&l=50&s=start_time&sd=desc', name: 'Cap Times' },
-  { url: 'https://isthmus.com/rss.xml', name: 'Isthmus' }, // was /feed/ (404)
-  { url: 'https://www.dailycardinal.com/feed', name: 'The Daily Cardinal (UW-Madison)' }, // was /feeds/main.xml (404)
+  { url: gNewsSiteFeed('captimes.com', LOCAL_ENERGY_TERMS), name: 'Cap Times (via Google News)' },     // direct 429 (Cloudflare)
+  { url: gNewsSiteFeed('isthmus.com', LOCAL_ENERGY_TERMS), name: 'Isthmus (via Google News)' },         // direct 404
   { url: 'https://badgerherald.com/feed/', name: 'The Badger Herald (UW-Madison)' },
-  // Milwaukee
-  { url: 'https://rssfeeds.jsonline.com/milwaukee/home', name: 'Milwaukee Journal Sentinel' }, // USA Today network; was /rss/ (404)
+  { url: gNewsSiteFeed('dailycardinal.com', LOCAL_ENERGY_TERMS), name: 'Daily Cardinal (via Google News)' }, // direct 404
+
+  // ========== Milwaukee ==========
+  { url: gNewsSiteFeed('jsonline.com', LOCAL_ENERGY_TERMS), name: 'Milwaukee Journal Sentinel (via Google News)' }, // direct 404 (USA Today migration)
   { url: 'https://urbanmilwaukee.com/feed/', name: 'Urban Milwaukee' },
-  { url: 'https://www.tmj4.com/arc/outboundfeeds/rss/', name: 'TMJ4 Milwaukee' }, // was /feed (404)
+  { url: gNewsSiteFeed('tmj4.com', LOCAL_ENERGY_TERMS), name: 'TMJ4 Milwaukee (via Google News)' },     // direct 404
   { url: 'https://www.cbs58.com/rss', name: 'CBS 58 Milwaukee' },
-  { url: 'https://www.fox6now.com/feed', name: 'FOX6 Milwaukee' },
+  { url: gNewsSiteFeed('fox6now.com', LOCAL_ENERGY_TERMS), name: 'FOX6 Milwaukee (via Google News)' }, // direct 404
   { url: 'https://www.wisn.com/topstories-rss', name: 'WISN 12 Milwaukee' },
-  // Green Bay / Fox Valley
-  { url: 'https://www.wbay.com/arc/outboundfeeds/rss/', name: 'WBAY Green Bay' },
-  { url: 'https://www.nbc26.com/feed', name: 'NBC 26 Green Bay' },
-  { url: 'https://www.wfrv.com/feed/', name: 'WFRV 5 Green Bay' },
-  // Statewide / public media / advocacy
+
+  // ========== Green Bay / Fox Valley ==========
+  { url: gNewsSiteFeed('wbay.com', LOCAL_ENERGY_TERMS), name: 'WBAY Green Bay (via Google News)' },    // direct 404
+  { url: gNewsSiteFeed('nbc26.com', LOCAL_ENERGY_TERMS), name: 'NBC 26 Green Bay (via Google News)' }, // direct 404
+  { url: gNewsSiteFeed('wearegreenbay.com', LOCAL_ENERGY_TERMS), name: 'WFRV 5 Green Bay (via Google News)' }, // wfrv.com ENOTFOUND; station now on wearegreenbay.com
+
+  // ========== Statewide / public media / advocacy ==========
   { url: 'https://wisconsinexaminer.com/feed/', name: 'Wisconsin Examiner' },
-  { url: 'https://www.wpr.org/rss.xml', name: 'Wisconsin Public Radio' },
-  { url: 'https://www.wuwm.com/rss.xml', name: 'WUWM 89.7 (Milwaukee NPR)' },
+  { url: gNewsSiteFeed('wpr.org', LOCAL_ENERGY_TERMS), name: 'Wisconsin Public Radio (via Google News)' }, // direct 404
+  { url: gNewsSiteFeed('wuwm.com', LOCAL_ENERGY_TERMS), name: 'WUWM 89.7 Milwaukee NPR (via Google News)' }, // direct 404
   { url: 'https://wisbusiness.com/feed/', name: 'WisBusiness' },
   { url: 'https://www.biztimes.com/feed/', name: 'BizTimes Milwaukee' }
 ];
@@ -1618,11 +1640,11 @@ app.get('/api/mentions/diagnose', async (req, res) => {
   // (both /tagged and /visitor_posts return "Unavailable Feature On New Page Experience").
   results.facebook = { note: 'Not available — MGE Page is on New Pages Experience; /tagged and /visitor_posts are deprecated by Meta for NPE accounts.' };
 
-  // SEC EDGAR (MGE Energy)
+  // SEC EDGAR (MGE Energy) — uses data.sec.gov JSON API now, not the old atom feed
   try {
-    const url = secAtomUrl('0001141591');
+    const url = secSubmissionsUrl('0001161728'); // MGE Energy, Inc.
     const r = await fetch(url, {
-      headers: { 'User-Agent': SEC_USER_AGENT, 'Accept': 'application/atom+xml,application/xml,text/xml' }
+      headers: { 'User-Agent': SEC_USER_AGENT, 'Accept': 'application/json' }
     });
     const body = await r.text();
     results.sec_filings = {
