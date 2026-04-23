@@ -1221,6 +1221,41 @@ const SEC_COMPANIES = [
   { cik: '0000061339', name: 'Madison Gas and Electric Company', ticker: null } // operating utility subsidiary
 ];
 
+// Human-readable labels for common SEC form types. Used as fallback when
+// data.sec.gov returns the form type itself as primaryDocDescription
+// (which yielded titles like "8-K — 8-K"). Expand as needed.
+const SEC_FORM_LABELS = {
+  '3':        'Initial Statement of Beneficial Ownership',
+  '4':        'Changes in Beneficial Ownership',
+  '5':        'Annual Statement of Beneficial Ownership',
+  '8-K':      'Current Report (material event)',
+  '8-K/A':    'Current Report Amendment',
+  '10-K':     'Annual Report',
+  '10-K/A':   'Annual Report Amendment',
+  '10-Q':     'Quarterly Report',
+  '10-Q/A':   'Quarterly Report Amendment',
+  '11-K':     'Employee Benefit Plan Annual Report',
+  'DEF 14A':  'Definitive Proxy Statement',
+  'DEF14A':   'Definitive Proxy Statement',
+  'DEFA14A':  'Additional Proxy Materials',
+  'PRE 14A':  'Preliminary Proxy Statement',
+  'ARS':      'Annual Report to Shareholders',
+  'S-1':      'Registration Statement',
+  'S-3':      'Shelf Registration',
+  'S-3/A':    'Shelf Registration Amendment',
+  'S-8':      'Employee Benefit Plan Registration',
+  '424B2':    'Prospectus Supplement',
+  '424B3':    'Prospectus Supplement',
+  '424B5':    'Prospectus Supplement',
+  'FWP':      'Free Writing Prospectus',
+  'SC 13G':   'Beneficial Ownership Report',
+  'SC 13G/A': 'Beneficial Ownership Report Amendment',
+  'SC 13D':   'Acquisition of Beneficial Ownership',
+  'SD':       'Specialized Disclosure Report',
+  'NT 10-K':  'Notification of Late 10-K Filing',
+  'NT 10-Q':  'Notification of Late 10-Q Filing'
+};
+
 function secSubmissionsUrl(cik) {
   // CIK must be zero-padded to 10 digits for data.sec.gov
   const padded = String(cik).padStart(10, '0');
@@ -1268,14 +1303,24 @@ async function pollSECFilings() {
         const filingDate = dates[i];
         const primaryDoc = primaryDocs[i];
         const desc = primaryDescs[i] || '';
-        const titleText = formType + (desc ? ' — ' + desc : '');
+        // SEC's API often returns the form type again as primaryDocDescription,
+        // which yielded titles like "8-K — 8-K". Fall back to a human-readable
+        // form-type map when desc is empty OR equals the form type.
+        const humanForm = SEC_FORM_LABELS[formType] || null;
+        let humanDesc = '';
+        if (desc && desc.trim().toLowerCase() !== formType.toLowerCase()) {
+          humanDesc = desc;
+        } else if (humanForm) {
+          humanDesc = humanForm;
+        }
+        const titleText = entityName + ' filed ' + formType + (humanDesc ? ' — ' + humanDesc : '');
         found.push({
           id: 'sec:' + company.cik + ':' + acc,
           source: 'sec_filings',
           sourceDisplay: 'SEC EDGAR \u00b7 ' + entityName,
           sourceName: entityName + (company.ticker ? ' (' + company.ticker + ')' : ''),
           title: titleText,
-          snippet: 'Filed with the U.S. Securities and Exchange Commission by ' + entityName + '. Form type: ' + formType + (desc ? '. ' + desc : '') + '.',
+          snippet: 'Filed with the U.S. Securities and Exchange Commission by ' + entityName + '. Form type: ' + formType + (humanDesc ? ' (' + humanDesc + ')' : '') + '.',
           url: secFilingUrl(company.cik, acc, primaryDoc),
           author: entityName,
           publishedAt: filingDate ? new Date(filingDate + 'T16:00:00Z').toISOString() : new Date().toISOString(),
