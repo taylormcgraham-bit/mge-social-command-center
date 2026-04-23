@@ -3077,10 +3077,11 @@ function renderSentimentTimeline(rawOrData, processedData) {
         allComments = rawOrData.comments;
     }
 
-    // Extract all posts for engagement per month
+    // Extract all posts for engagement per month (processedData uses allPosts)
     var allPosts = [];
-    if (processedData && processedData.posts) {
-        allPosts = processedData.posts;
+    if (processedData) {
+        if (Array.isArray(processedData.allPosts)) allPosts = processedData.allPosts;
+        else if (Array.isArray(processedData.posts)) allPosts = processedData.posts;
     }
 
     // Bucket comments by month
@@ -3094,16 +3095,21 @@ function renderSentimentTimeline(rawOrData, processedData) {
         if (commentMap[key]) commentMap[key].push(c.text || '');
     });
 
-    // Bucket engagement by month from posts (live, this session)
+    // Bucket engagement by month from posts (live, this session).
+    // processData posts use .date and .totalEngagement.
     var engMap = {};
     rolling.forEach(function(m) { engMap[m.key] = 0; });
     allPosts.forEach(function(p) {
-        if (!p.time) return;
-        var d = new Date(p.time);
+        var dateStr = p.date || p.time;
+        if (!dateStr) return;
+        var d = new Date(dateStr);
         if (isNaN(d.getTime())) return;
         var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
         if (engMap[key] !== undefined) {
-            engMap[key] += (p.engagement || 0);
+            var eng = (typeof p.totalEngagement === 'number') ? p.totalEngagement
+                    : (typeof p.engagement === 'number') ? p.engagement
+                    : ((p.reactions || 0) + (p.comments || 0) + (p.shares || 0));
+            engMap[key] += eng;
         }
     });
 
@@ -3669,54 +3675,74 @@ function initInsightsPanel() {
 
 function buildInsightsPayload(data, previousData) {
     if (!data) return null;
-    // Pull top-engaging posts (cap at 20 to keep payload small)
-    var posts = Array.isArray(data.posts) ? data.posts.slice() : [];
-    posts.sort(function(a, b) { return (b.engagement || 0) - (a.engagement || 0); });
+    // Pull posts from data.allPosts (processData's field name). Each has
+    // { platform, text, date, reactions, comments, shares, views, totalEngagement }.
+    var posts = Array.isArray(data.allPosts) ? data.allPosts.slice()
+              : (Array.isArray(data.posts) ? data.posts.slice() : []);
+    function postEng(p) {
+        if (typeof p.totalEngagement === 'number') return p.totalEngagement;
+        if (typeof p.engagement === 'number') return p.engagement;
+        return (p.reactions || 0) + (p.comments || 0) + (p.shares || 0);
+    }
+    posts.sort(function(a, b) { return postEng(b) - postEng(a); });
     var topPosts = posts.slice(0, 20).map(function(p) {
         return {
             platform: p.platform || p.source || 'unknown',
-            date: p.time || p.date || '',
-            engagement: p.engagement || 0,
+            date: p.date || p.time || '',
+            engagement: postEng(p),
             reach: p.reach || null,
             impressions: p.impressions || null,
-            comments: p.commentCount != null ? p.commentCount : (p.comments || 0),
-            likes: p.likes || null,
-            shares: p.shares || null,
+            comments: p.comments || 0,
+            reactions: p.reactions || 0,
+            shares: p.shares || 0,
+            views: p.views || 0,
             type: p.mediaType || p.type || '',
             text: (p.text || p.caption || p.message || p.title || '').slice(0, 400)
         };
     });
 
-    // Sample a representative mix of comments (positive, neutral, negative)
+    // Sample a representative mix of comments
     var allComments = [];
-    if (Array.isArray(data.comments)) {
-        allComments = data.comments;
-    } else if (data.platformComments) {
+    if (Array.isArray(data.comments) && data.comments.length) {
+        allComments = data.comments.slice();
+    }
+    if (!allComments.length && data.platformComments) {
         ['fb','ig','li','yt'].forEach(function(k) {
             var arr = data.platformComments[k] || [];
-            arr.forEach(function(c) { allComments.push(c); });
+            arr.forEach(function(c) {
+                // platformComments items may be plain strings or objects
+                if (typeof c === 'string') allComments.push({ platform: k, text: c });
+                else allComments.push(Object.assign({ platform: k }, c));
+            });
         });
     }
-    // Keep short comments only and cap at 40
     var sampled = allComments
-        .filter(function(c) { return c && (c.text || c.message); })
+        .filter(function(c) { return c && (c.text || c.message || typeof c === 'string'); })
         .map(function(c) {
-            var txt = (c.text || c.message || '').slice(0, 220);
-            var s = (typeof analyzeSentiment === 'function') ? analyzeSentiment(txt) : null;
+            var txt = (c.text || c.message || (typeof c === 'string' ? c : '')).slice(0, 220);
+            var s = (typeof analyzeSentiment === 'function' && txt) ? analyzeSentiment(txt) : null;
             return {
                 platform: c.platform || c.source || '',
                 text: txt,
                 score: s ? s.score : null
             };
         })
+        .filter(function(c) { return c.text; })
         .slice(0, 40);
+
+    // Range label from the visible date picker display
+    var rangeLabel = '';
+    try {
+        var disp = document.getElementById('dateRangeDisplay');
+        if (disp) rangeLabel = (disp.textContent || '').replace(/^[^A-Za-z0-9]+/, '');
+    } catch (e) {}
 
     // Headline metrics
     var metrics = {
-        dateRange: (data.dateRange || data.window || ''),
+        dateRange: rangeLabel,
         postCount: posts.length,
         commentCount: allComments.length,
-        totalEngagement: posts.reduce(function(s, p) { return s + (p.engagement || 0); }, 0),
+        totalEngagement: posts.reduce(function(s, p) { return s + postEng(p); }, 0),
         totalReach: posts.reduce(function(s, p) { return s + (p.reach || 0); }, 0),
         platforms: {}
     };
@@ -3725,18 +3751,19 @@ function buildInsightsPayload(data, previousData) {
         if (arr.length) {
             metrics.platforms[k] = {
                 posts: arr.length,
-                engagement: arr.reduce(function(s, p) { return s + (p.engagement || 0); }, 0)
+                engagement: arr.reduce(function(s, p) { return s + postEng(p); }, 0)
             };
         }
     });
 
     // Compare to previous period if we have it
     var prior = null;
-    if (previousData && Array.isArray(previousData.posts)) {
+    var priorPosts = previousData && (previousData.allPosts || previousData.posts);
+    if (Array.isArray(priorPosts)) {
         prior = {
-            postCount: previousData.posts.length,
-            totalEngagement: previousData.posts.reduce(function(s, p) { return s + (p.engagement || 0); }, 0),
-            totalReach: previousData.posts.reduce(function(s, p) { return s + (p.reach || 0); }, 0)
+            postCount: priorPosts.length,
+            totalEngagement: priorPosts.reduce(function(s, p) { return s + postEng(p); }, 0),
+            totalReach: priorPosts.reduce(function(s, p) { return s + (p.reach || 0); }, 0)
         };
     }
 
