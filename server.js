@@ -1048,7 +1048,7 @@ var LOCAL_ENERGY_TERMS =
 
 const LOCAL_NEWS_FEEDS = [
   // ========== Madison TV ==========
-  { url: 'https://www.channel3000.com/feed/', name: 'Channel 3000 (WISC-TV)' },
+  { url: gNewsSiteFeed('channel3000.com', LOCAL_ENERGY_TERMS), name: 'Channel 3000 / WISC-TV (via Google News)' }, // direct 404
   { url: gNewsSiteFeed('wkow.com', LOCAL_ENERGY_TERMS), name: 'WKOW 27 (via Google News)' },            // direct 429 (Cloudflare)
   { url: gNewsSiteFeed('nbc15.com', LOCAL_ENERGY_TERMS), name: 'NBC 15 / WMTV (via Google News)' },    // direct 404
   // Madison's FOX affiliate (WMSN) doesn't publish a public RSS. Use Google News site-search.
