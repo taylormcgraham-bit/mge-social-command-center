@@ -1022,7 +1022,8 @@ async function pollLocalNews() {
   for (const feed of LOCAL_NEWS_FEEDS) {
     let feedStatus = 'ok';
     let itemsInFeed = 0;
-    let matched = 0;
+    let brandMatched = 0;
+    let topicalMatched = 0;
     try {
       const data = await rssParser.parseURL(feed.url);
       itemsInFeed = (data.items || []).length;
@@ -1030,9 +1031,29 @@ async function pollLocalNews() {
         const titleText = cleanHtml(item.title || '');
         const bodyText = cleanHtml(item.contentSnippet || item.content || '');
         const text = titleText + ' ' + bodyText;
+
+        let brandTag, matchedKeyword, confidence;
         const m = matchesAnyBrand(text, item.link, titleText);
-        if (!m) continue;
-        matched++;
+        if (m) {
+          brandTag = m.brand;
+          matchedKeyword = m.keyword;
+          confidence = m.confidence;
+          brandMatched++;
+        } else if (verifyTopicalContent(text)) {
+          // No brand name matched (often because the RSS body is truncated and
+          // brand mentions are deeper in the article), but the headline/snippet
+          // hits a utility/energy topical signal. These feeds are already
+          // curated to Wisconsin local outlets, so we skip the US geo gate —
+          // everything here is US-relevant by definition.
+          brandTag = 'topical';
+          const sig = text.match(TOPICAL_STRICT_SIGNALS);
+          matchedKeyword = sig ? sig[0] : 'industry topic';
+          confidence = 'topical';
+          topicalMatched++;
+        } else {
+          continue;
+        }
+
         found.push({
           id: 'news:' + (item.guid || item.link),
           source: 'local_news',
@@ -1044,15 +1065,15 @@ async function pollLocalNews() {
           author: item.creator || feed.name,
           publishedAt: item.isoDate || item.pubDate || new Date().toISOString(),
           thumbnail: imageFromRssItem(item),
-          brandTag: m.brand,
-          matchedKeyword: m.keyword,
-          confidence: m.confidence
+          brandTag: brandTag,
+          matchedKeyword: matchedKeyword,
+          confidence: confidence
         });
       }
     } catch (err) {
       feedStatus = 'ERROR:' + (err.code || err.message || 'unknown').substring(0, 40);
     }
-    feedStats.push(feed.name + ' [' + feedStatus + '] items=' + itemsInFeed + ' matched=' + matched);
+    feedStats.push(feed.name + ' [' + feedStatus + '] items=' + itemsInFeed + ' brand=' + brandMatched + ' topical=' + topicalMatched);
   }
   console.log(' [MENTIONS] Local News: ' + LOCAL_NEWS_FEEDS.length + ' feeds, ' + found.length + ' total matches');
   for (const s of feedStats) console.log('   \u2514 ' + s);
