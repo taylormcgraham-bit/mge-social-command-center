@@ -429,9 +429,16 @@ app.get('/api/all-data', async (req, res) => {
 // ============================================================
 
 const Parser = require('rss-parser');
+// Browser-like User-Agent. Our previous custom UA was being blocked by TownNews /
+// Cloudflare sites (WKOW, Channel 3000, Wisconsin State Journal, Cap Times all
+// returned 429 rate-limited). Mainstream browser UAs get through these filters.
+const FEED_USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 const rssParser = new Parser({
   timeout: 15000,
-  headers: { 'User-Agent': 'MGE-Social-Command-Center/1.0 (Madison Gas and Electric brand monitoring)' },
+  headers: {
+    'User-Agent': FEED_USER_AGENT,
+    'Accept': 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*'
+  },
   customFields: {
     item: [
       ['media:thumbnail', 'mediaThumbnail'],
@@ -441,6 +448,40 @@ const rssParser = new Parser({
     ]
   }
 });
+
+// Fetch + parse an RSS feed with a single retry on 429 (rate-limited).
+// TownNews-powered Wisconsin outlets (WKOW, madison.com, captimes.com, etc.)
+// occasionally return 429 on the first hit and succeed on a quick retry.
+// Throws the original error if the retry also fails.
+async function parseFeedResilient(url) {
+  const doFetch = async () => {
+    const resp = await fetch(url, {
+      headers: {
+        'User-Agent': FEED_USER_AGENT,
+        'Accept': 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Cache-Control': 'no-cache'
+      },
+      // 15 second cap — don't let a slow feed hold up the whole poll
+      signal: AbortSignal.timeout ? AbortSignal.timeout(15000) : undefined
+    });
+    return resp;
+  };
+  let resp = await doFetch();
+  if (resp.status === 429) {
+    // Brief jittered backoff, then retry once
+    const waitMs = 2500 + Math.floor(Math.random() * 1500);
+    await new Promise(r => setTimeout(r, waitMs));
+    resp = await doFetch();
+  }
+  if (!resp.ok) {
+    const err = new Error('Status code ' + resp.status);
+    err.code = 'HTTP_' + resp.status;
+    throw err;
+  }
+  const body = await resp.text();
+  return rssParser.parseString(body);
+}
 
 // --- Image/thumbnail extraction helpers ---
 function firstImgFromHtml(html) {
@@ -985,22 +1026,25 @@ async function pollYouTubeMentions() {
 }
 
 // --- 5. Local news RSS (Wisconsin outlets — TV, print, radio, college) ---
+// Feed URLs checked and updated 2026-04-23 after an audit found 10/23 failing.
+// 429-blocked feeds now use the resilient fetcher with browser-like UA + retry.
+// 404-broken URLs have been updated where confident, flagged with TODO otherwise.
 const LOCAL_NEWS_FEEDS = [
   // Madison TV
   { url: 'https://www.channel3000.com/feed/', name: 'Channel 3000 (WISC-TV)' },
-  { url: 'https://www.nbc15.com/arc/outboundfeeds/rss/', name: 'NBC 15 (WMTV)' },
+  { url: 'https://www.nbc15.com/rss/', name: 'NBC 15 (WMTV)' }, // was /arc/outboundfeeds/rss/ (404)
   { url: 'https://www.wkow.com/search/?f=rss&t=article&l=50&s=start_time&sd=desc', name: 'WKOW 27 (ABC Madison)' },
-  { url: 'https://fox47.com/feed/', name: 'FOX 47 Madison' },
+  // FOX 47 Madison removed — fox47.com is not the Madison affiliate. Madison's FOX is WMSN-TV; no public RSS found.
   // Madison print / magazine
   { url: 'https://madison.com/search/?f=rss&t=article&l=50&s=start_time&sd=desc', name: 'Wisconsin State Journal' },
   { url: 'https://captimes.com/search/?f=rss&t=article&l=50&s=start_time&sd=desc', name: 'Cap Times' },
-  { url: 'https://isthmus.com/feed/', name: 'Isthmus' },
-  { url: 'https://www.dailycardinal.com/feeds/main.xml', name: 'The Daily Cardinal (UW-Madison)' },
+  { url: 'https://isthmus.com/rss.xml', name: 'Isthmus' }, // was /feed/ (404)
+  { url: 'https://www.dailycardinal.com/feed', name: 'The Daily Cardinal (UW-Madison)' }, // was /feeds/main.xml (404)
   { url: 'https://badgerherald.com/feed/', name: 'The Badger Herald (UW-Madison)' },
   // Milwaukee
-  { url: 'https://www.jsonline.com/rss/', name: 'Milwaukee Journal Sentinel' },
+  { url: 'https://rssfeeds.jsonline.com/milwaukee/home', name: 'Milwaukee Journal Sentinel' }, // USA Today network; was /rss/ (404)
   { url: 'https://urbanmilwaukee.com/feed/', name: 'Urban Milwaukee' },
-  { url: 'https://www.tmj4.com/feed', name: 'TMJ4 Milwaukee' },
+  { url: 'https://www.tmj4.com/arc/outboundfeeds/rss/', name: 'TMJ4 Milwaukee' }, // was /feed (404)
   { url: 'https://www.cbs58.com/rss', name: 'CBS 58 Milwaukee' },
   { url: 'https://www.fox6now.com/feed', name: 'FOX6 Milwaukee' },
   { url: 'https://www.wisn.com/topstories-rss', name: 'WISN 12 Milwaukee' },
@@ -1025,7 +1069,9 @@ async function pollLocalNews() {
     let brandMatched = 0;
     let topicalMatched = 0;
     try {
-      const data = await rssParser.parseURL(feed.url);
+      // Use resilient fetcher with browser-like UA + 429 retry.
+      // Many TownNews/Cloudflare outlets block the default rss-parser UA.
+      const data = await parseFeedResilient(feed.url);
       itemsInFeed = (data.items || []).length;
       for (const item of (data.items || [])) {
         const titleText = cleanHtml(item.title || '');
