@@ -296,15 +296,36 @@
             font-size: 11px; color: #94A3B8; line-height: 1.4;
         }
 
-        /* Three-column grid of section cards */
-        .insights-sections {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+        /* Top row — The Story, full width, editorial style */
+        .insights-top { display: block; }
+        .insights-top .insights-section-card.what-happened {
+            padding: 20px 22px 18px;
         }
-        @media (max-width: 1100px) {
-            .insights-sections { grid-template-columns: 1fr 1fr; }
+        .insights-top .insights-narrative {
+            font-size: 15px; line-height: 1.65; color: #E2E8F0;
+            margin: 0 0 10px;
+        }
+        .insights-top .insights-narrative:last-child { margin-bottom: 0; }
+
+        /* Bottom row — equal-width action cards */
+        .insights-sections {
+            display: grid; gap: 16px; align-items: stretch;
+        }
+        .insights-sections.three { grid-template-columns: 1fr 1fr 1fr; }
+        .insights-sections.four  { grid-template-columns: 1fr 1fr 1fr 1fr; }
+        .insights-sections > .insights-section-card {
+            display: flex; flex-direction: column;
+        }
+        .insights-sections > .insights-section-card > .insights-items {
+            flex: 1 1 auto;
+        }
+        @media (max-width: 1200px) {
+            .insights-sections.four  { grid-template-columns: 1fr 1fr; }
+            .insights-sections.three { grid-template-columns: 1fr 1fr; }
         }
         @media (max-width: 780px) {
-            .insights-sections { grid-template-columns: 1fr; }
+            .insights-sections.three,
+            .insights-sections.four { grid-template-columns: 1fr; }
         }
         .insights-section-card {
             position: relative;
@@ -725,7 +746,96 @@
 
         /* --- KPI cards --- */
         .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .kpi-card { background: #F8FAFC; border-radius: 12px; padding: 16px; text-align: center; }
+        .kpi-card {
+            background: #F8FAFC; border-radius: 12px; padding: 16px; text-align: center;
+            border: 1px solid transparent; cursor: pointer;
+            font-family: inherit; color: inherit;
+            transition: background 0.15s, border-color 0.15s, transform 0.1s;
+            position: relative;
+        }
+        .kpi-card:hover { background: #F1F5F9; border-color: #E2E8F0; }
+        .kpi-card:active { transform: translateY(1px); }
+        .kpi-card[aria-expanded="true"] {
+            background: linear-gradient(180deg, #EEF2FF 0%, #F8FAFC 100%);
+            border-color: #6366F1;
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.08);
+        }
+        .kpi-card .kpi-chev {
+            display: inline-block; margin-left: 2px;
+            font-size: 10px; color: #94A3B8;
+            transition: transform 0.2s ease;
+        }
+        .kpi-card[aria-expanded="true"] .kpi-chev { transform: rotate(180deg); color: #6366F1; }
+
+        /* Breakdown panel that appears below the KPI grid */
+        .kpi-breakdown {
+            margin-top: 14px;
+            background: linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%);
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 14px 16px;
+            animation: kpiBreakdownFade 0.25s ease both;
+        }
+        .kpi-breakdown-head {
+            display: flex; justify-content: space-between; align-items: baseline;
+            gap: 10px; margin-bottom: 10px; flex-wrap: wrap;
+        }
+        .kpi-breakdown-title {
+            font-size: 11px; font-weight: 800; letter-spacing: 1px;
+            color: #475569; text-transform: uppercase;
+        }
+        .kpi-breakdown-total {
+            font-size: 12px; color: #64748B;
+        }
+        .kpi-breakdown-total strong { color: #1E293B; font-variant-numeric: tabular-nums; }
+        .kpi-breakdown-rows {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;
+        }
+        .kpi-breakdown-row {
+            display: flex; flex-direction: column; gap: 6px;
+            background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px;
+            padding: 10px 12px;
+        }
+        .kpi-breakdown-row .row-top {
+            display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+        }
+        .kpi-breakdown-row .row-platform {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 12px; font-weight: 700; color: #1E293B;
+        }
+        .kpi-breakdown-row .row-platform .platform-dot {
+            width: 8px; height: 8px; border-radius: 50%; background: #CBD5E1;
+        }
+        .kpi-breakdown-row.fb .platform-dot { background: #1877F2; }
+        .kpi-breakdown-row.ig .platform-dot { background: #E1306C; }
+        .kpi-breakdown-row.li .platform-dot { background: #0A66C2; }
+        .kpi-breakdown-row.yt .platform-dot { background: #FF0000; }
+        .kpi-breakdown-row .row-value {
+            font-size: 16px; font-weight: 700; color: #1E293B; font-variant-numeric: tabular-nums;
+        }
+        .kpi-breakdown-row .row-bar {
+            height: 6px; border-radius: 3px; background: #F1F5F9; overflow: hidden;
+        }
+        .kpi-breakdown-row .row-bar-fill {
+            height: 100%; border-radius: 3px;
+            background: linear-gradient(90deg, #6366F1, #8B5CF6);
+            transition: width 0.4s ease;
+        }
+        .kpi-breakdown-row.fb .row-bar-fill { background: linear-gradient(90deg, #1877F2, #3B82F6); }
+        .kpi-breakdown-row.ig .row-bar-fill { background: linear-gradient(90deg, #E1306C, #F77737); }
+        .kpi-breakdown-row.li .row-bar-fill { background: linear-gradient(90deg, #0A66C2, #3B82F6); }
+        .kpi-breakdown-row.yt .row-bar-fill { background: linear-gradient(90deg, #FF0000, #F87171); }
+        .kpi-breakdown-row .row-meta {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 11px; color: #64748B;
+        }
+        .kpi-breakdown-empty {
+            font-size: 12px; color: #94A3B8; font-style: italic; text-align: center; padding: 8px 0;
+        }
+        @keyframes kpiBreakdownFade {
+            from { opacity: 0; transform: translateY(-4px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
         .followers-section { margin-top: 18px; padding-top: 18px; border-top: 1px solid #E2E8F0; }
         .followers-section-title {
             font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase;
@@ -1465,7 +1575,7 @@
         <div class="insights-header">
             <div class="insights-title">
                 <span class="insights-badge">AI</span>
-                Insights from MGE platforms
+                Insights from social platforms
                 <span class="insights-range" id="insightsRange"></span>
                 <span class="insights-provider-pill" id="insightsProviderPill" style="display:none;"></span>
             </div>
@@ -1581,27 +1691,29 @@
         <div class="card" style="margin-bottom:24px;">
             <div class="card-title">Engagement Overview</div>
             <div class="kpi-grid">
-                <div class="kpi-card">
+                <button type="button" class="kpi-card" data-kpi="reactions" onclick="toggleKpiBreakdown(this)" aria-expanded="false">
                     <div class="kpi-value" id="kpiReactions">0</div>
-                    <div class="kpi-label">Total Reactions</div>
+                    <div class="kpi-label">Total Reactions <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
                     <div class="kpi-change" id="kpiReactionsChange"></div>
-                </div>
-                <div class="kpi-card">
+                </button>
+                <button type="button" class="kpi-card" data-kpi="comments" onclick="toggleKpiBreakdown(this)" aria-expanded="false">
                     <div class="kpi-value" id="kpiComments">0</div>
-                    <div class="kpi-label">Total Comments</div>
+                    <div class="kpi-label">Total Comments <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
                     <div class="kpi-change" id="kpiCommentsChange"></div>
-                </div>
-                <div class="kpi-card">
+                </button>
+                <button type="button" class="kpi-card" data-kpi="shares" onclick="toggleKpiBreakdown(this)" aria-expanded="false">
                     <div class="kpi-value" id="kpiShares">0</div>
-                    <div class="kpi-label">Total Shares</div>
+                    <div class="kpi-label">Total Shares <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
                     <div class="kpi-change" id="kpiSharesChange"></div>
-                </div>
-                <div class="kpi-card">
+                </button>
+                <button type="button" class="kpi-card" data-kpi="views" onclick="toggleKpiBreakdown(this)" aria-expanded="false">
                     <div class="kpi-value" id="kpiViews">0</div>
-                    <div class="kpi-label">Total Views</div>
+                    <div class="kpi-label">Total Video Views <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
                     <div class="kpi-change" id="kpiViewsChange"></div>
-                </div>
+                </button>
             </div>
+            <!-- Inline breakdown, shown when any KPI card is clicked -->
+            <div class="kpi-breakdown" id="kpiBreakdown" hidden></div>
             <div class="followers-section">
                 <div class="followers-section-title">Followers by Platform</div>
                 <div class="kpi-followers-row" id="kpiFollowersRow"></div>
@@ -1640,7 +1752,7 @@
 <div style="max-width: 1600px; margin: 0 auto; padding: 0 36px 24px;">
     <div class="card">
         <div class="timeline-header">
-            <div class="card-title" style="margin-bottom:0;">Audience Health Over Time <span class="timeline-sub">rolling 12 months</span></div>
+            <div class="card-title" style="margin-bottom:0;">Audience Health Over Time <span class="timeline-sub">last 52 weeks &middot; weekly snapshots</span></div>
             <div class="timeline-legend" style="flex-wrap:wrap;">
                 <span class="tl-legend-item"><span class="tl-swatch" style="background:linear-gradient(135deg,#003B71,#0066CC);width:14px;height:3px;border-radius:2px;"></span>AHS Score</span>
                 <span class="tl-legend-item"><span class="tl-swatch" style="background:linear-gradient(135deg,#22C55E,#16A34A);width:14px;height:3px;border-radius:2px;"></span>Sentiment</span>
@@ -2461,38 +2573,168 @@ function getFollowerMoMChange(platformKey, currentFollowers) {
 }
 
 // ============================================================
-// AHS HISTORY (localStorage, monthly composite scores for timeline chart)
-// Also snapshots monthly engagement totals and sentiment scores so the
-// chart can show all three lines even when the API only returns recent data.
+// KPI PLATFORM BREAKDOWN — shown when a KPI card is clicked
 // ============================================================
-var AHS_HISTORY_KEY = 'mge_ahs_history_v3';
+var KPI_META = {
+    reactions: {
+        label: 'Total Reactions',
+        description: 'Likes, loves, care, and other reactions by platform',
+        // Returns the reaction total for a given platform key
+        platformValue: function(pe, platformKey) {
+            if (!pe[platformKey]) return 0;
+            if (platformKey === 'fb') {
+                return (pe.fb.like || 0) + (pe.fb.love || 0) + (pe.fb.wow || 0) +
+                       (pe.fb.haha || 0) + (pe.fb.sad || 0) + (pe.fb.angry || 0) + (pe.fb.care || 0);
+            }
+            // IG, LI, YT expose .likes (dislikes folded into reactions for YT)
+            if (platformKey === 'yt') {
+                return (pe.yt.likes || 0); // dislikes are not public from the API
+            }
+            return (pe[platformKey].likes || 0);
+        }
+    },
+    comments: {
+        label: 'Total Comments',
+        description: 'Comments left by your audience on each platform',
+        platformValue: function(pe, k) { return pe[k] ? (pe[k].comments || 0) : 0; }
+    },
+    shares: {
+        label: 'Total Shares',
+        description: 'Shares / reposts / retweets on each platform',
+        platformValue: function(pe, k) { return pe[k] ? (pe[k].shares || 0) : 0; }
+    },
+    views: {
+        label: 'Total Video Views',
+        description: 'Video views on YouTube and Instagram Reels. Facebook and LinkedIn do not publish per-post view counts via their public APIs.',
+        platformValue: function(pe, k) { return pe[k] ? (pe[k].views || 0) : 0; }
+    }
+};
+
+var PLATFORM_INFO = {
+    fb: { name: 'Facebook' },
+    ig: { name: 'Instagram' },
+    li: { name: 'LinkedIn' },
+    yt: { name: 'YouTube' }
+};
+
+window.toggleKpiBreakdown = function(btn) {
+    if (!btn) return;
+    var wantedKpi = btn.getAttribute('data-kpi');
+    var isOpen = btn.getAttribute('aria-expanded') === 'true';
+    // Close all cards first
+    document.querySelectorAll('.kpi-card[aria-expanded="true"]').forEach(function(c) {
+        c.setAttribute('aria-expanded', 'false');
+    });
+    var panel = document.getElementById('kpiBreakdown');
+    if (isOpen) {
+        // Clicking the already-open card collapses the panel
+        if (panel) panel.hidden = true;
+        return;
+    }
+    btn.setAttribute('aria-expanded', 'true');
+    renderKpiBreakdown(wantedKpi);
+};
+
+function renderKpiBreakdown(kpiKey) {
+    var panel = document.getElementById('kpiBreakdown');
+    if (!panel) return;
+    var data = window._lastProcessedData;
+    var meta = KPI_META[kpiKey];
+    if (!data || !data.platformEngagement || !meta) {
+        panel.hidden = true;
+        return;
+    }
+    var pe = data.platformEngagement;
+    var rows = Object.keys(PLATFORM_INFO).map(function(k) {
+        return {
+            key: k,
+            name: PLATFORM_INFO[k].name,
+            value: meta.platformValue(pe, k),
+            postCount: pe[k] ? (pe[k].postCount || 0) : 0
+        };
+    });
+    var total = rows.reduce(function(s, r) { return s + r.value; }, 0);
+    var max = rows.reduce(function(m, r) { return r.value > m ? r.value : m; }, 0);
+    rows.sort(function(a, b) { return b.value - a.value; });
+
+    var rowsHtml = rows.map(function(r) {
+        var pct = total > 0 ? Math.round((r.value / total) * 100) : 0;
+        var barPct = max > 0 ? Math.round((r.value / max) * 100) : 0;
+        var valueDisplay = r.value > 0 ? r.value.toLocaleString() : '0';
+        return '<div class="kpi-breakdown-row ' + r.key + '">' +
+                 '<div class="row-top">' +
+                   '<span class="row-platform"><span class="platform-dot"></span>' + escapeHtml(r.name) + '</span>' +
+                   '<span class="row-value">' + valueDisplay + '</span>' +
+                 '</div>' +
+                 '<div class="row-bar"><div class="row-bar-fill" style="width:' + barPct + '%;"></div></div>' +
+                 '<div class="row-meta">' +
+                   '<span>' + pct + '% of total</span>' +
+                   '<span>' + r.postCount + (r.postCount === 1 ? ' post' : ' posts') + ' this window</span>' +
+                 '</div>' +
+               '</div>';
+    }).join('');
+
+    panel.hidden = false;
+    panel.innerHTML =
+        '<div class="kpi-breakdown-head">' +
+            '<div class="kpi-breakdown-title">' + escapeHtml(meta.label) + ' by platform</div>' +
+            '<div class="kpi-breakdown-total">Total: <strong>' + total.toLocaleString() + '</strong></div>' +
+        '</div>' +
+        (meta.description ? '<div class="kpi-breakdown-empty" style="text-align:left;margin:-4px 0 10px;font-style:normal;color:#64748B;">' + escapeHtml(meta.description) + '</div>' : '') +
+        '<div class="kpi-breakdown-rows">' + rowsHtml + '</div>';
+}
+
+
+// ============================================================
+// AHS HISTORY (localStorage, WEEKLY composite scores for timeline chart)
+// Snapshots weekly engagement totals, sentiment scores, and AHS composite
+// so the chart can build up 52 weeks of data regardless of which date
+// window the dashboard is showing.
+// Storage was bumped to v4 when we switched from month buckets (v3) to
+// ISO-week buckets (v4). Old monthly data doesn't decompose cleanly to
+// weeks, so we start fresh; history rebuilds as the dashboard is used.
+// ============================================================
+var AHS_HISTORY_KEY = 'mge_ahs_history_v4';
 function getAhsHistory() {
     try {
         var raw = localStorage.getItem(AHS_HISTORY_KEY);
-        var parsed = raw ? JSON.parse(raw) : {};
-        // One-time migration: pull forward any v2 history on first load of v3
-        if (!raw) {
-            try {
-                var legacyRaw = localStorage.getItem('mge_ahs_history_v2');
-                if (legacyRaw) {
-                    parsed = JSON.parse(legacyRaw);
-                    localStorage.setItem(AHS_HISTORY_KEY, JSON.stringify(parsed));
-                }
-            } catch (e) {}
-        }
-        return parsed;
+        return raw ? JSON.parse(raw) : {};
     } catch (e) { return {}; }
 }
-function currentYmKey() {
-    var now = new Date();
-    return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+// ISO 8601 week: Monday-start, week 1 contains the year's first Thursday
+function isoWeekKey(date) {
+    var d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    var dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum); // move to Thursday of that week
+    var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    var weekNum = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+    return d.getUTCFullYear() + '-W' + String(weekNum).padStart(2, '0');
 }
+// Returns the Monday date of the given ISO week key (e.g. "2026-W17").
+function weekStartFromKey(key) {
+    var parts = String(key || '').match(/^(\d{4})-W(\d{1,2})$/);
+    if (!parts) return null;
+    var year = parseInt(parts[1], 10);
+    var week = parseInt(parts[2], 10);
+    // Jan 4 is always in ISO week 1
+    var jan4 = new Date(Date.UTC(year, 0, 4));
+    var jan4Day = jan4.getUTCDay() || 7;
+    var week1Monday = new Date(jan4);
+    week1Monday.setUTCDate(jan4.getUTCDate() - jan4Day + 1);
+    var target = new Date(week1Monday);
+    target.setUTCDate(week1Monday.getUTCDate() + (week - 1) * 7);
+    return target;
+}
+function currentWeekKey() { return isoWeekKey(new Date()); }
+// Back-compat alias — some older call sites may still reference currentYmKey
+function currentYmKey() { return currentWeekKey(); }
+
 function saveAhsScore(overallScore, perPlatform) {
     if (overallScore === null) return;
     var history = getAhsHistory();
-    var ymKey = currentYmKey();
-    var existing = history[ymKey] || { platforms: {} };
-    history[ymKey] = {
+    var key = currentWeekKey();
+    var existing = history[key] || { platforms: {} };
+    history[key] = {
         ts: new Date().toISOString(),
         score: overallScore,
         engagement: existing.engagement != null ? existing.engagement : null,
@@ -2502,7 +2744,7 @@ function saveAhsScore(overallScore, perPlatform) {
     if (perPlatform) {
         ['fb', 'ig', 'li', 'yt'].forEach(function(k) {
             if (perPlatform[k]) {
-                history[ymKey].platforms[k] = {
+                history[key].platforms[k] = {
                     score: perPlatform[k].score,
                     engagement: perPlatform[k].pillars ? perPlatform[k].pillars.engagement : null,
                     sentiment: perPlatform[k].pillars ? perPlatform[k].pillars.sentiment : null,
@@ -2513,19 +2755,21 @@ function saveAhsScore(overallScore, perPlatform) {
     }
     try { localStorage.setItem(AHS_HISTORY_KEY, JSON.stringify(history)); } catch (e) {}
 }
-// Stamp the current month's engagement total and sentiment score. Called from
-// renderSentimentTimeline so the chart has month-over-month data even when the
-// dashboard's date filter is short (e.g. 7-day window).
-function saveMonthlyMetrics(engagementTotal, sentimentScore) {
+// Stamp the current week's engagement total and sentiment score. Called from
+// renderSentimentTimeline so the trend builds week-over-week even when the
+// dashboard's date filter is short.
+function saveWeeklyMetrics(engagementTotal, sentimentScore) {
     var history = getAhsHistory();
-    var ymKey = currentYmKey();
-    var row = history[ymKey] || { ts: new Date().toISOString(), score: null, platforms: {} };
+    var key = currentWeekKey();
+    var row = history[key] || { ts: new Date().toISOString(), score: null, platforms: {} };
     if (engagementTotal != null && !isNaN(engagementTotal)) row.engagement = Math.round(engagementTotal);
     if (sentimentScore  != null && !isNaN(sentimentScore))  row.sentiment  = Math.round(sentimentScore);
     row.ts = new Date().toISOString();
-    history[ymKey] = row;
+    history[key] = row;
     try { localStorage.setItem(AHS_HISTORY_KEY, JSON.stringify(history)); } catch (e) {}
 }
+// Back-compat alias
+function saveMonthlyMetrics(eng, sent) { return saveWeeklyMetrics(eng, sent); }
 
 // ============================================================
 // RENDERING
@@ -2555,6 +2799,13 @@ function timeAgo(date) {
 function renderKPIs(data) {
     var el = function(id) { return document.getElementById(id); };
     var prev = previousPeriodData ? previousPeriodData.kpis : null;
+    // Stash the processed data so the KPI breakdown can reach it on click
+    window._lastProcessedData = data;
+    // If a breakdown is currently expanded, re-render it with the latest numbers
+    var expandedCard = document.querySelector('.kpi-card[aria-expanded="true"]');
+    if (expandedCard) {
+        renderKpiBreakdown(expandedCard.getAttribute('data-kpi'));
+    }
     if (el('kpiReactions')) el('kpiReactions').textContent = fmt(data.kpis.reactions);
     if (el('kpiComments')) el('kpiComments').textContent = fmt(data.kpis.comments);
     if (el('kpiShares')) el('kpiShares').textContent = fmt(data.kpis.shares);
@@ -3320,18 +3571,22 @@ function extractAllRawComments(raw) {
 }
 
 function renderSentimentTimeline(rawOrData, processedData) {
-    // Build the rolling 12-month window ending at the current month
+    // Build a rolling 52-WEEK window ending at the current ISO week.
+    // Viewing window remains ~12 months, but each data point is one week
+    // so trends are far more granular than the prior monthly buckets.
     var rolling = [];
-    var now = new Date();
-    for (var i = 11; i >= 0; i--) {
-        var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        rolling.push({
-            key: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'),
-            label: d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-        });
+    var nowDate = new Date();
+    for (var i = 51; i >= 0; i--) {
+        var d = new Date(nowDate);
+        d.setDate(d.getDate() - i * 7);
+        var key = isoWeekKey(d);
+        var monday = weekStartFromKey(key);
+        // Short label (e.g. "Apr 13") — chart will thin these via maxTicksLimit
+        var label = monday ? monday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : key;
+        rolling.push({ key: key, label: label, monday: monday });
     }
 
-    // Extract all raw comments for sentiment per month
+    // Extract all raw comments for sentiment per week
     var allComments = [];
     if (rawOrData && (rawOrData.facebook || rawOrData.instagram || rawOrData.linkedin || rawOrData.youtube)) {
         allComments = extractAllRawComments(rawOrData);
@@ -3339,34 +3594,34 @@ function renderSentimentTimeline(rawOrData, processedData) {
         allComments = rawOrData.comments;
     }
 
-    // Extract all posts for engagement per month (processedData uses allPosts)
+    // Extract all posts for engagement per week (processedData uses allPosts)
     var allPosts = [];
     if (processedData) {
         if (Array.isArray(processedData.allPosts)) allPosts = processedData.allPosts;
         else if (Array.isArray(processedData.posts)) allPosts = processedData.posts;
     }
 
-    // Bucket comments by month
+    // Bucket comments by week
     var commentMap = {};
-    rolling.forEach(function(m) { commentMap[m.key] = []; });
+    rolling.forEach(function(w) { commentMap[w.key] = []; });
     allComments.forEach(function(c) {
         if (!c.time) return;
         var d = new Date(c.time);
         if (isNaN(d.getTime())) return;
-        var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+        var key = isoWeekKey(d);
         if (commentMap[key]) commentMap[key].push(c.text || '');
     });
 
-    // Bucket engagement by month from posts (live, this session).
+    // Bucket engagement by week from posts (live, this session).
     // processData posts use .date and .totalEngagement.
     var engMap = {};
-    rolling.forEach(function(m) { engMap[m.key] = 0; });
+    rolling.forEach(function(w) { engMap[w.key] = 0; });
     allPosts.forEach(function(p) {
         var dateStr = p.date || p.time;
         if (!dateStr) return;
         var d = new Date(dateStr);
         if (isNaN(d.getTime())) return;
-        var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+        var key = isoWeekKey(d);
         if (engMap[key] !== undefined) {
             var eng = (typeof p.totalEngagement === 'number') ? p.totalEngagement
                     : (typeof p.engagement === 'number') ? p.engagement
@@ -3375,21 +3630,21 @@ function renderSentimentTimeline(rawOrData, processedData) {
         }
     });
 
-    var labels = rolling.map(function(m) { return m.label; });
-    var commentVolumes = rolling.map(function(m) { return commentMap[m.key].length; });
+    var labels = rolling.map(function(w) { return w.label; });
+    var commentVolumes = rolling.map(function(w) { return commentMap[w.key].length; });
 
-    // Compute current-month sentiment from raw comments (not filtered by date window)
-    var thisMonthKey = currentYmKey();
-    var thisMonthSentiment = null;
-    if (commentMap[thisMonthKey] && commentMap[thisMonthKey].length > 0) {
-        var thisMonthTexts = commentMap[thisMonthKey].join(' ');
-        if (thisMonthTexts.trim()) {
-            thisMonthSentiment = analyzeSentiment(thisMonthTexts).score;
+    // Compute current-week sentiment from raw comments (not filtered by date window)
+    var thisWeekKey = currentWeekKey();
+    var thisWeekSentiment = null;
+    if (commentMap[thisWeekKey] && commentMap[thisWeekKey].length > 0) {
+        var thisWeekTexts = commentMap[thisWeekKey].join(' ');
+        if (thisWeekTexts.trim()) {
+            thisWeekSentiment = analyzeSentiment(thisWeekTexts).score;
         }
     }
-    // Stamp current month's engagement + sentiment so the trend builds over time
-    // (previous months are frozen; we only ever update the live month).
-    saveMonthlyMetrics(engMap[thisMonthKey] || 0, thisMonthSentiment);
+    // Stamp current week's engagement + sentiment so the trend builds over time.
+    // Previous weeks are frozen — we only ever update the live week.
+    saveWeeklyMetrics(engMap[thisWeekKey] || 0, thisWeekSentiment);
 
     // Now pull ALL three metric series from localStorage history, so the chart
     // shows month-over-month data regardless of the currently selected date window.
@@ -3542,7 +3797,7 @@ function renderSentimentTimeline(rawOrData, processedData) {
                     cornerRadius: 8,
                     displayColors: true,
                     callbacks: {
-                        title: function(items) { return items[0].label; },
+                        title: function(items) { return 'Week of ' + items[0].label; },
                         label: function(ctx) {
                             if (ctx.dataset.label === 'AHS Score') {
                                 if (ctx.parsed.y == null) return 'AHS: no data';
@@ -3575,7 +3830,18 @@ function renderSentimentTimeline(rawOrData, processedData) {
                     grid: { display: false },
                     ticks: { font: { size: 10 }, color: '#94A3B8', precision: 0 }
                 },
-                x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#64748B' }, stacked: true }
+                x: {
+                    grid: { display: false },
+                    ticks: {
+                        font: { size: 10 },
+                        color: '#64748B',
+                        autoSkip: true,
+                        maxTicksLimit: 13, // ~1 tick per month across 52 weeks
+                        maxRotation: 0,
+                        minRotation: 0
+                    },
+                    stacked: true
+                }
             }
         },
         plugins: [zonesPlugin]
@@ -3590,15 +3856,16 @@ function renderTimelineStats(rolling, scores, volumes) {
         if (scores[i] != null) withData.push({ label: rolling[i].label, score: scores[i], vol: volumes[i] });
     }
     if (withData.length === 0) {
-        statsEl.innerHTML = '<div class="tl-stat" style="grid-column: 1 / -1;"><div class="tl-stat-label">No history yet</div><div class="tl-stat-sub">AHS scores will build up over time as the dashboard runs each month.</div></div>';
+        statsEl.innerHTML = '<div class="tl-stat" style="grid-column: 1 / -1;"><div class="tl-stat-label">No history yet</div><div class="tl-stat-sub">AHS scores will build up each week as the dashboard runs.</div></div>';
         return;
     }
     var totalComments = volumes.reduce(function(a, b) { return a + b; }, 0);
     var avgScore = Math.round(withData.reduce(function(a, b) { return a + b.score; }, 0) / withData.length);
     var best = withData.reduce(function(a, b) { return b.score > a.score ? b : a; });
     var worst = withData.reduce(function(a, b) { return b.score < a.score ? b : a; });
-    var recent = withData.slice(-3);
-    var prior  = withData.slice(-6, -3);
+    // 4-week vs prior 4-week comparison (~monthly) using the new weekly buckets
+    var recent = withData.slice(-4);
+    var prior  = withData.slice(-8, -4);
     var trendBadgeHtml = '';
     if (recent.length && prior.length) {
         var rAvg = recent.reduce(function(a, b) { return a + b.score; }, 0) / recent.length;
@@ -3615,16 +3882,16 @@ function renderTimelineStats(rolling, scores, volumes) {
     statsEl.innerHTML =
         '<div class="tl-stat"><div class="tl-stat-label">Avg AHS Score</div>' +
             '<div class="tl-stat-value ' + avgCls + '">' + avgScore + '<span style="font-size:12px;font-weight:600;color:#94A3B8;"> /100</span></div>' +
-            '<div class="tl-stat-sub">' + avgLabel + ' &middot; ' + withData.length + ' month' + (withData.length !== 1 ? 's' : '') + ' of data</div></div>' +
-        '<div class="tl-stat"><div class="tl-stat-label">3-mo Trend</div>' +
+            '<div class="tl-stat-sub">' + avgLabel + ' &middot; ' + withData.length + ' week' + (withData.length !== 1 ? 's' : '') + ' of data</div></div>' +
+        '<div class="tl-stat"><div class="tl-stat-label">4-wk Trend</div>' +
             trendBadgeHtml +
-            '<div class="tl-stat-sub">vs. prior 3 months</div></div>' +
-        '<div class="tl-stat"><div class="tl-stat-label">Strongest Month</div>' +
+            '<div class="tl-stat-sub">vs. prior 4 weeks</div></div>' +
+        '<div class="tl-stat"><div class="tl-stat-label">Strongest Week</div>' +
             '<div class="tl-stat-value pos">' + best.score + '</div>' +
-            '<div class="tl-stat-sub">' + best.label + ' &middot; ' + best.vol + ' comments</div></div>' +
-        '<div class="tl-stat"><div class="tl-stat-label">Weakest Month</div>' +
+            '<div class="tl-stat-sub">Week of ' + best.label + ' &middot; ' + best.vol + ' comments</div></div>' +
+        '<div class="tl-stat"><div class="tl-stat-label">Weakest Week</div>' +
             '<div class="tl-stat-value ' + (worst.score < 45 ? 'neg' : worst.score >= 60 ? 'pos' : 'neu') + '">' + worst.score + '</div>' +
-            '<div class="tl-stat-sub">' + worst.label + ' &middot; ' + totalComments.toLocaleString() + ' total comments</div></div>';
+            '<div class="tl-stat-sub">Week of ' + worst.label + ' &middot; ' + totalComments.toLocaleString() + ' total comments</div></div>';
 }
 
 // ============================================================
@@ -3918,10 +4185,10 @@ window.addEventListener('DOMContentLoaded', () => {
 // every render cycle — only when data meaningfully changes or the
 // user clicks Refresh.
 // ============================================================
-// Bumped to v2 when the response schema gained headline/stats/nextMoves/watchOuts.
-// Old v1 cached entries (whatHappened/whatsWorking/whatToTry only) would render
-// without the hero section, so we invalidate by bumping the key.
-var INSIGHTS_CACHE_KEY = 'mge_insights_cache_v2';
+// Bumped to v3 when we dropped headline/stats and asked Gemini for a richer
+// multi-paragraph narrative for The Story. Invalidate old caches so viewers
+// see the new shape on first load.
+var INSIGHTS_CACHE_KEY = 'mge_insights_cache_v3';
 var _insightsLatestFingerprint = null;
 
 function initInsightsPanel() {
@@ -4109,37 +4376,10 @@ function formatInsightsSections(result) {
     if (!result) return insightsPlaceholder('No insights', 'The model returned an empty response.', true);
 
     // Pull fields with back-compat fallbacks so older cached payloads still render
-    var headline     = result.headline || '';
-    var stats        = Array.isArray(result.stats) ? result.stats : [];
     var whatHappened = result.whatHappened || result.summary || '';
     var whatsWorking = Array.isArray(result.whatsWorking) ? result.whatsWorking : (Array.isArray(result.working) ? result.working : []);
     var nextMoves    = Array.isArray(result.nextMoves)    ? result.nextMoves    : (Array.isArray(result.whatToTry) ? result.whatToTry : []);
     var watchOuts    = Array.isArray(result.watchOuts)    ? result.watchOuts    : [];
-
-    // --- Hero ----------------------------------------------------------
-    function renderHero() {
-        if (!headline && !stats.length) return '';
-        var headlineHtml = headline ? '<div class="insights-headline">' + escapeHtml(headline) + '</div>' : '';
-        var statsHtml = stats.length ? '<div class="insights-stats">' + stats.map(renderStat).join('') + '</div>' : '';
-        return '<div class="insights-hero">' + headlineHtml + statsHtml + '</div>';
-    }
-    function renderStat(s) {
-        var dir = s.direction || 'neutral';
-        var deltaHtml = s.delta
-            ? '<span class="stat-delta ' + escapeHtml(dir) + '">' +
-                (dir === 'up' ? '\u25B2 ' : dir === 'down' ? '\u25BC ' : '') +
-                escapeHtml(String(s.delta)) +
-              '</span>'
-            : '';
-        return '<div class="insights-stat">' +
-                 '<div class="stat-label">' + escapeHtml(s.label || '') + '</div>' +
-                 '<div class="stat-value-row">' +
-                   '<span class="stat-value">' + escapeHtml(String(s.value || '')) + '</span>' +
-                   deltaHtml +
-                 '</div>' +
-                 (s.context ? '<div class="stat-context">' + escapeHtml(s.context) + '</div>' : '') +
-               '</div>';
-    }
 
     // --- Section scaffolding ------------------------------------------
     function sectionCard(cls, kicker, glyph, body) {
@@ -4152,12 +4392,17 @@ function formatInsightsSections(result) {
                '</div>';
     }
 
-    // --- What happened -------------------------------------------------
-    var happenedCard = sectionCard('what-happened', 'The Story', '\u25CF',
-        whatHappened
-            ? '<p class="insights-narrative">' + escapeHtml(whatHappened) + '</p>'
-            : '<p class="insights-narrative" style="color:#94A3B8;font-style:italic;">No narrative returned.</p>'
-    );
+    // --- The Story — narrative, supports multiple paragraphs ---------
+    function renderNarrative(text) {
+        if (!text) return '<p class="insights-narrative" style="color:#94A3B8;font-style:italic;">No narrative returned.</p>';
+        // Preserve paragraph breaks when the model returns multi-paragraph prose
+        var paragraphs = String(text).split(/\n{2,}|\r\n{2,}/).map(function(p) { return p.trim(); }).filter(Boolean);
+        if (paragraphs.length === 0) paragraphs = [String(text)];
+        return paragraphs.map(function(p) {
+            return '<p class="insights-narrative">' + escapeHtml(p) + '</p>';
+        }).join('');
+    }
+    var happenedCard = sectionCard('what-happened', 'The Story', '\u25CF', renderNarrative(whatHappened));
 
     // --- What's working -----------------------------------------------
     function renderWorkingItem(it) {
@@ -4206,10 +4451,12 @@ function formatInsightsSections(result) {
         );
     }
 
-    return renderHero() +
-           '<div class="insights-sections">' +
-              happenedCard + workingCard + movesCard + watchCard +
-           '</div>';
+    // Layout: full-width narrative at top, then equal-width action cards below.
+    // Watch-outs only render when the model actually flagged something.
+    var bottomCards = workingCard + movesCard + watchCard;
+    var bottomClass = watchCard ? 'insights-sections four' : 'insights-sections three';
+    return '<div class="insights-top">' + happenedCard + '</div>' +
+           '<div class="' + bottomClass + '">' + bottomCards + '</div>';
 }
 
 // Pretty labels for the provider badge / footer
