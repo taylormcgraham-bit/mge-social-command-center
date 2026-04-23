@@ -3889,11 +3889,11 @@ async function renderInsightsPanel(data, previousData, force) {
         if (statusEl) statusEl.textContent = 'Error';
         var msg = (err && err.message) || 'Unknown error';
         // Detect the "no API key" case so we show a helpful message instead of a red error
-        if (/ANTHROPIC_API_KEY|missing.*key|not configured/i.test(msg)) {
+        if (/LLM API key|ANTHROPIC_API_KEY|GEMINI_API_KEY|missing.*key|not configured/i.test(msg)) {
             strip.classList.remove('is-error');
             renderInsightsBody(insightsPlaceholder(
                 'Insights not configured',
-                'Add ANTHROPIC_API_KEY to Render env vars to enable AI-generated insights.'
+                'Add GEMINI_API_KEY (free at aistudio.google.com) or ANTHROPIC_API_KEY to Render env vars to enable AI insights.'
             ));
         } else {
             renderInsightsBody(insightsPlaceholder('Insights failed', msg));
