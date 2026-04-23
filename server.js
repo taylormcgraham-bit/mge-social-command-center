@@ -1677,12 +1677,7 @@ function buildInsightsUserPrompt(body) {
   lines.push('');
   lines.push('Return a single valid JSON object matching this exact shape. No code fences, no prose outside JSON.');
   lines.push('{');
-  lines.push('  "headline": "ONE bold sentence (15-25 words) naming the most important finding of this window. Lead with the concrete fact, not the framing.",');
-  lines.push('  "stats": [');
-  lines.push('    { "label": "Short metric label (1-3 words)", "value": "The number or name", "delta": "+12% or -8% or null if no prior", "direction": "up | down | neutral", "context": "Brief qualifier (e.g., vs prior 28 days)" }');
-  lines.push('    // include 3 stats — the most informative ones for this window. Always include engagement. Use reach/impressions/followers/best-platform as additional.');
-  lines.push('  ],');
-  lines.push('  "whatHappened": "2-3 sentence narrative. Lead with the larger pattern, then one supporting detail. Do not recap the stats already shown above.",');
+  lines.push('  "whatHappened": "A rich, multi-paragraph narrative (4-7 sentences total, split across 2 paragraphs using a blank line). Paragraph 1: the overall performance pattern of this window, naming the platform(s) that drove it and citing specific numbers. Paragraph 2: the most interesting behavioral observation — what the audience responded to, how comment sentiment read, what stood out vs prior period. Write like an editor briefing the team; concrete and specific, not a generic recap.",');
   lines.push('  "whatsWorking": [');
   lines.push('    { "title": "Short descriptive name (3-6 words)", "platform": "fb | ig | li | yt | mixed", "evidence": "specific metric or post reference, e.g. \\"846 engagements on a single post\\"", "why": "One sentence on why this performed — audience behavior, format, timing, topic resonance" }');
   lines.push('    // 3 items');
