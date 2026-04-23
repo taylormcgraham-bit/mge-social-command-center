@@ -547,6 +547,26 @@ function verifyTopicalContent(text) {
   return true;
 }
 
+// --- US geography gate for topical content ---------------------------------
+// Non-US country/region signals — if these show up prominently we drop the item.
+const NON_US_SIGNAL = /\b(ukraine|ukrainian|russia|russian|china|chinese|beijing|india|indian|pakistan|pakistani|u\.?k\.?|britain|british|england|english|scotland|scottish|wales|welsh|ireland|irish|germany|german|france|french|italy|italian|spain|spanish|portugal|portuguese|netherlands|dutch|amsterdam|belgium|belgian|poland|polish|sweden|swedish|norway|norwegian|finland|finnish|denmark|danish|europe|european union|\beu\b|brussels|brexit|australia|australian|new zealand|japan|japanese|tokyo|korea|korean|seoul|vietnam|indonesia|philippines|thailand|malaysia|singapore|taiwan|israel|israeli|iran|iranian|iraq|iraqi|saudi|saudi arabia|uae|united arab emirates|egypt|egyptian|turkey|turkish|south africa|nigeria|nigerian|kenya|kenyan|brazil|brazilian|mexico|mexican|argentina|chile|colombia|canada|canadian|ontario|quebec|alberta|toronto|vancouver|montreal)\b/i;
+
+// US geography/institutional signals — at least one of these must be present
+// for a topical item to pass the geo gate (WISCONSIN_GEO is already defined above).
+const US_SIGNAL = /\b(u\.?s\.?|u\.?s\.?a\.?|united states|america|american|americans|federal|ferc|\bepa\b|\bdoe\b|department of energy|nerc|\binl\b|nrel|sandia|midwest|midwestern|great lakes|pjm|miso|ercot|caiso|spp|nypa|tva|bpa|minnesota|minnesotan|illinois|iowa|iowan|michigan|indiana|ohio|missouri|north dakota|south dakota|kansas|nebraska|kentucky|tennessee|texas|texan|california|californian|new york|new yorker|florida|floridian|pennsylvania|washington state|oregon|oregonian|colorado|arizona|nevada|georgia|virginia|north carolina|south carolina|alabama|mississippi|louisiana|arkansas|oklahoma|utah|montana|wyoming|idaho|new mexico|maine|vermont|new hampshire|massachusetts|connecticut|rhode island|new jersey|delaware|maryland|west virginia|hawaii|alaska|chicago|minneapolis|saint paul|st\.? paul|detroit|cleveland|columbus|cincinnati|indianapolis|st\.? louis|saint louis|kansas city|omaha|des moines|dallas|houston|austin|atlanta|boston|philadelphia|pittsburgh|los angeles|san francisco|san diego|seattle|portland|denver|phoenix|las vegas|miami|orlando|tampa|nashville|memphis|new orleans|washington d\.?c\.?|capitol hill)\b/i;
+
+function verifyTopicalGeography(text) {
+  if (!text) return false;
+  // Hard-reject if a non-US country/region is in the first 120 chars (usually the title/lede)
+  const firstChunk = text.slice(0, 120);
+  if (NON_US_SIGNAL.test(firstChunk)) return false;
+  // Soft-reject if non-US is mentioned 2+ times across the full text
+  const nonUsMatches = (text.match(new RegExp(NON_US_SIGNAL.source, 'gi')) || []).length;
+  if (nonUsMatches >= 2) return false;
+  // Require a US/state/Wisconsin signal somewhere in the text
+  return US_SIGNAL.test(text) || WISCONSIN_GEO.test(text);
+}
+
 // Identify which brand a piece of text matches (if any)
 // Returns { brand, keyword, confidence } or null
 //
@@ -643,7 +663,7 @@ function matchesBrand(text) {
 const MENTIONS = {
   items: [],
   lastPoll: {},
-  stats: { reddit: 0, google_alerts: 0, gdelt: 0, youtube_search: 0, local_news: 0, google_news: 0, industry_news: 0, sec_filings: 0, podcasts: 0, facebook_visitor: 0 },
+  stats: { reddit: 0, google_alerts: 0, gdelt: 0, youtube_search: 0, local_news: 0, google_news: 0, industry_news: 0, sec_filings: 0, podcasts: 0 },
   brandStats: { mge: 0, alliant: 0, we_energies: 0, topical: 0 },
   maxSize: 800
 };
@@ -759,8 +779,10 @@ async function pollReddit() {
             confidence = m.confidence;
           } else {
             // For pure topical, require the text to hit the strict signal list
-            // AND have more utility signals than political noise
+            // AND have more utility signals than political noise,
+            // AND pass the US geography gate (drops non-US content)
             if (!verifyTopicalContent(text)) continue;
+            if (!verifyTopicalGeography(text)) continue;
             // Use the first strict-signal match as the displayed keyword
             const sig = text.match(TOPICAL_STRICT_SIGNALS);
             matchedKeyword = sig ? sig[0] : 'energy topic';
@@ -1090,6 +1112,7 @@ async function pollGoogleNews() {
           // brand matched — fine, keep
         } else if (tag === 'topical') {
           if (!verifyTopicalContent(text)) continue;
+          if (!verifyTopicalGeography(text)) continue;
         }
         // Google News source is usually embedded in the title as "Headline - Source Name"
         let srcName = 'Google News';
@@ -1154,7 +1177,9 @@ async function pollIndustryNews() {
           brandHits++;
         } else if (TOPICAL_STRICT_SIGNALS.test(text)) {
           // Industry pubs already pre-filter to utility topics, so accept any strict-signal match
-          // (renewables, solar, grid, EVs, decarb) without brand-name requirement
+          // (renewables, solar, grid, EVs, decarb) without brand-name requirement.
+          // Gate to US content so we don't surface Ukraine wind farms, EU energy policy, etc.
+          if (!verifyTopicalGeography(text)) continue;
           brandTag = 'topical';
           const sig = text.match(TOPICAL_STRICT_SIGNALS);
           matchedKeyword = sig ? sig[0] : 'industry trend';
@@ -1188,14 +1213,25 @@ async function pollIndustryNews() {
 }
 
 // --- 8. SEC EDGAR filings (MGE Energy holding co + Madison Gas and Electric subsidiary) ---
-// Every 8-K / 10-Q / 10-K / proxy statement shows up here. Atom feed, public domain, no auth.
+// Uses SEC's modern data.sec.gov JSON API (the legacy browse-edgar CGI endpoint returns
+// empty HTML for many CIKs even with output=atom). Public, no auth, but requires a
+// descriptive User-Agent with contact info per SEC's fair-use policy.
 const SEC_COMPANIES = [
-  { cik: '0001161728', name: 'MGE Energy, Inc.', ticker: 'MGEE' }, // holding company (publicly traded, ticker MGEE)
+  { cik: '0001161728', name: 'MGE Energy, Inc.', ticker: 'MGEE' }, // holding company (publicly traded)
   { cik: '0000061339', name: 'Madison Gas and Electric Company', ticker: null } // operating utility subsidiary
 ];
 
-function secAtomUrl(cik) {
-  return 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=' + cik + '&type=&dateb=&owner=include&count=40&output=atom';
+function secSubmissionsUrl(cik) {
+  // CIK must be zero-padded to 10 digits for data.sec.gov
+  const padded = String(cik).padStart(10, '0');
+  return 'https://data.sec.gov/submissions/CIK' + padded + '.json';
+}
+
+function secFilingUrl(cik, accessionNumber, primaryDocument) {
+  // Build a clean HTTPS link to the filing index page on sec.gov
+  const accNoDashes = String(accessionNumber).replace(/-/g, '');
+  const cikNum = parseInt(cik, 10);
+  return 'https://www.sec.gov/Archives/edgar/data/' + cikNum + '/' + accNoDashes + '/' + (primaryDocument || (accessionNumber + '-index.htm'));
 }
 
 // SEC requires a descriptive User-Agent with contact info per their fair-use policy
@@ -1206,32 +1242,43 @@ async function pollSECFilings() {
   const found = [];
   for (const company of SEC_COMPANIES) {
     try {
-      const resp = await fetch(secAtomUrl(company.cik), {
+      const resp = await fetch(secSubmissionsUrl(company.cik), {
         headers: {
           'User-Agent': SEC_USER_AGENT,
-          'Accept': 'application/atom+xml,application/xml,text/xml'
+          'Accept': 'application/json'
         }
       });
       if (!resp.ok) {
         console.warn(' [MENTIONS] SEC ' + resp.status + ' for ' + company.name + ' (' + company.cik + ')');
         continue;
       }
-      const body = await resp.text();
-      const feed = await rssParser.parseString(body);
-      for (const item of (feed.items || [])) {
-        // Extract form type from title (EDGAR titles are like "8-K - Current Report")
-        const formMatch = (item.title || '').match(/^([\dA-Z\-]+)/);
-        const formType = formMatch ? formMatch[1] : 'Filing';
+      const data = await resp.json();
+      const recent = (data.filings && data.filings.recent) || {};
+      const accs = recent.accessionNumber || [];
+      const forms = recent.form || [];
+      const dates = recent.filingDate || [];
+      const primaryDocs = recent.primaryDocument || [];
+      const primaryDescs = recent.primaryDocDescription || [];
+      const entityName = data.name || company.name;
+      // Take the 40 most recent filings per company
+      const count = Math.min(accs.length, 40);
+      for (let i = 0; i < count; i++) {
+        const acc = accs[i];
+        const formType = forms[i] || 'Filing';
+        const filingDate = dates[i];
+        const primaryDoc = primaryDocs[i];
+        const desc = primaryDescs[i] || '';
+        const titleText = formType + (desc ? ' — ' + desc : '');
         found.push({
-          id: 'sec:' + company.cik + ':' + (item.guid || item.link),
+          id: 'sec:' + company.cik + ':' + acc,
           source: 'sec_filings',
-          sourceDisplay: 'SEC EDGAR \u00b7 ' + company.name,
-          sourceName: company.name + (company.ticker ? ' (' + company.ticker + ')' : ''),
-          title: cleanHtml(item.title || ''),
-          snippet: cleanHtml(item.contentSnippet || item.content || '').substring(0, 300),
-          url: item.link,
-          author: company.name,
-          publishedAt: item.isoDate || item.pubDate || item.updated || new Date().toISOString(),
+          sourceDisplay: 'SEC EDGAR \u00b7 ' + entityName,
+          sourceName: entityName + (company.ticker ? ' (' + company.ticker + ')' : ''),
+          title: titleText,
+          snippet: 'Filed with the U.S. Securities and Exchange Commission by ' + entityName + '. Form type: ' + formType + (desc ? '. ' + desc : '') + '.',
+          url: secFilingUrl(company.cik, acc, primaryDoc),
+          author: entityName,
+          publishedAt: filingDate ? new Date(filingDate + 'T16:00:00Z').toISOString() : new Date().toISOString(),
           thumbnail: null,
           brandTag: 'mge',
           matchedKeyword: formType,
@@ -1396,19 +1443,17 @@ async function pollInstagramTagged() {
 
 // --- Staggered schedulers (spread API calls, stay well under rate limits) ---
 function startMentionPollers() {
-  console.log(' [MENTIONS] Starting pollers (10 sources, staggered)...');
+  console.log(' [MENTIONS] Starting pollers (9 sources, staggered)...');
   setTimeout(pollReddit, 5000);
-  setTimeout(pollFacebookVisitorPosts, 15000);
-  setTimeout(pollLocalNews, 25000);
-  setTimeout(pollGoogleNews, 45000);
-  setTimeout(pollGoogleAlerts, 65000);
-  setTimeout(pollGDELT, 85000);
-  setTimeout(pollSECFilings, 100000);
-  setTimeout(pollIndustryNews, 120000);
-  setTimeout(pollPodcasts, 145000);
-  setTimeout(pollYouTubeMentions, 170000);
+  setTimeout(pollLocalNews, 20000);
+  setTimeout(pollGoogleNews, 40000);
+  setTimeout(pollGoogleAlerts, 60000);
+  setTimeout(pollGDELT, 80000);
+  setTimeout(pollSECFilings, 95000);
+  setTimeout(pollIndustryNews, 115000);
+  setTimeout(pollPodcasts, 140000);
+  setTimeout(pollYouTubeMentions, 165000);
   setInterval(pollReddit, 30 * 60 * 1000);
-  setInterval(pollFacebookVisitorPosts, 20 * 60 * 1000);
   setInterval(pollLocalNews, 30 * 60 * 1000);
   setInterval(pollGoogleNews, 45 * 60 * 1000);
   setInterval(pollGoogleAlerts, 60 * 60 * 1000);
@@ -1417,8 +1462,8 @@ function startMentionPollers() {
   setInterval(pollIndustryNews, 180 * 60 * 1000);
   setInterval(pollPodcasts, 720 * 60 * 1000); // Podcasts slow, every 12h
   setInterval(pollYouTubeMentions, 240 * 60 * 1000);
-  // pollInstagramTagged() is defined but not scheduled — requires instagram_manage_insights
-  // via Meta App Review. Enable by adding a setInterval when permission is granted.
+  // Facebook visitor_posts and Instagram tags both deprecated/restricted for New Pages
+  // Experience accounts. Meta-side platform decision, no workaround without webhook App Review.
 }
 
 // --- API endpoints ---
@@ -1457,25 +1502,9 @@ app.get('/api/mentions', (req, res) => {
 app.get('/api/mentions/diagnose', async (req, res) => {
   const results = {};
 
-  // Facebook visitor posts
-  try {
-    const fbToken = process.env.FACEBOOK_PAGE_TOKEN || (typeof config !== 'undefined' && config.facebook && config.facebook.pageAccessToken) || '';
-    const fbPageId = process.env.FACEBOOK_PAGE_ID || (typeof config !== 'undefined' && config.facebook && config.facebook.pageId) || '';
-    if (!fbToken || !fbPageId) {
-      results.facebook_visitor = { error: 'Missing FACEBOOK_PAGE_TOKEN or FACEBOOK_PAGE_ID' };
-    } else {
-      const url = `${META_BASE}/${fbPageId}/visitor_posts?fields=id,message,created_time,from{name}&limit=3&access_token=${fbToken}`;
-      const r = await fetch(url);
-      const body = await r.text();
-      results.facebook_visitor = {
-        pageId: fbPageId,
-        tokenLen: fbToken.length,
-        status: r.status,
-        ok: r.ok,
-        body: body.substring(0, 800)
-      };
-    }
-  } catch (e) { results.facebook_visitor = { error: e.message }; }
+  // Facebook mentions are unavailable via API for New Pages Experience accounts
+  // (both /tagged and /visitor_posts return "Unavailable Feature On New Page Experience").
+  results.facebook = { note: 'Not available — MGE Page is on New Pages Experience; /tagged and /visitor_posts are deprecated by Meta for NPE accounts.' };
 
   // SEC EDGAR (MGE Energy)
   try {
@@ -1515,7 +1544,6 @@ app.post('/api/mentions/refresh', (req, res) => {
   _lastManualMentionsRefresh = now;
   Promise.all([
     pollReddit(),
-    pollFacebookVisitorPosts(),
     pollLocalNews(),
     pollGoogleNews(),
     pollGoogleAlerts(),
@@ -1525,7 +1553,7 @@ app.post('/api/mentions/refresh', (req, res) => {
     pollPodcasts(),
     pollYouTubeMentions()
   ]).catch(() => {});
-  res.json({ ok: true, message: 'Refresh triggered across all 10 sources. New mentions will appear within ~60 seconds.' });
+  res.json({ ok: true, message: 'Refresh triggered across all 9 sources. New mentions will appear within ~60 seconds.' });
 });
 
 if (process.env.NODE_ENV === 'production' || process.env.ENABLE_MENTIONS === 'true') {
@@ -1535,6 +1563,131 @@ if (process.env.NODE_ENV === 'production' || process.env.ENABLE_MENTIONS === 'tr
 // ============================================================
 // END MEDIA MONITORING & MENTIONS
 // ============================================================
+
+
+// ============================================================
+// AI INSIGHTS — narrative summary of the selected window
+// POST /api/insights with { metrics, prior, topPosts, commentSample }
+// Returns { whatHappened, whatsWorking, whatToTry }
+// Requires ANTHROPIC_API_KEY env var. Degrades gracefully if absent.
+// ============================================================
+const INSIGHTS_MODEL = process.env.INSIGHTS_MODEL || 'claude-sonnet-4-6';
+const INSIGHTS_SYSTEM_PROMPT =
+  'You are a senior digital marketing analyst at Madison Gas and Electric (MGE), a Wisconsin utility. ' +
+  'You review the social media performance data provided and write tight, useful insights for the marketing team. ' +
+  'Your audience is practical marketers — skip generic platitudes, prefer concrete specifics (numbers, post themes, ' +
+  'platform names) pulled from the data. Do not invent facts. When the sample is small or data is missing, say so. ' +
+  'Write in a warm, plain, professional tone. No emojis, no hype words.';
+
+function buildInsightsUserPrompt(body) {
+  const m = body.metrics || {};
+  const prior = body.prior;
+  const posts = (body.topPosts || []).slice(0, 20);
+  const comments = (body.commentSample || []).slice(0, 40);
+
+  const lines = [];
+  lines.push('Window: ' + (m.dateRange || 'unspecified'));
+  lines.push('Totals: ' + m.postCount + ' posts, ' + m.commentCount + ' comments, ' +
+             (m.totalEngagement || 0) + ' engagement, ' + (m.totalReach || 0) + ' reach.');
+  if (prior) {
+    const engDelta = (m.totalEngagement || 0) - (prior.totalEngagement || 0);
+    const engPct = prior.totalEngagement ? Math.round((engDelta / prior.totalEngagement) * 100) : null;
+    lines.push('Prior period: ' + prior.postCount + ' posts, ' + (prior.totalEngagement || 0) +
+               ' engagement' + (engPct != null ? ' (' + (engDelta >= 0 ? '+' : '') + engPct + '% vs prior)' : '') + '.');
+  }
+  if (m.platforms) {
+    const parts = [];
+    Object.keys(m.platforms).forEach(function(k) {
+      parts.push(k + ': ' + m.platforms[k].posts + ' posts / ' + m.platforms[k].engagement + ' eng');
+    });
+    if (parts.length) lines.push('By platform: ' + parts.join(' | '));
+  }
+  lines.push('');
+  lines.push('Top-engaging posts (up to 20, sorted by engagement):');
+  posts.forEach(function(p, i) {
+    lines.push(
+      (i + 1) + '. [' + (p.platform || '?') + '] ' +
+      (p.type ? p.type + ' - ' : '') +
+      (p.engagement || 0) + ' eng' +
+      (p.reach ? ', ' + p.reach + ' reach' : '') +
+      (p.comments ? ', ' + p.comments + ' comments' : '') +
+      ' :: ' + (p.text || '').replace(/\s+/g, ' ').slice(0, 280)
+    );
+  });
+  lines.push('');
+  lines.push('Sample of audience comments (text and auto-computed sentiment 0-100, 50=neutral):');
+  comments.forEach(function(c) {
+    lines.push('- [' + (c.platform || '?') + (c.score != null ? ', s=' + c.score : '') + '] ' + c.text);
+  });
+  lines.push('');
+  lines.push('Respond with a single valid JSON object and nothing else. Shape:');
+  lines.push('{');
+  lines.push('  "whatHappened": "2-4 sentence narrative. Lead with the single most important fact of the window.",');
+  lines.push('  "whatsWorking": ["3 specific items, each naming a post theme or platform and why it landed"],');
+  lines.push('  "whatToTry":   ["2-3 concrete, actionable recommendations for next window"]');
+  lines.push('}');
+  lines.push('Do not wrap the JSON in markdown or code fences. Do not add any commentary outside the JSON.');
+  return lines.join('\n');
+}
+
+app.post('/api/insights', express.json({ limit: '1mb' }), async (req, res) => {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return res.status(503).json({ error: 'ANTHROPIC_API_KEY not configured on the server. Add it in Render env vars.' });
+  }
+  const body = req.body || {};
+  if (!body.metrics || body.metrics.postCount === 0) {
+    return res.status(400).json({ error: 'No posts in the requested window.' });
+  }
+  try {
+    const userPrompt = buildInsightsUserPrompt(body);
+    const anthropicResp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: INSIGHTS_MODEL,
+        max_tokens: 1200,
+        system: INSIGHTS_SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: userPrompt }]
+      })
+    });
+    if (!anthropicResp.ok) {
+      const errText = await anthropicResp.text();
+      console.warn(' [INSIGHTS] Anthropic API error:', anthropicResp.status, errText.slice(0, 300));
+      return res.status(502).json({ error: 'Anthropic API error (' + anthropicResp.status + ')' });
+    }
+    const payload = await anthropicResp.json();
+    const raw = (payload.content && payload.content[0] && payload.content[0].text) || '';
+    // Try to parse as JSON — tolerate minor wrapping
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (e) {
+      // Strip ```json ... ``` fences if present
+      const fenced = raw.match(/\{[\s\S]*\}/);
+      if (fenced) {
+        try { parsed = JSON.parse(fenced[0]); } catch (e2) {}
+      }
+    }
+    if (!parsed) {
+      return res.status(502).json({ error: 'Model returned unparseable output.', raw: raw.slice(0, 500) });
+    }
+    return res.json({
+      whatHappened: String(parsed.whatHappened || parsed.summary || ''),
+      whatsWorking: Array.isArray(parsed.whatsWorking) ? parsed.whatsWorking.map(String)
+                    : Array.isArray(parsed.working) ? parsed.working.map(String) : [],
+      whatToTry:   Array.isArray(parsed.whatToTry) ? parsed.whatToTry.map(String)
+                   : Array.isArray(parsed.recommendations) ? parsed.recommendations.map(String) : []
+    });
+  } catch (err) {
+    console.warn(' [INSIGHTS] Server error:', err.message);
+    return res.status(500).json({ error: err.message || 'Insights generation failed' });
+  }
+});
 
 
 const PORT = config.server.port;
