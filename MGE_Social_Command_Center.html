@@ -4126,7 +4126,7 @@ function formatInsightsSections(result) {
     function renderStat(s) {
         var dir = s.direction || 'neutral';
         var deltaHtml = s.delta
-            ? '<span class="stat-delta ' + escapeAttr(dir) + '">' +
+            ? '<span class="stat-delta ' + escapeHtml(dir) + '">' +
                 (dir === 'up' ? '\u25B2 ' : dir === 'down' ? '\u25BC ' : '') +
                 escapeHtml(String(s.delta)) +
               '</span>'
@@ -4165,7 +4165,7 @@ function formatInsightsSections(result) {
         var platformLabel = { fb: 'Facebook', ig: 'Instagram', li: 'LinkedIn', yt: 'YouTube', mixed: 'Cross-platform' };
         var plat = (it.platform || '').toLowerCase();
         var platPill = plat && platformLabel[plat]
-            ? '<span class="insights-platform-chip ' + escapeAttr(plat) + '">' + escapeHtml(platformLabel[plat]) + '</span>'
+            ? '<span class="insights-platform-chip ' + escapeHtml(plat) + '">' + escapeHtml(platformLabel[plat]) + '</span>'
             : '';
         return '<div class="insights-item">' +
                  '<div class="insights-item-title">' + escapeHtml(it.title || '') + ' ' + platPill + '</div>' +
