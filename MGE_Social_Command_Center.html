@@ -119,11 +119,13 @@
             box-shadow: 0 2px 6px rgba(124,58,237,0.55), inset 0 0 0 1px rgba(255,255,255,0.18);
         }
 
-        /* --- AI Insights panel --- */
+        /* ==========================================================
+           AI Insights panel — premium dark editorial design
+           ========================================================== */
         .insights-strip {
             max-width: 1600px; margin: 28px auto 0; padding: 0 36px;
             overflow: hidden;
-            transition: max-height 0.3s ease, margin 0.3s ease, opacity 0.2s ease;
+            transition: max-height 0.35s ease, margin 0.35s ease, opacity 0.25s ease;
         }
         .insights-strip.collapsed {
             max-height: 0;
@@ -131,39 +133,86 @@
             opacity: 0;
             pointer-events: none;
         }
-        .insights-strip > .insights-header,
-        .insights-strip > .insights-body,
-        .insights-strip > .insights-footer { box-sizing: border-box; }
+        .insights-strip > .insights-shell {
+            position: relative;
+            border-radius: 20px;
+            background:
+                radial-gradient(1200px 400px at 10% -10%, rgba(124,58,237,0.25), transparent 60%),
+                radial-gradient(900px 300px at 110% 10%, rgba(236,72,153,0.18), transparent 60%),
+                linear-gradient(160deg, #0B1020 0%, #1A1444 55%, #0F1626 100%);
+            box-shadow:
+                0 24px 60px rgba(15,23,42,0.25),
+                0 4px 14px rgba(15,23,42,0.15),
+                inset 0 1px 0 rgba(255,255,255,0.08);
+            overflow: hidden;
+            color: #E2E8F0;
+        }
+        /* Subtle animated accent border */
+        .insights-strip > .insights-shell::before {
+            content: '';
+            position: absolute; inset: 0;
+            border-radius: 20px; padding: 1px;
+            background: linear-gradient(120deg, rgba(124,58,237,0.45), rgba(59,130,246,0.25) 35%, rgba(244,63,94,0.35) 70%, rgba(251,191,36,0.3));
+            -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+            -webkit-mask-composite: xor;
+                    mask-composite: exclude;
+            pointer-events: none;
+        }
+        /* Tiny twinkling grid of particles in the background */
+        .insights-strip > .insights-shell::after {
+            content: '';
+            position: absolute; inset: 0;
+            background-image:
+                radial-gradient(1px 1px at 18% 28%, rgba(255,255,255,0.35), transparent 60%),
+                radial-gradient(1px 1px at 62% 18%, rgba(255,255,255,0.25), transparent 60%),
+                radial-gradient(1px 1px at 88% 72%, rgba(255,255,255,0.3), transparent 60%),
+                radial-gradient(1px 1px at 35% 82%, rgba(255,255,255,0.2), transparent 60%),
+                radial-gradient(1px 1px at 8% 62%, rgba(255,255,255,0.18), transparent 60%);
+            opacity: 0.9;
+            pointer-events: none;
+            animation: insightsTwinkle 8s ease-in-out infinite alternate;
+        }
+        @keyframes insightsTwinkle {
+            0%   { opacity: 0.55; }
+            100% { opacity: 0.95; }
+        }
+
         .insights-strip .insights-header {
+            position: relative;
             display: flex; justify-content: space-between; align-items: center;
             gap: 12px; flex-wrap: wrap;
-            background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%);
-            color: #F8FAFC;
-            border-radius: 14px 14px 0 0;
-            padding: 14px 22px;
+            padding: 18px 28px 14px;
+            border-bottom: 1px solid rgba(148,163,184,0.12);
         }
         .insights-strip .insights-title {
             display: flex; align-items: center; gap: 12px;
             font-size: 15px; font-weight: 700; letter-spacing: 0.2px;
+            color: #F8FAFC;
         }
         .insights-strip .insights-badge {
             display: inline-flex; align-items: center; justify-content: center;
-            background: linear-gradient(135deg, #F59E0B, #F43F5E);
-            color: white; font-size: 11px; font-weight: 800; letter-spacing: 0.5px;
-            padding: 3px 9px; border-radius: 6px; text-transform: uppercase;
-            box-shadow: 0 1px 3px rgba(244,63,94,0.35);
+            background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 60%, #F59E0B 100%);
+            background-size: 200% 200%;
+            animation: insightsBadgeShimmer 4s ease-in-out infinite alternate;
+            color: white; font-size: 11px; font-weight: 800; letter-spacing: 0.6px;
+            padding: 4px 10px; border-radius: 6px; text-transform: uppercase;
+            box-shadow: 0 1px 3px rgba(139,92,246,0.45), 0 0 16px rgba(236,72,153,0.18);
+        }
+        @keyframes insightsBadgeShimmer {
+            0%   { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
         }
         .insights-strip .insights-range {
-            color: #CBD5E1; font-weight: 500; font-size: 13px;
+            color: #94A3B8; font-weight: 500; font-size: 13px;
         }
         .insights-strip .insights-provider-pill {
-            background: rgba(255,255,255,0.12); color: #E2E8F0;
-            border: 1px solid rgba(255,255,255,0.2);
-            font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
-            padding: 3px 8px; border-radius: 12px; text-transform: uppercase;
+            background: rgba(255,255,255,0.08); color: #E2E8F0;
+            border: 1px solid rgba(255,255,255,0.14);
+            font-size: 10px; font-weight: 700; letter-spacing: 0.6px;
+            padding: 3px 9px; border-radius: 999px; text-transform: uppercase;
             margin-left: 4px;
         }
-        .insights-strip .insights-provider-pill.gemini { background: linear-gradient(135deg, #4285F4, #34A853); border-color: transparent; color: white; }
+        .insights-strip .insights-provider-pill.gemini    { background: linear-gradient(135deg, #4285F4, #34A853); border-color: transparent; color: white; }
         .insights-strip .insights-provider-pill.anthropic { background: linear-gradient(135deg, #D97706, #C2410C); border-color: transparent; color: white; }
         .insights-strip .insights-actions {
             display: flex; align-items: center; gap: 12px;
@@ -172,75 +221,224 @@
             font-size: 12px; color: #94A3B8; font-style: italic;
         }
         .insights-strip .insights-refresh {
-            background: rgba(255,255,255,0.1); color: #F8FAFC;
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 600;
-            cursor: pointer; transition: background 0.15s;
+            background: rgba(255,255,255,0.08); color: #F8FAFC;
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 10px; padding: 6px 14px; font-size: 12px; font-weight: 600;
+            cursor: pointer; transition: background 0.15s, border-color 0.15s, transform 0.1s;
         }
-        .insights-strip .insights-refresh:hover { background: rgba(255,255,255,0.2); }
-        .insights-strip .insights-refresh:disabled { opacity: 0.5; cursor: not-allowed; }
+        .insights-strip .insights-refresh:hover { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.3); }
+        .insights-strip .insights-refresh:active { transform: scale(0.97); }
+
         .insights-strip .insights-body {
-            background: white;
-            padding: 20px 24px;
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
-            border-left: 1px solid #E2E8F0;
-            border-right: 1px solid #E2E8F0;
+            position: relative;
+            padding: 24px 28px 22px;
+            display: flex; flex-direction: column; gap: 22px;
         }
-        @media (max-width: 960px) {
-            .insights-strip .insights-body { grid-template-columns: 1fr; }
+
+        /* Hero: headline + stat strip */
+        .insights-hero {
+            display: flex; flex-direction: column; gap: 16px;
         }
-        .insights-strip .insights-section { min-width: 0; }
-        .insights-strip .insights-section-title {
-            font-size: 11px; font-weight: 800; letter-spacing: 1px;
-            color: #475569; text-transform: uppercase;
-            margin-bottom: 10px;
+        .insights-headline {
+            font-size: 22px; font-weight: 700; line-height: 1.35;
+            color: #F8FAFC;
+            letter-spacing: -0.01em;
+            max-width: 960px;
+            animation: insightsFadeUp 0.5s ease both;
+        }
+        .insights-headline .h-accent {
+            background: linear-gradient(90deg, #A78BFA 0%, #F472B6 60%, #FBBF24 100%);
+            -webkit-background-clip: text;
+                    background-clip: text;
+            -webkit-text-fill-color: transparent;
+                    color: transparent;
+        }
+
+        .insights-stats {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 12px;
+        }
+        .insights-stat {
+            position: relative;
+            background: rgba(148,163,184,0.06);
+            border: 1px solid rgba(148,163,184,0.14);
+            border-radius: 12px;
+            padding: 12px 14px;
+            display: flex; flex-direction: column; gap: 4px;
+            transition: transform 0.15s, background 0.2s, border-color 0.2s;
+            animation: insightsFadeUp 0.55s ease both;
+        }
+        .insights-stat:hover {
+            transform: translateY(-2px);
+            background: rgba(148,163,184,0.10);
+            border-color: rgba(148,163,184,0.25);
+        }
+        .insights-stat .stat-label {
+            font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
+            color: #94A3B8; text-transform: uppercase;
+        }
+        .insights-stat .stat-value-row {
+            display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+        }
+        .insights-stat .stat-value {
+            font-size: 22px; font-weight: 700; color: #F8FAFC;
+            letter-spacing: -0.01em; line-height: 1.1;
+        }
+        .insights-stat .stat-delta {
+            font-size: 11px; font-weight: 700;
+            padding: 2px 8px; border-radius: 999px;
+            display: inline-flex; align-items: center; gap: 3px;
+        }
+        .insights-stat .stat-delta.up      { background: rgba(34,197,94,0.15);  color: #86EFAC; }
+        .insights-stat .stat-delta.down    { background: rgba(239,68,68,0.15);  color: #FCA5A5; }
+        .insights-stat .stat-delta.neutral { background: rgba(148,163,184,0.15); color: #CBD5E1; }
+        .insights-stat .stat-context {
+            font-size: 11px; color: #94A3B8; line-height: 1.4;
+        }
+
+        /* Three-column grid of section cards */
+        .insights-sections {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+        }
+        @media (max-width: 1100px) {
+            .insights-sections { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 780px) {
+            .insights-sections { grid-template-columns: 1fr; }
+        }
+        .insights-section-card {
+            position: relative;
+            background: rgba(15,23,42,0.45);
+            border: 1px solid rgba(148,163,184,0.12);
+            border-radius: 14px;
+            padding: 16px 16px 14px;
+            overflow: hidden;
+            animation: insightsFadeUp 0.6s ease both;
+        }
+        .insights-section-card::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, var(--sec-accent-a), var(--sec-accent-b));
+            opacity: 0.9;
+        }
+        .insights-section-card.what-happened { --sec-accent-a: #60A5FA; --sec-accent-b: #3B82F6; }
+        .insights-section-card.whats-working { --sec-accent-a: #34D399; --sec-accent-b: #10B981; }
+        .insights-section-card.next-moves    { --sec-accent-a: #FBBF24; --sec-accent-b: #F97316; }
+        .insights-section-card.watch-outs    { --sec-accent-a: #F87171; --sec-accent-b: #EF4444; }
+
+        .insights-section-head {
             display: flex; align-items: center; gap: 8px;
+            font-size: 10px; font-weight: 800; letter-spacing: 1.2px;
+            color: #CBD5E1; text-transform: uppercase;
+            margin-bottom: 12px;
         }
-        .insights-strip .insights-section-title .sec-dot {
-            width: 8px; height: 8px; border-radius: 50%;
+        .insights-section-head .section-glyph {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 22px; height: 22px; border-radius: 6px;
+            background: linear-gradient(135deg, var(--sec-accent-a), var(--sec-accent-b));
+            color: white; font-size: 12px; font-weight: 800;
+            box-shadow: 0 1px 3px rgba(15,23,42,0.35);
         }
-        .insights-strip .insights-section.what-happened .sec-dot { background: #3B82F6; }
-        .insights-strip .insights-section.whats-working .sec-dot { background: #22C55E; }
-        .insights-strip .insights-section.what-to-try   .sec-dot { background: #F59E0B; }
-        .insights-strip .insights-section p {
-            margin: 0 0 10px; font-size: 13px; line-height: 1.55; color: #1E293B;
+
+        .insights-narrative {
+            font-size: 14px; line-height: 1.6; color: #E2E8F0;
+            margin: 0;
         }
-        .insights-strip .insights-section ul {
-            margin: 0; padding-left: 0; list-style: none;
+
+        .insights-items { display: flex; flex-direction: column; gap: 12px; }
+        .insights-item {
+            background: rgba(30,41,59,0.55);
+            border: 1px solid rgba(148,163,184,0.08);
+            border-radius: 10px;
+            padding: 10px 12px;
+            transition: background 0.15s, border-color 0.15s;
         }
-        .insights-strip .insights-section li {
-            font-size: 13px; line-height: 1.55; color: #1E293B;
-            padding: 7px 0 7px 20px; position: relative;
-            border-top: 1px solid #F1F5F9;
+        .insights-item:hover {
+            background: rgba(30,41,59,0.75);
+            border-color: rgba(148,163,184,0.18);
         }
-        .insights-strip .insights-section li:first-child { border-top: none; }
-        .insights-strip .insights-section li::before {
-            content: ''; position: absolute; left: 0; top: 14px;
-            width: 10px; height: 2px; background: #CBD5E1; border-radius: 1px;
+        .insights-item-title {
+            font-size: 13px; font-weight: 700; color: #F8FAFC; line-height: 1.35;
+            margin: 0 0 4px;
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
         }
-        .insights-strip .insights-section.whats-working li::before { background: #22C55E; }
-        .insights-strip .insights-section.what-to-try li::before   { background: #F59E0B; }
+        .insights-platform-chip {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 9px; font-weight: 800; letter-spacing: 0.5px;
+            padding: 2px 7px; border-radius: 999px; text-transform: uppercase;
+            color: white;
+        }
+        .insights-platform-chip.fb { background: #1877F2; }
+        .insights-platform-chip.ig { background: linear-gradient(135deg, #E1306C, #F77737); }
+        .insights-platform-chip.li { background: #0A66C2; }
+        .insights-platform-chip.yt { background: #FF0000; }
+        .insights-platform-chip.mixed { background: linear-gradient(135deg, #8B5CF6, #EC4899); }
+
+        .insights-item-evidence {
+            font-size: 11px; color: #94A3B8; font-weight: 600;
+            margin: 0 0 6px;
+            font-variant-numeric: tabular-nums;
+        }
+        .insights-item-evidence::before {
+            content: '▲ '; color: #6EE7B7; font-size: 9px;
+        }
+        .insights-item-why {
+            font-size: 12px; line-height: 1.5; color: #CBD5E1;
+            margin: 0;
+        }
+
+        .insights-move-rationale, .insights-move-impact {
+            font-size: 12px; line-height: 1.5; color: #CBD5E1;
+            margin: 2px 0 0;
+        }
+        .insights-move-rationale::before { content: 'Why: '; color: #94A3B8; font-weight: 700; font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase; }
+        .insights-move-impact::before    { content: 'Impact: '; color: #FBBF24; font-weight: 700; font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase; }
+
+        .insights-watchout {
+            display: flex; align-items: flex-start; gap: 8px;
+            font-size: 12px; line-height: 1.5; color: #FECACA;
+        }
+        .insights-watchout::before {
+            content: '!'; flex: 0 0 auto; width: 16px; height: 16px;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: rgba(239,68,68,0.15); color: #FCA5A5;
+            border-radius: 50%; font-size: 10px; font-weight: 800;
+            margin-top: 1px;
+        }
+
+        /* Footer */
         .insights-strip .insights-footer {
-            background: #F8FAFC; border: 1px solid #E2E8F0; border-top: none;
-            border-radius: 0 0 14px 14px;
-            padding: 10px 22px;
+            position: relative;
+            padding: 12px 28px;
             display: flex; justify-content: space-between; align-items: center;
             gap: 12px; flex-wrap: wrap;
-            font-size: 11px; color: #64748B;
+            font-size: 11px; color: #94A3B8;
+            border-top: 1px solid rgba(148,163,184,0.12);
         }
-        .insights-strip .insights-timestamp { font-weight: 600; color: #475569; }
+        .insights-strip .insights-timestamp { font-weight: 600; color: #CBD5E1; }
+
+        /* Placeholder / loading / error states */
         .insights-strip .insights-placeholder {
-            grid-column: 1 / -1; text-align: center; padding: 24px 12px; color: #64748B;
+            grid-column: 1 / -1;
+            text-align: center; padding: 28px 12px; color: #94A3B8;
         }
         .insights-strip .insights-placeholder-title {
-            font-weight: 700; color: #1E293B; margin-bottom: 6px; font-size: 14px;
+            font-weight: 700; color: #F8FAFC; margin-bottom: 6px; font-size: 15px;
         }
-        .insights-strip .insights-placeholder-sub { font-size: 12px; }
+        .insights-strip .insights-placeholder-sub { font-size: 13px; line-height: 1.5; }
         .insights-strip.is-loading .insights-refresh { pointer-events: none; opacity: 0.5; }
-        .insights-strip.is-error .insights-body {
-            background: #FEF2F2; border-color: #FECACA;
+        .insights-strip.is-error  .insights-placeholder-title { color: #FECACA; }
+
+        /* Staggered entrance for sections */
+        .insights-section-card:nth-child(1) { animation-delay: 0.05s; }
+        .insights-section-card:nth-child(2) { animation-delay: 0.12s; }
+        .insights-section-card:nth-child(3) { animation-delay: 0.19s; }
+        .insights-section-card:nth-child(4) { animation-delay: 0.26s; }
+
+        @keyframes insightsFadeUp {
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
-        .insights-strip.is-error .insights-placeholder-title { color: #991B1B; }
 
         /* --- Two-column layout --- */
         .main-grid {
@@ -1263,27 +1461,29 @@
 
 <!-- AI Insights — full width, narrative summary of the selected window. Collapsed by default; toggled via the AI Insights button in the platform strip. -->
 <div class="insights-strip collapsed" id="insightsStrip" aria-hidden="true">
-    <div class="insights-header">
-        <div class="insights-title">
-            <span class="insights-badge">AI</span>
-            Insights from MGE platforms
-            <span class="insights-range" id="insightsRange"></span>
-            <span class="insights-provider-pill" id="insightsProviderPill" style="display:none;"></span>
+    <div class="insights-shell">
+        <div class="insights-header">
+            <div class="insights-title">
+                <span class="insights-badge">AI</span>
+                Insights from MGE platforms
+                <span class="insights-range" id="insightsRange"></span>
+                <span class="insights-provider-pill" id="insightsProviderPill" style="display:none;"></span>
+            </div>
+            <div class="insights-actions">
+                <span class="insights-status" id="insightsStatus"></span>
+                <button class="insights-refresh" id="insightsRefreshBtn" title="Regenerate the insights summary">&#x21bb; Refresh</button>
+            </div>
         </div>
-        <div class="insights-actions">
-            <span class="insights-status" id="insightsStatus"></span>
-            <button class="insights-refresh" id="insightsRefreshBtn" title="Regenerate the insights summary">&#x21bb; Refresh</button>
+        <div class="insights-body" id="insightsBody">
+            <div class="insights-placeholder">
+                <div class="insights-placeholder-title">Insights ready when you are</div>
+                <div class="insights-placeholder-sub">Click <strong>AI Insights</strong> above to generate a narrative summary for the selected window.</div>
+            </div>
         </div>
-    </div>
-    <div class="insights-body" id="insightsBody">
-        <div class="insights-placeholder">
-            <div class="insights-placeholder-title">Waiting for data</div>
-            <div class="insights-placeholder-sub">Insights will generate automatically once this session's posts and comments finish loading.</div>
+        <div class="insights-footer">
+            <span id="insightsFooterText">Generated from posts, performance metrics, and audience comments in the selected window.</span>
+            <span class="insights-timestamp" id="insightsTimestamp"></span>
         </div>
-    </div>
-    <div class="insights-footer">
-        <span id="insightsFooterText">Generated from posts, performance metrics, and audience comments in the selected window.</span>
-        <span class="insights-timestamp" id="insightsTimestamp"></span>
     </div>
 </div>
 
@@ -3718,7 +3918,10 @@ window.addEventListener('DOMContentLoaded', () => {
 // every render cycle — only when data meaningfully changes or the
 // user clicks Refresh.
 // ============================================================
-var INSIGHTS_CACHE_KEY = 'mge_insights_cache_v1';
+// Bumped to v2 when the response schema gained headline/stats/nextMoves/watchOuts.
+// Old v1 cached entries (whatHappened/whatsWorking/whatToTry only) would render
+// without the hero section, so we invalidate by bumping the key.
+var INSIGHTS_CACHE_KEY = 'mge_insights_cache_v2';
 var _insightsLatestFingerprint = null;
 
 function initInsightsPanel() {
@@ -3746,7 +3949,7 @@ window.toggleInsightsPanel = function() {
     if (wasCollapsed) {
         // Expanding — allow max-height to grow naturally
         strip.classList.remove('collapsed');
-        strip.style.maxHeight = '800px'; // generous cap to let CSS transition run
+        strip.style.maxHeight = '2000px'; // generous cap so the transition completes; content sizes naturally
         strip.setAttribute('aria-hidden', 'false');
         btn.setAttribute('aria-expanded', 'true');
         // Lazy-generate: if we have data but haven't rendered yet, kick off generation now
@@ -3904,21 +4107,109 @@ function insightsPlaceholder(title, sub, isError) {
 
 function formatInsightsSections(result) {
     if (!result) return insightsPlaceholder('No insights', 'The model returned an empty response.', true);
-    function sectionHtml(cls, title, body) {
-        return '<div class="insights-section ' + cls + '">' +
-               '<div class="insights-section-title"><span class="sec-dot"></span>' + escapeHtml(title) + '</div>' +
-               body + '</div>';
-    }
-    function toList(arr) {
-        if (!arr || !arr.length) return '<p style="color:#94A3B8;font-style:italic;">No items.</p>';
-        return '<ul>' + arr.map(function(s) { return '<li>' + escapeHtml(String(s)) + '</li>'; }).join('') + '</ul>';
-    }
+
+    // Pull fields with back-compat fallbacks so older cached payloads still render
+    var headline     = result.headline || '';
+    var stats        = Array.isArray(result.stats) ? result.stats : [];
     var whatHappened = result.whatHappened || result.summary || '';
-    var whatsWorking = result.whatsWorking || result.working || [];
-    var whatToTry = result.whatToTry || result.recommendations || [];
-    return sectionHtml('what-happened', 'What happened', '<p>' + escapeHtml(whatHappened) + '</p>') +
-           sectionHtml('whats-working', "What's working", toList(whatsWorking)) +
-           sectionHtml('what-to-try', 'What to try next', toList(whatToTry));
+    var whatsWorking = Array.isArray(result.whatsWorking) ? result.whatsWorking : (Array.isArray(result.working) ? result.working : []);
+    var nextMoves    = Array.isArray(result.nextMoves)    ? result.nextMoves    : (Array.isArray(result.whatToTry) ? result.whatToTry : []);
+    var watchOuts    = Array.isArray(result.watchOuts)    ? result.watchOuts    : [];
+
+    // --- Hero ----------------------------------------------------------
+    function renderHero() {
+        if (!headline && !stats.length) return '';
+        var headlineHtml = headline ? '<div class="insights-headline">' + escapeHtml(headline) + '</div>' : '';
+        var statsHtml = stats.length ? '<div class="insights-stats">' + stats.map(renderStat).join('') + '</div>' : '';
+        return '<div class="insights-hero">' + headlineHtml + statsHtml + '</div>';
+    }
+    function renderStat(s) {
+        var dir = s.direction || 'neutral';
+        var deltaHtml = s.delta
+            ? '<span class="stat-delta ' + escapeAttr(dir) + '">' +
+                (dir === 'up' ? '\u25B2 ' : dir === 'down' ? '\u25BC ' : '') +
+                escapeHtml(String(s.delta)) +
+              '</span>'
+            : '';
+        return '<div class="insights-stat">' +
+                 '<div class="stat-label">' + escapeHtml(s.label || '') + '</div>' +
+                 '<div class="stat-value-row">' +
+                   '<span class="stat-value">' + escapeHtml(String(s.value || '')) + '</span>' +
+                   deltaHtml +
+                 '</div>' +
+                 (s.context ? '<div class="stat-context">' + escapeHtml(s.context) + '</div>' : '') +
+               '</div>';
+    }
+
+    // --- Section scaffolding ------------------------------------------
+    function sectionCard(cls, kicker, glyph, body) {
+        return '<div class="insights-section-card ' + cls + '">' +
+                 '<div class="insights-section-head">' +
+                   '<span class="section-glyph">' + glyph + '</span>' +
+                   escapeHtml(kicker) +
+                 '</div>' +
+                 body +
+               '</div>';
+    }
+
+    // --- What happened -------------------------------------------------
+    var happenedCard = sectionCard('what-happened', 'The Story', '\u25CF',
+        whatHappened
+            ? '<p class="insights-narrative">' + escapeHtml(whatHappened) + '</p>'
+            : '<p class="insights-narrative" style="color:#94A3B8;font-style:italic;">No narrative returned.</p>'
+    );
+
+    // --- What's working -----------------------------------------------
+    function renderWorkingItem(it) {
+        if (typeof it === 'string') it = { title: it };
+        var platformLabel = { fb: 'Facebook', ig: 'Instagram', li: 'LinkedIn', yt: 'YouTube', mixed: 'Cross-platform' };
+        var plat = (it.platform || '').toLowerCase();
+        var platPill = plat && platformLabel[plat]
+            ? '<span class="insights-platform-chip ' + escapeAttr(plat) + '">' + escapeHtml(platformLabel[plat]) + '</span>'
+            : '';
+        return '<div class="insights-item">' +
+                 '<div class="insights-item-title">' + escapeHtml(it.title || '') + ' ' + platPill + '</div>' +
+                 (it.evidence ? '<div class="insights-item-evidence">' + escapeHtml(it.evidence) + '</div>' : '') +
+                 (it.why ? '<p class="insights-item-why">' + escapeHtml(it.why) + '</p>' : '') +
+               '</div>';
+    }
+    var workingCard = sectionCard('whats-working', "What's working", '\u2713',
+        whatsWorking.length
+            ? '<div class="insights-items">' + whatsWorking.map(renderWorkingItem).join('') + '</div>'
+            : '<p class="insights-narrative" style="color:#94A3B8;font-style:italic;">No standout wins surfaced.</p>'
+    );
+
+    // --- Next moves ----------------------------------------------------
+    function renderMoveItem(it) {
+        if (typeof it === 'string') it = { title: it };
+        return '<div class="insights-item">' +
+                 '<div class="insights-item-title">' + escapeHtml(it.title || '') + '</div>' +
+                 (it.rationale ? '<p class="insights-move-rationale">' + escapeHtml(it.rationale) + '</p>' : '') +
+                 (it.impact ? '<p class="insights-move-impact">' + escapeHtml(it.impact) + '</p>' : '') +
+               '</div>';
+    }
+    var movesCard = sectionCard('next-moves', 'Try next', '\u2192',
+        nextMoves.length
+            ? '<div class="insights-items">' + nextMoves.map(renderMoveItem).join('') + '</div>'
+            : '<p class="insights-narrative" style="color:#94A3B8;font-style:italic;">No actions suggested.</p>'
+    );
+
+    // --- Watch-outs (optional, only if present) -----------------------
+    var watchCard = '';
+    if (watchOuts.length) {
+        watchCard = sectionCard('watch-outs', 'Watch-outs', '!',
+            '<div class="insights-items">' +
+                watchOuts.map(function(w) {
+                    return '<div class="insights-watchout">' + escapeHtml(String(w)) + '</div>';
+                }).join('') +
+            '</div>'
+        );
+    }
+
+    return renderHero() +
+           '<div class="insights-sections">' +
+              happenedCard + workingCard + movesCard + watchCard +
+           '</div>';
 }
 
 // Pretty labels for the provider badge / footer
