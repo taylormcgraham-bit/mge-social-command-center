@@ -1623,11 +1623,16 @@ if (process.env.NODE_ENV === 'production' || process.env.ENABLE_MENTIONS === 'tr
 const CLAUDE_MODEL_DEFAULT = 'claude-sonnet-4-6';
 const GEMINI_MODEL_DEFAULT = 'gemini-2.0-flash';
 const INSIGHTS_SYSTEM_PROMPT =
-  'You are a senior digital marketing analyst at Madison Gas and Electric (MGE), a Wisconsin utility. ' +
-  'You review the social media performance data provided and write tight, useful insights for the marketing team. ' +
-  'Your audience is practical marketers — skip generic platitudes, prefer concrete specifics (numbers, post themes, ' +
-  'platform names) pulled from the data. Do not invent facts. When the sample is small or data is missing, say so. ' +
-  'Write in a warm, plain, professional tone. No emojis, no hype words.';
+  'You are a senior digital marketing strategist at Madison Gas and Electric (MGE), a Wisconsin utility. ' +
+  'You review social media performance data and produce editorial-quality insights for the marketing team. ' +
+  'Hard rules: (1) Every claim must cite a specific post, metric, or platform from the data — never generic. ' +
+  '(2) Never invent numbers. If something is unknown, say "not reported in this window" rather than guessing. ' +
+  '(3) If the sample is small (e.g., 1-2 posts per platform) or a metric is missing/zero (reach, impressions), ' +
+  'flag that limitation explicitly instead of drawing broad conclusions. ' +
+  '(4) Write in a warm, plain, professional tone. No hype, no emojis, no marketing buzzwords. ' +
+  '(5) Be surgical with specificity: name posts by their subject ("the Falcon Cam YouTube post"), ' +
+  'not vague categories ("video content"). ' +
+  '(6) Recommendations must be things a marketer can actually do next week, not strategic platitudes.';
 
 function buildInsightsUserPrompt(body) {
   const m = body.metrics || {};
@@ -1670,13 +1675,26 @@ function buildInsightsUserPrompt(body) {
     lines.push('- [' + (c.platform || '?') + (c.score != null ? ', s=' + c.score : '') + '] ' + c.text);
   });
   lines.push('');
-  lines.push('Respond with a single valid JSON object and nothing else. Shape:');
+  lines.push('Return a single valid JSON object matching this exact shape. No code fences, no prose outside JSON.');
   lines.push('{');
-  lines.push('  "whatHappened": "2-4 sentence narrative. Lead with the single most important fact of the window.",');
-  lines.push('  "whatsWorking": ["3 specific items, each naming a post theme or platform and why it landed"],');
-  lines.push('  "whatToTry":   ["2-3 concrete, actionable recommendations for next window"]');
+  lines.push('  "headline": "ONE bold sentence (15-25 words) naming the most important finding of this window. Lead with the concrete fact, not the framing.",');
+  lines.push('  "stats": [');
+  lines.push('    { "label": "Short metric label (1-3 words)", "value": "The number or name", "delta": "+12% or -8% or null if no prior", "direction": "up | down | neutral", "context": "Brief qualifier (e.g., vs prior 28 days)" }');
+  lines.push('    // include 3 stats — the most informative ones for this window. Always include engagement. Use reach/impressions/followers/best-platform as additional.');
+  lines.push('  ],');
+  lines.push('  "whatHappened": "2-3 sentence narrative. Lead with the larger pattern, then one supporting detail. Do not recap the stats already shown above.",');
+  lines.push('  "whatsWorking": [');
+  lines.push('    { "title": "Short descriptive name (3-6 words)", "platform": "fb | ig | li | yt | mixed", "evidence": "specific metric or post reference, e.g. \\"846 engagements on a single post\\"", "why": "One sentence on why this performed — audience behavior, format, timing, topic resonance" }');
+  lines.push('    // 3 items');
+  lines.push('  ],');
+  lines.push('  "nextMoves": [');
+  lines.push('    { "title": "Short imperative action (4-8 words, e.g. \\"Cross-post Falcon Cam to Instagram Reels\\")", "rationale": "Why this based on what we observed in the data", "impact": "Expected outcome — be specific and modest (e.g. \\"Test lift in IG video reach, since current IG reach is unreported\\")" }');
+  lines.push('    // 3 items — must be implementable within a week');
+  lines.push('  ],');
+  lines.push('  "watchOuts": [');
+  lines.push('    "Short flag about a data gap, concerning trend, or audience signal worth monitoring. 1-2 items max. Empty array is fine if nothing concerning."');
+  lines.push('  ]');
   lines.push('}');
-  lines.push('Do not wrap the JSON in markdown or code fences. Do not add any commentary outside the JSON.');
   return lines.join('\n');
 }
 
@@ -1693,12 +1711,51 @@ function parseInsightsJson(raw) {
 }
 
 function shapeInsightsResult(parsed) {
+  // Normalize winning plays and next moves — accept either the new object form
+  // or the older plain-string array for backward compat.
+  function normalizeWorking(arr) {
+    if (!Array.isArray(arr)) return [];
+    return arr.map(function(item) {
+      if (typeof item === 'string') return { title: item, platform: '', evidence: '', why: '' };
+      return {
+        title: String(item.title || ''),
+        platform: String(item.platform || '').toLowerCase(),
+        evidence: String(item.evidence || item.metric || ''),
+        why: String(item.why || item.reason || '')
+      };
+    });
+  }
+  function normalizeMoves(arr) {
+    if (!Array.isArray(arr)) return [];
+    return arr.map(function(item) {
+      if (typeof item === 'string') return { title: item, rationale: '', impact: '' };
+      return {
+        title: String(item.title || ''),
+        rationale: String(item.rationale || item.why || ''),
+        impact: String(item.impact || item.expectedImpact || '')
+      };
+    });
+  }
+  function normalizeStats(arr) {
+    if (!Array.isArray(arr)) return [];
+    return arr.slice(0, 4).map(function(s) {
+      return {
+        label: String(s.label || ''),
+        value: String(s.value || ''),
+        delta: s.delta == null ? null : String(s.delta),
+        direction: ['up', 'down', 'neutral'].indexOf(s.direction) >= 0 ? s.direction : 'neutral',
+        context: String(s.context || '')
+      };
+    });
+  }
   return {
+    headline: String(parsed.headline || ''),
+    stats: normalizeStats(parsed.stats),
     whatHappened: String(parsed.whatHappened || parsed.summary || ''),
-    whatsWorking: Array.isArray(parsed.whatsWorking) ? parsed.whatsWorking.map(String)
-                  : Array.isArray(parsed.working) ? parsed.working.map(String) : [],
-    whatToTry:   Array.isArray(parsed.whatToTry) ? parsed.whatToTry.map(String)
-                 : Array.isArray(parsed.recommendations) ? parsed.recommendations.map(String) : []
+    // Back-compat: if old clients still send `whatsWorking` as strings, keep them
+    whatsWorking: normalizeWorking(parsed.whatsWorking || parsed.working),
+    nextMoves: normalizeMoves(parsed.nextMoves || parsed.whatToTry || parsed.recommendations),
+    watchOuts: Array.isArray(parsed.watchOuts) ? parsed.watchOuts.map(String).slice(0, 3) : []
   };
 }
 
