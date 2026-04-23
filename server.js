@@ -1569,9 +1569,14 @@ if (process.env.NODE_ENV === 'production' || process.env.ENABLE_MENTIONS === 'tr
 // AI INSIGHTS — narrative summary of the selected window
 // POST /api/insights with { metrics, prior, topPosts, commentSample }
 // Returns { whatHappened, whatsWorking, whatToTry }
-// Requires ANTHROPIC_API_KEY env var. Degrades gracefully if absent.
+//
+// Dual-provider: auto-detects which API key is configured in env vars.
+//   - ANTHROPIC_API_KEY  → calls Claude (preferred if both set)
+//   - GEMINI_API_KEY     → calls Google Gemini (free tier friendly)
+//   - neither → returns 503 and the UI shows a friendly "configure a key" placeholder
 // ============================================================
-const INSIGHTS_MODEL = process.env.INSIGHTS_MODEL || 'claude-sonnet-4-6';
+const CLAUDE_MODEL_DEFAULT = 'claude-sonnet-4-6';
+const GEMINI_MODEL_DEFAULT = 'gemini-2.0-flash';
 const INSIGHTS_SYSTEM_PROMPT =
   'You are a senior digital marketing analyst at Madison Gas and Electric (MGE), a Wisconsin utility. ' +
   'You review the social media performance data provided and write tight, useful insights for the marketing team. ' +
@@ -1630,10 +1635,89 @@ function buildInsightsUserPrompt(body) {
   return lines.join('\n');
 }
 
+// Parse a JSON object out of an LLM response, tolerating markdown fences and prose wrapping.
+function parseInsightsJson(raw) {
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch (e) {}
+  // Strip ```json ... ``` fences and try again
+  const fenced = raw.match(/\{[\s\S]*\}/);
+  if (fenced) {
+    try { return JSON.parse(fenced[0]); } catch (e) {}
+  }
+  return null;
+}
+
+function shapeInsightsResult(parsed) {
+  return {
+    whatHappened: String(parsed.whatHappened || parsed.summary || ''),
+    whatsWorking: Array.isArray(parsed.whatsWorking) ? parsed.whatsWorking.map(String)
+                  : Array.isArray(parsed.working) ? parsed.working.map(String) : [],
+    whatToTry:   Array.isArray(parsed.whatToTry) ? parsed.whatToTry.map(String)
+                 : Array.isArray(parsed.recommendations) ? parsed.recommendations.map(String) : []
+  };
+}
+
+async function callAnthropicInsights(apiKey, userPrompt) {
+  const model = process.env.INSIGHTS_MODEL || CLAUDE_MODEL_DEFAULT;
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: model,
+      max_tokens: 1200,
+      system: INSIGHTS_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: userPrompt }]
+    })
+  });
+  if (!resp.ok) {
+    const errText = await resp.text();
+    console.warn(' [INSIGHTS] Anthropic API error:', resp.status, errText.slice(0, 300));
+    throw new Error('Claude API error (' + resp.status + ')');
+  }
+  const payload = await resp.json();
+  return (payload.content && payload.content[0] && payload.content[0].text) || '';
+}
+
+async function callGeminiInsights(apiKey, userPrompt) {
+  const model = process.env.INSIGHTS_MODEL || GEMINI_MODEL_DEFAULT;
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
+              encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(apiKey);
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: INSIGHTS_SYSTEM_PROMPT }] },
+      contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+      generationConfig: {
+        temperature: 0.4,
+        maxOutputTokens: 1200,
+        responseMimeType: 'application/json'
+      }
+    })
+  });
+  if (!resp.ok) {
+    const errText = await resp.text();
+    console.warn(' [INSIGHTS] Gemini API error:', resp.status, errText.slice(0, 300));
+    throw new Error('Gemini API error (' + resp.status + ')');
+  }
+  const payload = await resp.json();
+  const parts = payload.candidates && payload.candidates[0] &&
+                payload.candidates[0].content && payload.candidates[0].content.parts;
+  return (parts && parts[0] && parts[0].text) || '';
+}
+
 app.post('/api/insights', express.json({ limit: '1mb' }), async (req, res) => {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return res.status(503).json({ error: 'ANTHROPIC_API_KEY not configured on the server. Add it in Render env vars.' });
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (!anthropicKey && !geminiKey) {
+    return res.status(503).json({
+      error: 'No LLM API key configured. Add GEMINI_API_KEY (free, get at aistudio.google.com) ' +
+             'or ANTHROPIC_API_KEY to Render env vars.'
+    });
   }
   const body = req.body || {};
   if (!body.metrics || body.metrics.postCount === 0) {
@@ -1641,48 +1725,21 @@ app.post('/api/insights', express.json({ limit: '1mb' }), async (req, res) => {
   }
   try {
     const userPrompt = buildInsightsUserPrompt(body);
-    const anthropicResp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: INSIGHTS_MODEL,
-        max_tokens: 1200,
-        system: INSIGHTS_SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: userPrompt }]
-      })
-    });
-    if (!anthropicResp.ok) {
-      const errText = await anthropicResp.text();
-      console.warn(' [INSIGHTS] Anthropic API error:', anthropicResp.status, errText.slice(0, 300));
-      return res.status(502).json({ error: 'Anthropic API error (' + anthropicResp.status + ')' });
-    }
-    const payload = await anthropicResp.json();
-    const raw = (payload.content && payload.content[0] && payload.content[0].text) || '';
-    // Try to parse as JSON — tolerate minor wrapping
-    let parsed;
-    try {
-      parsed = JSON.parse(raw);
-    } catch (e) {
-      // Strip ```json ... ``` fences if present
-      const fenced = raw.match(/\{[\s\S]*\}/);
-      if (fenced) {
-        try { parsed = JSON.parse(fenced[0]); } catch (e2) {}
-      }
-    }
+    const provider = anthropicKey ? 'anthropic' : 'gemini';
+    const raw = anthropicKey
+      ? await callAnthropicInsights(anthropicKey, userPrompt)
+      : await callGeminiInsights(geminiKey, userPrompt);
+    const parsed = parseInsightsJson(raw);
     if (!parsed) {
-      return res.status(502).json({ error: 'Model returned unparseable output.', raw: raw.slice(0, 500) });
+      return res.status(502).json({
+        error: 'Model returned unparseable output.',
+        provider: provider,
+        raw: (raw || '').slice(0, 500)
+      });
     }
-    return res.json({
-      whatHappened: String(parsed.whatHappened || parsed.summary || ''),
-      whatsWorking: Array.isArray(parsed.whatsWorking) ? parsed.whatsWorking.map(String)
-                    : Array.isArray(parsed.working) ? parsed.working.map(String) : [],
-      whatToTry:   Array.isArray(parsed.whatToTry) ? parsed.whatToTry.map(String)
-                   : Array.isArray(parsed.recommendations) ? parsed.recommendations.map(String) : []
-    });
+    const result = shapeInsightsResult(parsed);
+    result._provider = provider;
+    return res.json(result);
   } catch (err) {
     console.warn(' [INSIGHTS] Server error:', err.message);
     return res.status(500).json({ error: err.message || 'Insights generation failed' });
