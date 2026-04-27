@@ -485,21 +485,6 @@
             text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px;
         }
 
-        /* --- AHS methodology note --- */
-        .ahs-methodology-footer {
-            font-size: 11px; color: #94A3B8; line-height: 1.7;
-            padding: 20px 36px;
-            background: #F8FAFC; border-top: 1px solid #E2E8F0;
-            max-width: 1600px; margin: 0 auto;
-        }
-        .ahs-methodology-footer em { font-style: italic; }
-        .ahs-methodology-footer strong { color: #64748B; font-weight: 600; font-style: normal; }
-        .ahs-method-title { font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: #64748B; margin-bottom: 8px; }
-        .ahs-method-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 10px; }
-        .ahs-method-col h4 { font-size: 11px; font-weight: 700; color: #475569; margin: 0 0 4px; }
-        .ahs-method-col p { margin: 0 0 6px; }
-        @media (max-width: 800px) { .ahs-method-grid { grid-template-columns: 1fr; } }
-
         /* --- AHS info icon + calculation modal --- */
         .ahs-info-btn {
             display: inline-flex; align-items: center; justify-content: center;
@@ -581,7 +566,31 @@
         .ahs-note {
             background: #FEF9E7; border-left: 3px solid #EAB308;
             padding: 10px 12px; border-radius: 6px; font-size: 11px; color: #78350F;
-            margin-top: 8px;
+            margin-top: 12px;
+        }
+        .ahs-pillar-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px;
+        }
+        @media (max-width: 600px) { .ahs-pillar-grid { grid-template-columns: 1fr; } }
+        .ahs-pillar-box {
+            background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px;
+            padding: 12px 14px;
+        }
+        .ahs-pillar-title {
+            font-size: 11px; font-weight: 800; color: #003B71;
+            text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
+        }
+        .ahs-pillar-box p { margin: 0 0 8px; font-size: 11px; color: #475569; line-height: 1.55; }
+        .ahs-tier-list { list-style: none; padding: 0; margin: 0; font-size: 11px; }
+        .ahs-tier-list li {
+            display: flex; align-items: baseline; gap: 8px;
+            padding: 4px 0; border-bottom: 1px dashed #E2E8F0; color: #334155;
+        }
+        .ahs-tier-list li:last-child { border-bottom: none; }
+        .ahs-tier-w {
+            display: inline-block; min-width: 32px; padding: 2px 6px; text-align: center;
+            background: #003B71; color: #fff; font-weight: 700; font-size: 10px;
+            border-radius: 4px; font-variant-numeric: tabular-nums;
         }
 
         /* --- Audience & Reach card --- */
@@ -1854,31 +1863,6 @@
     </div>
 </div>
 
-<!-- Methodology footer -->
-<div class="ahs-methodology-footer">
-    <div class="ahs-method-title">Audience Health Score &mdash; Methodology</div>
-    <em>A composite 0&ndash;100 score blending two equally weighted pillars (50/50). All engagement metrics are <strong>normalized per post</strong>, so platforms with fewer posts in the selected date range aren't penalized for lower volume &mdash; only the quality of engagement on each post matters. Platforms with fewer than 2 posts in the period are excluded entirely and labeled &ldquo;Low activity.&rdquo; The overall gauge is a follower-weighted average of qualifying per-platform scores.</em>
-    <div class="ahs-method-grid">
-        <div class="ahs-method-col">
-            <h4>Engagement Quality (50%)</h4>
-            <p><em>Interactions are scored per post using a tiered weighting system that values depth of engagement:</em></p>
-            <p><strong>Tier 1 &mdash; Highest Value:</strong> <em>Comments (weighted 5x) &mdash; indicate real conversation and audience investment.</em></p>
-            <p><strong>Tier 2 &mdash; High Value:</strong> <em>Shares &amp; Saves (weighted 3x) &mdash; audience actively amplifying your content or bookmarking it for later.</em></p>
-            <p><strong>Tier 3 &mdash; Moderate Value:</strong> <em>Reactions/Likes (weighted 1x) &mdash; positive signal but low-effort interaction. Negative reactions (sad, angry, dislikes) are subtracted.</em></p>
-            <p><strong>Tier 4 &mdash; Baseline:</strong> <em>Views (weighted 0.2x) &mdash; passive consumption, valued as reach awareness.</em></p>
-            <p><em>The weighted total is divided by the number of posts in the period, then normalized via tanh curve (baseline: ~30 weighted engagements/post = score 50).</em></p>
-        </div>
-        <div class="ahs-method-col">
-            <h4>Comment Sentiment (50%)</h4>
-            <p><em>Analyzes the tone of audience conversations using keyword-based sentiment scoring.</em></p>
-            <p><strong>Confidence Weighting:</strong> <em>The sentiment score is confidence-weighted by comment volume. With fewer than 15 comments, the score pulls toward neutral (50) to avoid over-reacting to small samples. With 0 comments, sentiment returns null and the algorithm gracefully degrades to engagement-only scoring.</em></p>
-            <p><strong>Formula:</strong> <em>final = (raw_sentiment &times; confidence) + (50 &times; (1 &minus; confidence)), where confidence = min(1, comment_count / 15).</em></p>
-            <p><strong>Minimum Post Threshold:</strong> <em>Platforms with fewer than 2 posts in the selected date range are excluded from the overall score entirely. This prevents low-volume platforms (e.g., Instagram or YouTube during quiet periods) from dragging down the aggregate score when there simply isn&rsquo;t enough data to evaluate.</em></p>
-            <p><strong>Null-safe rescaling:</strong> <em>If a pillar returns null (no comments) or a platform is excluded (low posts), the remaining data rescales automatically. The score reflects only platforms and pillars with meaningful activity.</em></p>
-        </div>
-    </div>
-</div>
-
 
 </div><!-- /#dashboardView -->
 
@@ -3144,13 +3128,37 @@ function showAhsBreakdown() {
 
     body.innerHTML = `
         <div class="ahs-modal-section">
-            <h4>The Formula</h4>
-            <p>The overall score is a <strong>follower-weighted average</strong> of each qualifying platform&rsquo;s composite score. Each platform&rsquo;s composite is itself a 50/50 blend of two pillars:</p>
+            <h4>How the Score Works</h4>
             <div class="ahs-formula-box">
                 Platform Composite = (Engagement Quality &times; 0.5) + (Comment Sentiment &times; 0.5)<br>
                 Overall Score = &Sigma; (Platform Composite &times; Followers) &divide; &Sigma; Followers
             </div>
-            <p style="color:#64748B;">Platforms with fewer than 2 posts in the selected date range are excluded entirely so a quiet week on one platform doesn&rsquo;t drag the aggregate.</p>
+            <p style="color:#475569; margin:8px 0 0;">A 0&ndash;100 composite blending two equally weighted pillars. Engagement is normalized <strong>per post</strong> so low-volume platforms aren&rsquo;t penalized. Platforms with fewer than 2 posts in the range are excluded. The headline gauge is a follower-weighted average of qualifying platforms.</p>
+        </div>
+
+        <div class="ahs-modal-section">
+            <h4>The Two Pillars</h4>
+            <div class="ahs-pillar-grid">
+                <div class="ahs-pillar-box">
+                    <div class="ahs-pillar-title">Engagement Quality &mdash; 50%</div>
+                    <p>Each interaction is weighted by depth, summed, divided by post count, and normalized via tanh (baseline: ~30 weighted engagements/post = score 50).</p>
+                    <ul class="ahs-tier-list">
+                        <li><span class="ahs-tier-w">5&times;</span> <strong>Comments</strong> &mdash; real conversation</li>
+                        <li><span class="ahs-tier-w">3&times;</span> <strong>Shares &amp; Saves</strong> &mdash; amplification</li>
+                        <li><span class="ahs-tier-w">1&times;</span> <strong>Reactions/Likes</strong> &mdash; light positive signal (negative reactions subtract)</li>
+                        <li><span class="ahs-tier-w">0.2&times;</span> <strong>Views</strong> &mdash; passive reach</li>
+                    </ul>
+                </div>
+                <div class="ahs-pillar-box">
+                    <div class="ahs-pillar-title">Comment Sentiment &mdash; 50%</div>
+                    <p>Keyword-based sentiment on the comment stream, then pulled toward neutral when the sample is small to avoid over-reacting.</p>
+                    <div class="ahs-formula-box" style="font-size:10.5px; margin:6px 0;">
+                        final = (raw &times; conf) + (50 &times; (1 &minus; conf))<br>
+                        conf = min(1, comments &divide; 15)
+                    </div>
+                    <p style="color:#64748B; margin:0;">If a pillar or platform has no data, it&rsquo;s dropped and the remaining weights rescale automatically.</p>
+                </div>
+            </div>
         </div>
 
         <div class="ahs-modal-section">
@@ -3189,12 +3197,7 @@ function showAhsBreakdown() {
                 </div>
                 <div class="ahs-final-score-value">${b.overallScore === null ? '--' : b.overallScore}</div>
             </div>
-        </div>
-
-        <div class="ahs-modal-section">
-            <h4>Why does it move slowly day-to-day?</h4>
-            <p style="color:#475569;">The score is dominated by whichever platform has the largest follower count (the weight). Engagement Quality uses a tanh curve normalized per post, so a few extra reactions or comments only nudge each pillar by 1&ndash;3 points. Sentiment is confidence-weighted toward 50 with low comment volume. The combined effect: small daily deltas in raw activity translate to ~1-point moves in the headline score &mdash; which is the intended behavior of a stability-oriented index.</p>
-            <div class="ahs-note"><strong>Tip:</strong> Switch the date range filter to see the score recompute against a different window. Excluded platforms (low post count) are listed above so you can verify which platforms are actually contributing.</div>
+            <div class="ahs-note"><strong>Why it moves slowly:</strong> tanh normalization caps how much a few extra interactions can shift each pillar, sentiment damps toward 50 on low volume, and the largest-follower platform dominates the weighted average. Net effect: ~1-point daily moves are the index working as designed. Switch the date range above to see it recompute against a different window.</div>
         </div>
     `;
     overlay.classList.add('active');
