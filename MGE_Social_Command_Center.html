@@ -500,6 +500,90 @@
         .ahs-method-col p { margin: 0 0 6px; }
         @media (max-width: 800px) { .ahs-method-grid { grid-template-columns: 1fr; } }
 
+        /* --- AHS info icon + calculation modal --- */
+        .ahs-info-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 16px; height: 16px; margin-left: 6px;
+            border-radius: 50%; border: 1px solid #94A3B8; background: #fff; color: #64748B;
+            font-size: 10px; font-weight: 700; font-family: Georgia, serif; font-style: italic;
+            cursor: pointer; padding: 0; line-height: 1; vertical-align: middle;
+            transition: all 0.15s ease;
+        }
+        .ahs-info-btn:hover { border-color: #003B71; color: #003B71; background: #EBF5FF; transform: scale(1.1); }
+        .ahs-info-btn:focus { outline: 2px solid #0066CC; outline-offset: 2px; }
+
+        .ahs-modal-overlay {
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55);
+            backdrop-filter: blur(3px);
+            display: none; align-items: flex-start; justify-content: center;
+            z-index: 9999; padding: 40px 20px; overflow-y: auto;
+        }
+        .ahs-modal-overlay.active { display: flex; }
+        .ahs-modal {
+            background: #fff; border-radius: 14px; max-width: 760px; width: 100%;
+            box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25);
+            overflow: hidden; animation: ahsModalIn 0.22s ease-out;
+        }
+        @keyframes ahsModalIn {
+            from { opacity: 0; transform: translateY(-12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .ahs-modal-header {
+            padding: 18px 24px; border-bottom: 1px solid #E2E8F0;
+            display: flex; align-items: center; justify-content: space-between;
+            background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+        }
+        .ahs-modal-title { font-size: 14px; font-weight: 800; color: #1B2559; letter-spacing: 0.3px; }
+        .ahs-modal-sub { font-size: 11px; color: #64748B; margin-top: 2px; font-weight: 500; }
+        .ahs-modal-close {
+            background: none; border: none; font-size: 20px; color: #94A3B8;
+            cursor: pointer; padding: 4px 10px; border-radius: 6px; line-height: 1;
+        }
+        .ahs-modal-close:hover { background: #F1F5F9; color: #1B2559; }
+        .ahs-modal-body { padding: 20px 24px 24px; font-size: 12px; color: #334155; line-height: 1.6; }
+        .ahs-modal-section { margin-bottom: 20px; }
+        .ahs-modal-section:last-child { margin-bottom: 0; }
+        .ahs-modal-section h4 {
+            font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
+            color: #003B71; margin: 0 0 8px; padding-bottom: 6px; border-bottom: 1px solid #E2E8F0;
+        }
+        .ahs-formula-box {
+            background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px;
+            padding: 12px 14px; font-family: 'SF Mono', Monaco, Consolas, monospace;
+            font-size: 11px; color: #1B2559; margin: 8px 0;
+        }
+        .ahs-calc-table {
+            width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 8px;
+        }
+        .ahs-calc-table th {
+            background: #F8FAFC; color: #64748B; font-weight: 700; text-transform: uppercase;
+            font-size: 9px; letter-spacing: 0.5px; padding: 8px; text-align: right;
+            border-bottom: 1px solid #E2E8F0;
+        }
+        .ahs-calc-table th:first-child, .ahs-calc-table td:first-child { text-align: left; }
+        .ahs-calc-table td {
+            padding: 8px; border-bottom: 1px solid #F1F5F9; color: #334155; text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        .ahs-calc-table td.platform-name { font-weight: 700; color: #1B2559; }
+        .ahs-calc-table td.excluded { color: #94A3B8; font-style: italic; }
+        .ahs-calc-table tfoot td {
+            border-top: 2px solid #003B71; border-bottom: none;
+            font-weight: 800; color: #003B71; padding-top: 10px;
+        }
+        .ahs-final-score-row {
+            display: flex; align-items: center; justify-content: space-between;
+            background: linear-gradient(135deg, #003B71, #0066CC); color: #fff;
+            padding: 14px 18px; border-radius: 10px; margin-top: 12px;
+        }
+        .ahs-final-score-label { font-size: 12px; font-weight: 600; opacity: 0.9; }
+        .ahs-final-score-value { font-size: 32px; font-weight: 800; line-height: 1; }
+        .ahs-note {
+            background: #FEF9E7; border-left: 3px solid #EAB308;
+            padding: 10px 12px; border-radius: 6px; font-size: 11px; color: #78350F;
+            margin-top: 8px;
+        }
+
         /* --- Audience & Reach card --- */
         .audience-reach-grid {
             display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
@@ -1605,7 +1689,7 @@
 
         <!-- Overall Audience Health Score (Hero) -->
         <div class="card" style="margin-bottom:24px; border: 1px solid #E2E8F0; background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);">
-            <div class="card-title" style="text-align:center; font-size: 13px;">Audience Health Score</div>
+            <div class="card-title" style="text-align:center; font-size: 13px;">Audience Health Score<button type="button" class="ahs-info-btn" onclick="showAhsBreakdown()" aria-label="View calculation breakdown" title="View exact calculation">i</button></div>
             <div class="sentiment-gauge">
                 <div class="gauge-hero-bg"></div>
                 <div class="gauge-wrap animated" id="gaugeWrap">
@@ -1797,6 +1881,22 @@
 
 
 </div><!-- /#dashboardView -->
+
+<!-- Audience Health Score — Calculation Breakdown Modal -->
+<div class="ahs-modal-overlay" id="ahsModalOverlay" onclick="if(event.target===this) hideAhsBreakdown()">
+    <div class="ahs-modal" role="dialog" aria-labelledby="ahsModalTitle" aria-modal="true">
+        <div class="ahs-modal-header">
+            <div>
+                <div class="ahs-modal-title" id="ahsModalTitle">Audience Health Score &mdash; Live Calculation</div>
+                <div class="ahs-modal-sub" id="ahsModalSub">Showing the exact numbers behind today&rsquo;s score</div>
+            </div>
+            <button type="button" class="ahs-modal-close" onclick="hideAhsBreakdown()" aria-label="Close">&times;</button>
+        </div>
+        <div class="ahs-modal-body" id="ahsModalBody">
+            <!-- Populated dynamically by renderAhsBreakdown() -->
+        </div>
+    </div>
+</div>
 
 <div id="mentionsView" class="view-panel">
     <div class="mentions-wrap">
@@ -2984,6 +3084,130 @@ function ahsComposite(pillars) {
     if (!den) return null;
     return Math.round(num / den);
 }
+// ============================================================
+// AHS Calculation Breakdown Modal — surfaces the exact math
+// ============================================================
+function showAhsBreakdown() {
+    const overlay = document.getElementById('ahsModalOverlay');
+    const body = document.getElementById('ahsModalBody');
+    const sub = document.getElementById('ahsModalSub');
+    const b = window.__ahsBreakdown;
+    if (!b) {
+        body.innerHTML = '<p style="color:#94A3B8;">No score has been computed yet. Try refreshing the dashboard.</p>';
+        overlay.classList.add('active');
+        return;
+    }
+    const platName = { fb: 'Facebook', ig: 'Instagram', li: 'LinkedIn', yt: 'YouTube' };
+    const fmt = n => (n === null || n === undefined) ? '&mdash;' : Number(n).toLocaleString();
+    const fmtScore = n => (n === null || n === undefined) ? '<span style="color:#94A3B8;">N/A</span>' : Math.round(n);
+
+    // Build per-platform table rows
+    const tableRows = b.rows.map(r => {
+        if (!r.included) {
+            const reason = (r.postCount < 2)
+                ? 'Excluded: &lt; 2 posts'
+                : 'Excluded: no data';
+            return `<tr>
+                <td class="platform-name">${platName[r.key]}</td>
+                <td>${fmt(r.postCount)}</td>
+                <td>${fmt(r.commentCount)}</td>
+                <td class="excluded">&mdash;</td>
+                <td class="excluded">&mdash;</td>
+                <td class="excluded">&mdash;</td>
+                <td class="excluded">${reason}</td>
+                <td class="excluded">&mdash;</td>
+            </tr>`;
+        }
+        const pctOfWeight = b.totalWeight ? ((r.weight / b.totalWeight) * 100).toFixed(1) + '%' : '0%';
+        return `<tr>
+            <td class="platform-name">${platName[r.key]}</td>
+            <td>${fmt(r.postCount)}</td>
+            <td>${fmt(r.commentCount)}</td>
+            <td>${fmtScore(r.engagementScore)}</td>
+            <td>${fmtScore(r.sentimentScore)}</td>
+            <td><strong>${fmtScore(r.compositeScore)}</strong></td>
+            <td>${fmt(r.followers)}</td>
+            <td>${pctOfWeight}</td>
+        </tr>`;
+    }).join('');
+
+    // Build the math expression for the final calc
+    const mathParts = b.rows.filter(r => r.included).map(r =>
+        `(${r.compositeScore} &times; ${fmt(r.weight)})`
+    ).join(' + ');
+    const mathStr = mathParts
+        ? `${mathParts} &divide; ${fmt(b.totalWeight)} = <strong>${fmt(Math.round(b.weightedSum))} &divide; ${fmt(b.totalWeight)} = ${b.overallScore}</strong>`
+        : 'No qualifying platforms.';
+
+    const stamp = b.computedAt ? b.computedAt.toLocaleString() : '';
+    sub.innerHTML = 'Showing the exact numbers behind today&rsquo;s score &middot; computed ' + stamp;
+
+    body.innerHTML = `
+        <div class="ahs-modal-section">
+            <h4>The Formula</h4>
+            <p>The overall score is a <strong>follower-weighted average</strong> of each qualifying platform&rsquo;s composite score. Each platform&rsquo;s composite is itself a 50/50 blend of two pillars:</p>
+            <div class="ahs-formula-box">
+                Platform Composite = (Engagement Quality &times; 0.5) + (Comment Sentiment &times; 0.5)<br>
+                Overall Score = &Sigma; (Platform Composite &times; Followers) &divide; &Sigma; Followers
+            </div>
+            <p style="color:#64748B;">Platforms with fewer than 2 posts in the selected date range are excluded entirely so a quiet week on one platform doesn&rsquo;t drag the aggregate.</p>
+        </div>
+
+        <div class="ahs-modal-section">
+            <h4>Per-Platform Scores (Current Date Range)</h4>
+            <table class="ahs-calc-table">
+                <thead>
+                    <tr>
+                        <th>Platform</th>
+                        <th>Posts</th>
+                        <th>Comments</th>
+                        <th>Eng Quality</th>
+                        <th>Sentiment</th>
+                        <th>Composite</th>
+                        <th>Followers (Weight)</th>
+                        <th>% of Weight</th>
+                    </tr>
+                </thead>
+                <tbody>${tableRows}</tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="6">Total weight (followers across qualifying platforms)</td>
+                        <td>${fmt(b.totalWeight)}</td>
+                        <td>100%</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <div class="ahs-modal-section">
+            <h4>Final Calculation</h4>
+            <div class="ahs-formula-box">${mathStr}</div>
+            <div class="ahs-final-score-row">
+                <div>
+                    <div class="ahs-final-score-label">Overall Audience Health Score</div>
+                    <div style="font-size:11px; opacity:0.85; margin-top:2px;">${b.label}</div>
+                </div>
+                <div class="ahs-final-score-value">${b.overallScore === null ? '--' : b.overallScore}</div>
+            </div>
+        </div>
+
+        <div class="ahs-modal-section">
+            <h4>Why does it move slowly day-to-day?</h4>
+            <p style="color:#475569;">The score is dominated by whichever platform has the largest follower count (the weight). Engagement Quality uses a tanh curve normalized per post, so a few extra reactions or comments only nudge each pillar by 1&ndash;3 points. Sentiment is confidence-weighted toward 50 with low comment volume. The combined effect: small daily deltas in raw activity translate to ~1-point moves in the headline score &mdash; which is the intended behavior of a stability-oriented index.</p>
+            <div class="ahs-note"><strong>Tip:</strong> Switch the date range filter to see the score recompute against a different window. Excluded platforms (low post count) are listed above so you can verify which platforms are actually contributing.</div>
+        </div>
+    `;
+    overlay.classList.add('active');
+}
+function hideAhsBreakdown() {
+    const overlay = document.getElementById('ahsModalOverlay');
+    if (overlay) overlay.classList.remove('active');
+}
+// Close modal on Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') hideAhsBreakdown();
+});
+
 function ahsLabel(score) {
     if (score === null) return '--';
     if (score >= 75) return 'Excellent';
@@ -3080,15 +3304,46 @@ function renderSentiment(data) {
     // Overall = reach-weighted composite of per-platform scores.
     // Weight by followers (reach proxy when no reach data); fall back to equal.
     let totalWeight = 0, weightedSum = 0;
+    const calcRows = [];
     platformKeys.forEach(k => {
         const s = perPlatform[k].score;
-        if (s === null) return;
-        const w = data.audience[k].followers || 1;
-        weightedSum += s * w;
-        totalWeight += w;
+        const followers = data.audience[k] ? (data.audience[k].followers || 0) : 0;
+        const pe = data.platformEngagement[k] || {};
+        const commentCount = (data.platformComments && data.platformComments[k]) ? data.platformComments[k].length : 0;
+        const row = {
+            key: k,
+            postCount: pe.postCount || 0,
+            commentCount: commentCount,
+            engagementScore: perPlatform[k].pillars.engagement,
+            sentimentScore: perPlatform[k].pillars.sentiment,
+            compositeScore: s,
+            followers: followers,
+            included: s !== null
+        };
+        if (s !== null) {
+            const w = followers || 1;
+            row.weight = w;
+            row.contribution = s * w;
+            weightedSum += s * w;
+            totalWeight += w;
+        } else {
+            row.weight = 0;
+            row.contribution = 0;
+        }
+        calcRows.push(row);
     });
     const overallScore = totalWeight ? Math.round(weightedSum / totalWeight) : null;
     const overall = { score: overallScore === null ? 0 : overallScore, label: ahsLabel(overallScore) };
+
+    // Stash full breakdown for the info-icon modal
+    window.__ahsBreakdown = {
+        rows: calcRows,
+        weightedSum: weightedSum,
+        totalWeight: totalWeight,
+        overallScore: overallScore,
+        label: overall.label,
+        computedAt: new Date()
+    };
 
     // Stamp this month's AHS score into history for the timeline chart
     saveAhsScore(overallScore, perPlatform);
