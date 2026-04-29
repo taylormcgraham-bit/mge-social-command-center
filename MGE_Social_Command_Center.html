@@ -297,23 +297,17 @@
             font-size: 11px; color: #94A3B8; line-height: 1.4;
         }
 
-        /* Top row — The Story, full width, editorial style */
-        .insights-top { display: block; }
-        .insights-top .insights-section-card.what-happened {
-            padding: 20px 22px 18px;
-        }
-        .insights-top .insights-narrative {
-            font-size: 15px; line-height: 1.65; color: #E2E8F0;
-            margin: 0 0 10px;
-        }
-        .insights-top .insights-narrative:last-child { margin-bottom: 0; }
-
-        /* Bottom row — equal-width action cards */
+        /* Insights grid — equal-width columns including The Story */
         .insights-sections {
             display: grid; gap: 16px; align-items: stretch;
         }
         .insights-sections.three { grid-template-columns: 1fr 1fr 1fr; }
         .insights-sections.four  { grid-template-columns: 1fr 1fr 1fr 1fr; }
+        .insights-section-card.what-happened .insights-narrative {
+            font-size: 13.5px; line-height: 1.55; color: #E2E8F0;
+            margin: 0 0 10px;
+        }
+        .insights-section-card.what-happened .insights-narrative:last-child { margin-bottom: 0; }
         .insights-sections > .insights-section-card {
             display: flex; flex-direction: column;
         }
@@ -4966,12 +4960,11 @@ function formatInsightsSections(result) {
         );
     }
 
-    // Layout: full-width narrative at top, then equal-width action cards below.
-    // Watch-outs only render when the model actually flagged something.
-    var bottomCards = workingCard + movesCard + watchCard;
-    var bottomClass = watchCard ? 'insights-sections four' : 'insights-sections three';
-    return '<div class="insights-top">' + happenedCard + '</div>' +
-           '<div class="' + bottomClass + '">' + bottomCards + '</div>';
+    // Layout: 4 equal-width columns — The Story first, then action cards.
+    // Watch-outs gets its own column when present; otherwise we lay out 3.
+    var allCards = happenedCard + workingCard + movesCard + watchCard;
+    var layoutClass = watchCard ? 'insights-sections four' : 'insights-sections three';
+    return '<div class="' + layoutClass + '">' + allCards + '</div>';
 }
 
 // Pretty labels for the provider badge / footer
