@@ -1286,10 +1286,14 @@
         .pulse-bubble-label {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             font-weight: 700;
+            letter-spacing: 0.2px;
             fill: #fff;
             text-anchor: middle;
             pointer-events: none;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+            paint-order: stroke;
+            stroke: rgba(15, 23, 42, 0.55);
+            stroke-width: 3px;
+            stroke-linejoin: round;
         }
         .pulse-bubble-count {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -1320,26 +1324,32 @@
         }
         .pulse-modal-card {
             background: #fff;
-            border-radius: 12px;
-            max-width: 720px;
+            border-radius: 16px;
+            max-width: 920px;
             width: 100%;
-            max-height: 86vh;
+            max-height: 88vh;
             overflow-y: auto;
-            box-shadow: 0 18px 48px rgba(0,0,0,0.28);
+            box-shadow: 0 24px 64px rgba(0,0,0,0.32), 0 0 0 1px rgba(15,23,42,0.04);
             position: relative;
-            animation: pulseModalRise 0.22s ease-out;
+            transform-origin: var(--bloom-x, 50%) var(--bloom-y, 50%);
+            animation: pulseModalBloom 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        @keyframes pulseModalRise {
-            from { transform: translateY(12px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+        @keyframes pulseModalBloom {
+            0%   { transform: scale(0.04); opacity: 0; }
+            55%  { opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
         }
         .pulse-modal-close {
-            position: absolute; top: 12px; right: 14px;
-            background: transparent; border: none; font-size: 26px; line-height: 1;
-            color: #64748b; cursor: pointer; padding: 4px 10px; border-radius: 6px;
+            position: absolute; top: 14px; right: 16px;
+            background: rgba(241,245,249,0.85); border: none; font-size: 22px; line-height: 1;
+            color: #475569; cursor: pointer;
+            width: 36px; height: 36px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.15s, color 0.15s, transform 0.15s;
+            z-index: 2;
         }
-        .pulse-modal-close:hover { background: #f1f5f9; color: #0f172a; }
-        .pulse-modal-header { padding: 22px 28px 14px; border-bottom: 1px solid #e2e8f0; }
+        .pulse-modal-close:hover { background: #e2e8f0; color: #0f172a; transform: scale(1.06); }
+        .pulse-modal-header { padding: 28px 36px 18px; border-bottom: 1px solid #e2e8f0; }
         .pulse-modal-sentiment {
             display: inline-block; padding: 3px 10px; border-radius: 12px;
             font-size: 11px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase;
@@ -1349,10 +1359,10 @@
         .pulse-modal-sentiment.mixed    { background: #94a3b8; }
         .pulse-modal-sentiment.negative { background: #dc2626; }
         .pulse-modal-sentiment.low_signal { background: #94a3b8; }
-        .pulse-modal-title { font-size: 22px; font-weight: 700; color: #0f172a; }
-        .pulse-modal-counts { font-size: 12px; color: #64748b; margin-top: 4px; }
-        .pulse-modal-section { padding: 16px 28px; border-bottom: 1px solid #f1f5f9; }
-        .pulse-modal-section:last-child { border-bottom: none; padding-bottom: 24px; }
+        .pulse-modal-title { font-size: 26px; font-weight: 700; color: #0f172a; letter-spacing: -0.01em; }
+        .pulse-modal-counts { font-size: 12px; color: #64748b; margin-top: 6px; }
+        .pulse-modal-section { padding: 22px 36px; border-bottom: 1px solid #f1f5f9; }
+        .pulse-modal-section:last-child { border-bottom: none; padding-bottom: 30px; }
         .pulse-modal-label { font-size: 11px; font-weight: 700; letter-spacing: 0.6px;
             color: #64748b; text-transform: uppercase; margin-bottom: 8px; }
         .pulse-modal-summary { font-size: 14px; line-height: 1.55; color: #1e293b; }
@@ -5682,41 +5692,53 @@ async function renderInsightsPanel(data, previousData, force) {
         var themes = (data && data.themes) || [];
         if (themes.length === 0) return;
 
-        // Define gradients + filters once per render — gives bubbles a real "soap-bubble" look
+        // Define gradients + filters once per render — soap-bubble look with multi-stop
+        // gradient (white core, color body, deeper rim) for a real "shiny bubble" feel.
         var defs = svg.append('defs');
         themes.forEach(function(t) {
             var color = SENTIMENT_COLORS[t.sentiment] || SENTIMENT_COLORS.mixed;
             var grad = defs.append('radialGradient')
                 .attr('id', 'pulseGrad-' + t.id)
-                .attr('cx', '35%').attr('cy', '30%')
-                .attr('r', '70%');
-            grad.append('stop').attr('offset', '0%').attr('stop-color', '#ffffff').attr('stop-opacity', 0.55);
-            grad.append('stop').attr('offset', '40%').attr('stop-color', color).attr('stop-opacity', 0.45);
-            grad.append('stop').attr('offset', '100%').attr('stop-color', color).attr('stop-opacity', 0.78);
+                .attr('cx', '32%').attr('cy', '28%')
+                .attr('r', '78%');
+            grad.append('stop').attr('offset', '0%').attr('stop-color', '#ffffff').attr('stop-opacity', 0.85);
+            grad.append('stop').attr('offset', '18%').attr('stop-color', '#ffffff').attr('stop-opacity', 0.45);
+            grad.append('stop').attr('offset', '55%').attr('stop-color', color).attr('stop-opacity', 0.55);
+            grad.append('stop').attr('offset', '88%').attr('stop-color', color).attr('stop-opacity', 0.82);
+            grad.append('stop').attr('offset', '100%').attr('stop-color', color).attr('stop-opacity', 0.95);
         });
-        // Soft glow for hover
-        var glow = defs.append('filter').attr('id', 'pulseGlow').attr('x', '-50%').attr('y', '-50%').attr('width', '200%').attr('height', '200%');
-        glow.append('feGaussianBlur').attr('stdDeviation', 6).attr('result', 'blur');
+        // Soft outer glow for hover state
+        var glow = defs.append('filter').attr('id', 'pulseGlow').attr('x', '-60%').attr('y', '-60%').attr('width', '220%').attr('height', '220%');
+        glow.append('feGaussianBlur').attr('stdDeviation', 8).attr('result', 'blur');
         var feMerge = glow.append('feMerge');
         feMerge.append('feMergeNode').attr('in', 'blur');
         feMerge.append('feMergeNode').attr('in', 'SourceGraphic');
+        // Drop-shadow filter for subtle depth at rest
+        var dropShadow = defs.append('filter').attr('id', 'pulseDrop').attr('x', '-30%').attr('y', '-30%').attr('width', '160%').attr('height', '160%');
+        dropShadow.append('feGaussianBlur').attr('in', 'SourceAlpha').attr('stdDeviation', 4);
+        dropShadow.append('feOffset').attr('dx', 0).attr('dy', 4).attr('result', 'offsetblur');
+        dropShadow.append('feComponentTransfer').append('feFuncA').attr('type', 'linear').attr('slope', 0.32);
+        var fm = dropShadow.append('feMerge');
+        fm.append('feMergeNode');
+        fm.append('feMergeNode').attr('in', 'SourceGraphic');
 
-        // All bubbles roughly the same size — slight variance keeps it organic.
-        // No volume scaling.
-        var BASE_R = 72;
+        // Three size tiers (small / medium / large) assigned by hashing theme id
+        // for deterministic but varied-looking bubbles. NOT data-driven.
+        var SIZE_TIERS = [62, 78, 95];
+        function hashId(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
         var nodes = themes.map(function(t, i) {
-            // Tiny per-theme variance (deterministic) for organic feel without scaling by metric
-            var variance = ((i * 37) % 12) - 6; // -6..+5
+            var tier = SIZE_TIERS[hashId(t.id) % SIZE_TIERS.length];
+            // Tiny extra organic jitter
+            var jitter = ((i * 37) % 8) - 4;
             return {
                 id: t.id,
                 label: t.label,
                 postCount: t.postCount || 0,
                 sentiment: t.sentiment || 'mixed',
                 color: SENTIMENT_COLORS[t.sentiment] || SENTIMENT_COLORS.mixed,
-                r: BASE_R + variance,
-                baseR: BASE_R + variance,
+                r: tier + jitter,
+                baseR: tier + jitter,
                 theme: t,
-                // Per-node sinusoidal drift offsets for organic floating motion
                 driftSeedX: Math.random() * Math.PI * 2,
                 driftSeedY: Math.random() * Math.PI * 2,
                 driftSpeed: 0.0008 + Math.random() * 0.0006
@@ -5757,7 +5779,22 @@ async function renderInsightsPanel(data, previousData, force) {
             .append('g')
             .attr('class', 'pulse-node')
             .style('cursor', 'pointer')
-            .on('click', function(event, d) { openPulseModal(d.theme); })
+            .on('click', function(event, d) {
+                // Set bloom origin from the click point (relative to viewport) so the
+                // modal expands out of where the bubble was clicked.
+                var modal = document.getElementById('pulseModal');
+                if (modal) {
+                    var card = modal.querySelector('.pulse-modal-card');
+                    if (card) {
+                        var rect = modal.getBoundingClientRect();
+                        var bx = ((event.clientX - rect.left) / rect.width) * 100;
+                        var by = ((event.clientY - rect.top) / rect.height) * 100;
+                        card.style.setProperty('--bloom-x', bx + '%');
+                        card.style.setProperty('--bloom-y', by + '%');
+                    }
+                }
+                openPulseModal(d.theme);
+            })
             .on('mouseenter', function(event, d) {
                 d.hovered = true;
                 d3.select(this).select('circle')
@@ -5783,29 +5820,56 @@ async function renderInsightsPanel(data, previousData, force) {
                     d.fx = null; d.fy = null;
                 }));
 
-        // Bubble — soap-bubble look: radial gradient + thin highlight ring + specular highlight
+        // Bubble body — radial gradient + soft drop shadow at rest
         node.append('circle')
             .attr('class', 'pulse-bubble')
             .attr('r', function(d) { return d.r; })
             .attr('fill', function(d) { return 'url(#pulseGrad-' + d.id + ')'; })
-            .attr('stroke', function(d) {
-                // Slightly tinted bubble outline — pulled from sentiment color
-                return d.color;
-            })
-            .attr('stroke-opacity', 0.5)
-            .attr('stroke-width', 1.5);
+            .attr('stroke', function(d) { return d.color; })
+            .attr('stroke-opacity', 0.55)
+            .attr('stroke-width', 1.5)
+            .attr('filter', 'url(#pulseDrop)');
 
-        // Specular highlight (the little white "glint" on a bubble)
+        // Inner rim highlight — gives the surface curvature
+        node.append('circle')
+            .attr('class', 'pulse-bubble-rim')
+            .attr('r', function(d) { return d.r - 2; })
+            .attr('fill', 'none')
+            .attr('stroke', '#ffffff')
+            .attr('stroke-opacity', 0.45)
+            .attr('stroke-width', 1.2)
+            .attr('pointer-events', 'none');
+
+        // Primary specular highlight (large soft glint, upper-left)
         node.append('ellipse')
             .attr('class', 'pulse-bubble-glint')
-            .attr('cx', function(d) { return -d.r * 0.32; })
-            .attr('cy', function(d) { return -d.r * 0.42; })
-            .attr('rx', function(d) { return d.r * 0.28; })
-            .attr('ry', function(d) { return d.r * 0.16; })
+            .attr('cx', function(d) { return -d.r * 0.30; })
+            .attr('cy', function(d) { return -d.r * 0.40; })
+            .attr('rx', function(d) { return d.r * 0.34; })
+            .attr('ry', function(d) { return d.r * 0.18; })
             .attr('fill', '#fff')
-            .attr('fill-opacity', 0.45)
+            .attr('fill-opacity', 0.60)
             .attr('pointer-events', 'none')
-            .attr('transform', 'rotate(-25)');
+            .attr('transform', 'rotate(-22)');
+
+        // Secondary tiny highlight (the "second shine" for extra realism)
+        node.append('circle')
+            .attr('class', 'pulse-bubble-spark')
+            .attr('cx', function(d) { return -d.r * 0.18; })
+            .attr('cy', function(d) { return -d.r * 0.55; })
+            .attr('r', function(d) { return d.r * 0.06; })
+            .attr('fill', '#fff')
+            .attr('fill-opacity', 0.85)
+            .attr('pointer-events', 'none');
+
+        // Dark backing under label for contrast — semi-transparent ellipse behind text
+        node.append('ellipse')
+            .attr('class', 'pulse-bubble-textbg')
+            .attr('rx', function(d) { return d.r * 0.78; })
+            .attr('ry', function(d) { return d.r * 0.34; })
+            .attr('fill', '#0f172a')
+            .attr('fill-opacity', 0.22)
+            .attr('pointer-events', 'none');
 
         // Wrap label across multiple lines if needed
         node.each(function(d) {
@@ -5874,13 +5938,11 @@ async function renderInsightsPanel(data, previousData, force) {
 
         document.getElementById('pulseModalTitle').textContent = theme.label;
         document.getElementById('pulseModalCounts').textContent =
-            (theme.postCount || 0) + ' posts analyzed' +
-            ' · Reddit: ' + (theme.redditCount || 0) +
-            ' · Bluesky: ' + (theme.blueskyCount || 0);
+            (theme.postCount || 0) + ' posts analyzed';
 
         var sentEl = document.getElementById('pulseModalSentiment');
         sentEl.className = 'pulse-modal-sentiment ' + (theme.sentiment || 'low_signal');
-        sentEl.textContent = SENTIMENT_LABELS[theme.sentiment] || 'Mixed';
+        sentEl.textContent = SENTIMENT_LABELS[theme.sentiment] || 'Neutral';
 
         document.getElementById('pulseModalSummary').textContent = theme.summary || 'No summary available.';
 
@@ -5968,6 +6030,14 @@ async function renderInsightsPanel(data, previousData, force) {
             });
         }
 
+        // Re-trigger the bloom animation each time the modal opens
+        var card = modal.querySelector('.pulse-modal-card');
+        if (card) {
+            card.style.animation = 'none';
+            // force reflow
+            void card.offsetWidth;
+            card.style.animation = '';
+        }
         modal.style.display = 'flex';
         if (_pulseState.data && _pulseState.data.weekId) markSeen(_pulseState.data.weekId);
     }
