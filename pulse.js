@@ -64,13 +64,6 @@ const PULSE_THEMES = [
     subreddits: ['RenewableEnergy', 'energy', 'climate', 'climatechange', 'sustainability']
   },
   {
-    id: 'reliability',
-    label: 'Reliability',
-    color: '#dc2626',
-    keywords: ['power outage', 'grid reliability', 'blackout', 'power restored', 'lost power', 'power restoration', 'grid'],
-    subreddits: ['energy', 'wisconsin', 'preppers', 'electricians', 'PowerSystemsEE']
-  },
-  {
     id: 'electrification',
     label: 'Electrification',
     color: '#0ea5e9',
@@ -85,26 +78,12 @@ const PULSE_THEMES = [
     subreddits: ['solar', 'SolarDIY', 'RenewableEnergy', 'energy']
   },
   {
-    id: 'tou_rates',
-    label: 'Time-of-Use Rates & Rate Cases',
-    color: '#a855f7',
-    keywords: ['time of use', 'TOU rate', 'rate case', 'rate hike', 'rate increase', 'utility rate', 'PSC ruling'],
-    subreddits: ['energy', 'electricvehicles', 'personalfinance', 'wisconsin']
-  },
-  {
     id: 'winter_heating',
     label: 'Winter Heating Costs',
     color: '#3b82f6',
     keywords: ['heating bill', 'winter heating', 'natural gas heating', 'furnace cost', 'gas bill winter', 'cold weather bill'],
     subreddits: ['Frugal', 'wisconsin', 'minnesota', 'HomeImprovement', 'hvacadvice', 'heatpumps']
   },
-  {
-    id: 'gas_bans',
-    label: 'Natural Gas & Gas Bans',
-    color: '#ea580c',
-    keywords: ['natural gas ban', 'gas stove ban', 'gas hookup ban', 'induction vs gas', 'electrification mandate', 'natural gas phaseout'],
-    subreddits: ['energy', 'climate', 'heatpumps', 'electricvehicles']
-  }
 ];
 
 // ============================================================
@@ -238,52 +217,11 @@ async function fetchTopCommentsForPost(post, limit) {
 }
 
 // ============================================================
-// Bluesky — public search, no auth
-// ============================================================
-async function fetchBlueskyForTheme(theme) {
-  const items = [];
-  const seen = new Set();
-  for (const kw of theme.keywords.slice(0, 2)) {
-    try {
-      const url = 'https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts?q=' +
-                  encodeURIComponent('"' + kw + '"') + '&limit=15&sort=latest';
-      const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
-      if (!resp.ok) continue;
-      const data = await resp.json();
-      const posts = data.posts || [];
-      for (const p of posts) {
-        if (!p || !p.uri || seen.has(p.uri)) continue;
-        const text = (p.record && p.record.text) || '';
-        if (!text || text.length < 30) continue;
-        seen.add(p.uri);
-        const handle = p.author && p.author.handle;
-        const rkey = p.uri.split('/').pop();
-        items.push({
-          source: 'bluesky',
-          id: p.uri,
-          title: text.slice(0, 140),
-          selftext: text,
-          author: handle || '',
-          score: (p.likeCount || 0) + (p.repostCount || 0),
-          comments: p.replyCount || 0,
-          createdAt: (p.record && p.record.createdAt) || new Date().toISOString(),
-          url: handle && rkey ? 'https://bsky.app/profile/' + handle + '/post/' + rkey : ''
-        });
-      }
-    } catch (e) {
-      console.warn(' [PULSE] Bluesky fetch error for ' + theme.id + ':', e.message);
-    }
-  }
-  items.sort((a, b) => b.score - a.score);
-  return items.slice(0, 10);
-}
-
-// ============================================================
 // Summarization — Claude Haiku primary, Gemini fallback
 // ============================================================
 const PULSE_SYSTEM_PROMPT =
   'You are an audience-research analyst at Madison Gas and Electric (MGE), a Wisconsin utility. ' +
-  'You read recent public Reddit and Bluesky commentary — both the original posts AND the top user replies — ' +
+  'You read recent public Reddit commentary — both the original posts AND the top user replies — ' +
   'and produce a tight, neutral, editorial summary for the marketing and communications team. Hard rules: ' +
   '(1) Ground every claim in the actual posts and comments provided — do not invent quotes or stats. ' +
   '(2) Lean heavily on the COMMENTS (user replies) for sentiment and recurring concerns, not just the post titles. ' +
@@ -314,7 +252,7 @@ function buildThemePrompt(theme, posts) {
   }).join('\n\n');
 
   return 'Theme: ' + theme.label + '\n\n' +
-         'Recent posts and the actual user commentary on them (Reddit + Bluesky, last 30 days):\n\n' +
+         'Recent posts and the actual user commentary on them (Reddit, last 30 days):\n\n' +
          blocks + '\n\n' +
          'Return strict JSON in exactly this shape — no other text:\n' +
          '{\n' +
@@ -443,17 +381,15 @@ async function generatePulse() {
     try {
       // 1. Reddit posts (subreddit-restricted, single combined OR search)
       const redditPosts = await fetchRedditPostsForTheme(theme);
-      // 2. Bluesky posts in parallel — actually serial here for rate-limiting friendliness
-      const blueskyPosts = await fetchBlueskyForTheme(theme);
 
-      // 3. Top 8 by combined engagement
-      const allPosts = [...redditPosts, ...blueskyPosts]
+      // 2. Top 8 by combined engagement
+      const allPosts = redditPosts
         .sort((a, b) => (b.score + b.comments) - (a.score + a.comments));
       const top8 = allPosts.slice(0, 8);
 
-      // 4. Fetch top comments for each
+      // 3. Fetch top comments for each
       for (const p of top8) {
-        if (p.source === 'reddit' && p.permalink) {
+        if (p.permalink) {
           p.topComments = await fetchTopCommentsForPost(p, 5);
           await delay(REDDIT_DELAY_MS);
         }
@@ -486,7 +422,7 @@ async function generatePulse() {
         color: theme.color,
         postCount: allPosts.length,
         redditCount: redditPosts.length,
-        blueskyCount: blueskyPosts.length,
+        blueskyCount: 0,
         commentsAnalyzed: top8.reduce((acc, p) => acc + ((p.topComments || []).length), 0),
         sentiment: ai.sentiment,
         summary: ai.summary,
