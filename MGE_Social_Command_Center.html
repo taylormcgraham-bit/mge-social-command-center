@@ -1305,10 +1305,59 @@
 
         .pulse-loading {
             position: absolute; inset: 0; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; gap: 8px; text-align: center; padding: 0 24px;
+            align-items: center; justify-content: center; gap: 14px; text-align: center; padding: 0 24px;
         }
-        .pulse-loading .big { font-size: 16px; font-weight: 600; color: #0f172a; }
-        .pulse-loading .small { font-size: 13px; color: #64748b; max-width: 480px; }
+        .pulse-loading .big { font-size: 17px; font-weight: 600; color: #0f172a; letter-spacing: -0.01em; }
+        .pulse-loading .small { font-size: 13px; color: #64748b; max-width: 520px; line-height: 1.5; }
+
+        /* Pulse loader — concentric expanding rings with breathing core */
+        .pulse-loader-svg { width: 160px; height: 160px; margin-bottom: 6px; overflow: visible; }
+        .pulse-loader-ring {
+            fill: none;
+            stroke: #6366f1;
+            stroke-width: 2;
+            opacity: 0;
+            transform-origin: 80px 80px;
+            animation: pulseLoaderRing 2.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+        }
+        .pulse-loader-ring-2 { animation-delay: 0.65s; stroke: #8b5cf6; }
+        .pulse-loader-ring-3 { animation-delay: 1.30s; stroke: #ec4899; }
+        .pulse-loader-ring-4 { animation-delay: 1.95s; stroke: #14b8a6; }
+        @keyframes pulseLoaderRing {
+            0%   { transform: scale(0.35); opacity: 0; stroke-width: 5; }
+            15%  { opacity: 0.85; }
+            100% { transform: scale(3.6);  opacity: 0; stroke-width: 1; }
+        }
+        .pulse-loader-core {
+            fill: url(#pulseLoaderCoreGrad);
+            transform-origin: 80px 80px;
+            animation: pulseLoaderCore 1.4s ease-in-out infinite;
+            filter: drop-shadow(0 0 12px rgba(99, 102, 241, 0.55));
+        }
+        @keyframes pulseLoaderCore {
+            0%, 100% { transform: scale(1); }
+            50%      { transform: scale(1.18); }
+        }
+        .pulse-loader-bar {
+            position: relative;
+            width: 240px;
+            height: 4px;
+            background: rgba(99, 102, 241, 0.12);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        .pulse-loader-bar::after {
+            content: '';
+            position: absolute; top: 0; left: -40%;
+            height: 100%; width: 40%;
+            background: linear-gradient(90deg, transparent, #6366f1 50%, transparent);
+            animation: pulseLoaderBar 1.8s ease-in-out infinite;
+        }
+        @keyframes pulseLoaderBar {
+            0%   { left: -40%; }
+            100% { left: 100%; }
+        }
 
         /* Pulse modal */
         .pulse-modal {
@@ -1349,33 +1398,117 @@
             z-index: 2;
         }
         .pulse-modal-close:hover { background: #e2e8f0; color: #0f172a; transform: scale(1.06); }
-        .pulse-modal-header { padding: 28px 36px 18px; border-bottom: 1px solid #e2e8f0; }
+        /* Header banner: sentiment-tinted gradient, large hero feel */
+        .pulse-modal-header {
+            position: relative;
+            padding: 32px 38px 22px;
+            border-bottom: 1px solid #e2e8f0;
+            overflow: hidden;
+        }
+        .pulse-modal-header::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(135deg,
+                var(--sentiment-tint, rgba(99,102,241,0.10)) 0%,
+                var(--sentiment-tint-2, rgba(139,92,246,0.04)) 100%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .pulse-modal-header > * { position: relative; z-index: 1; }
+        .pulse-modal-header.sentiment-positive  { --sentiment-tint: rgba(22,163,74,0.16);  --sentiment-tint-2: rgba(22,163,74,0.04); }
+        .pulse-modal-header.sentiment-negative  { --sentiment-tint: rgba(220,38,38,0.16);  --sentiment-tint-2: rgba(220,38,38,0.04); }
+        .pulse-modal-header.sentiment-mixed,
+        .pulse-modal-header.sentiment-low_signal { --sentiment-tint: rgba(99,102,241,0.10); --sentiment-tint-2: rgba(139,92,246,0.04); }
+
+        /* Big bold sentiment pill */
         .pulse-modal-sentiment {
-            display: inline-block; padding: 3px 10px; border-radius: 12px;
-            font-size: 11px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase;
-            color: #fff; margin-bottom: 8px;
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 14px; border-radius: 999px;
+            font-size: 12px; font-weight: 800; letter-spacing: 0.7px; text-transform: uppercase;
+            color: #fff; margin-bottom: 12px;
+            box-shadow: 0 4px 14px -4px currentColor;
         }
-        .pulse-modal-sentiment.positive { background: #16a34a; }
-        .pulse-modal-sentiment.mixed    { background: #94a3b8; }
-        .pulse-modal-sentiment.negative { background: #dc2626; }
-        .pulse-modal-sentiment.low_signal { background: #94a3b8; }
-        .pulse-modal-title { font-size: 26px; font-weight: 700; color: #0f172a; letter-spacing: -0.01em; }
-        .pulse-modal-counts { font-size: 12px; color: #64748b; margin-top: 6px; }
-        .pulse-modal-section { padding: 22px 36px; border-bottom: 1px solid #f1f5f9; }
-        .pulse-modal-section:last-child { border-bottom: none; padding-bottom: 30px; }
-        .pulse-modal-label { font-size: 11px; font-weight: 700; letter-spacing: 0.6px;
-            color: #64748b; text-transform: uppercase; margin-bottom: 8px; }
-        .pulse-modal-summary { font-size: 14px; line-height: 1.55; color: #1e293b; }
+        .pulse-modal-sentiment::before {
+            content: ''; width: 8px; height: 8px; border-radius: 50%; background: #fff;
+            box-shadow: 0 0 0 2px rgba(255,255,255,0.35);
+        }
+        .pulse-modal-sentiment.positive   { background: linear-gradient(135deg, #16a34a, #22c55e); }
+        .pulse-modal-sentiment.mixed      { background: linear-gradient(135deg, #64748b, #94a3b8); }
+        .pulse-modal-sentiment.negative   { background: linear-gradient(135deg, #b91c1c, #ef4444); }
+        .pulse-modal-sentiment.low_signal { background: linear-gradient(135deg, #64748b, #94a3b8); }
+
+        .pulse-modal-title {
+            font-size: 30px; font-weight: 800; color: #0f172a;
+            letter-spacing: -0.02em; line-height: 1.15;
+        }
+        .pulse-modal-counts {
+            font-size: 12px; color: #64748b; margin-top: 8px;
+            font-weight: 500; letter-spacing: 0.2px;
+        }
+
+        /* Section padding + cascading reveal */
+        .pulse-modal-section {
+            padding: 24px 38px;
+            border-bottom: 1px solid #f1f5f9;
+            opacity: 0;
+            transform: translateY(8px);
+            animation: pulseSectionReveal 0.5s ease-out forwards;
+        }
+        .pulse-modal-section:nth-of-type(1) { animation-delay: 0.18s; }
+        .pulse-modal-section:nth-of-type(2) { animation-delay: 0.26s; }
+        .pulse-modal-section:nth-of-type(3) { animation-delay: 0.34s; }
+        .pulse-modal-section:nth-of-type(4) { animation-delay: 0.42s; }
+        .pulse-modal-section:last-child { border-bottom: none; padding-bottom: 32px; }
+        @keyframes pulseSectionReveal {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Section label with accent bar */
+        .pulse-modal-label {
+            font-size: 11px; font-weight: 800; letter-spacing: 0.8px;
+            color: #475569; text-transform: uppercase; margin-bottom: 12px;
+            padding-left: 10px;
+            border-left: 3px solid #6366f1;
+        }
+
+        .pulse-modal-summary {
+            font-size: 15.5px; line-height: 1.65; color: #1e293b;
+            font-weight: 400;
+        }
+
+        /* Pull-quote — editorial style with big quotation glyph */
         .pulse-modal-quote {
-            font-size: 13px; line-height: 1.5; color: #334155;
-            font-style: italic; padding: 10px 14px;
-            border-left: 3px solid #cbd5e1; background: #f8fafc; border-radius: 0 6px 6px 0;
+            position: relative;
+            font-size: 15px; line-height: 1.55; color: #334155;
+            font-style: italic; font-weight: 500;
+            padding: 18px 22px 18px 56px;
+            background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
         }
-        .pulse-modal-themes { display: flex; flex-wrap: wrap; gap: 6px; }
+        .pulse-modal-quote::before {
+            content: '\201C';
+            position: absolute; top: -8px; left: 12px;
+            font-size: 64px; font-family: Georgia, serif;
+            color: #c7d2fe;
+            line-height: 1; font-style: normal;
+            pointer-events: none;
+        }
+
+        .pulse-modal-themes { display: flex; flex-wrap: wrap; gap: 8px; }
         .pulse-modal-theme-chip {
-            display: inline-block; padding: 4px 10px;
-            background: #eef2ff; color: #3730a3;
-            border-radius: 12px; font-size: 12px; font-weight: 500;
+            display: inline-block; padding: 6px 14px;
+            background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+            color: #3730a3;
+            border: 1px solid #c7d2fe;
+            border-radius: 999px;
+            font-size: 12px; font-weight: 600;
+            letter-spacing: 0.1px;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .pulse-modal-theme-chip:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px -4px rgba(99,102,241,0.4);
         }
         .pulse-modal-sources { display: flex; flex-direction: column; gap: 8px; }
         .pulse-modal-source {
@@ -2168,17 +2301,26 @@
             </div>
         </div>
 
-        <div class="pulse-legend">
-            <span class="pulse-legend-item"><span class="pulse-dot" style="background:#16a34a"></span>Positive</span>
-            <span class="pulse-legend-item"><span class="pulse-dot" style="background:#94a3b8"></span>Neutral</span>
-            <span class="pulse-legend-item"><span class="pulse-dot" style="background:#dc2626"></span>Negative</span>
-        </div>
-
         <div class="pulse-bubbles-container" id="pulseBubblesContainer">
             <svg id="pulseBubblesSvg" width="100%" height="600"></svg>
             <div class="pulse-loading" id="pulseLoading">
-                <div class="big">Generating this week's audience pulse...</div>
-                <div class="small">First run takes about 60 seconds. Future loads are instant — we only regenerate once a week.</div>
+                <svg class="pulse-loader-svg" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <defs>
+                        <radialGradient id="pulseLoaderCoreGrad" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%"   stop-color="#a5b4fc" />
+                            <stop offset="55%"  stop-color="#6366f1" />
+                            <stop offset="100%" stop-color="#4338ca" />
+                        </radialGradient>
+                    </defs>
+                    <circle class="pulse-loader-ring pulse-loader-ring-1" cx="80" cy="80" r="20"></circle>
+                    <circle class="pulse-loader-ring pulse-loader-ring-2" cx="80" cy="80" r="20"></circle>
+                    <circle class="pulse-loader-ring pulse-loader-ring-3" cx="80" cy="80" r="20"></circle>
+                    <circle class="pulse-loader-ring pulse-loader-ring-4" cx="80" cy="80" r="20"></circle>
+                    <circle class="pulse-loader-core" cx="80" cy="80" r="14"></circle>
+                </svg>
+                <div class="big">Listening to the audience...</div>
+                <div class="small">Scanning Reddit + summarizing with Claude — this takes about 6 minutes.</div>
+                <div class="pulse-loader-bar" aria-hidden="true"></div>
             </div>
         </div>
     </div>
@@ -5749,27 +5891,35 @@ async function renderInsightsPanel(data, previousData, force) {
         });
         // Soft outer glow for hover state
         var glow = defs.append('filter').attr('id', 'pulseGlow').attr('x', '-60%').attr('y', '-60%').attr('width', '220%').attr('height', '220%');
-        glow.append('feGaussianBlur').attr('stdDeviation', 8).attr('result', 'blur');
+        glow.append('feGaussianBlur').attr('stdDeviation', 10).attr('result', 'blur');
         var feMerge = glow.append('feMerge');
         feMerge.append('feMergeNode').attr('in', 'blur');
         feMerge.append('feMergeNode').attr('in', 'SourceGraphic');
         // Drop-shadow filter for subtle depth at rest
         var dropShadow = defs.append('filter').attr('id', 'pulseDrop').attr('x', '-30%').attr('y', '-30%').attr('width', '160%').attr('height', '160%');
-        dropShadow.append('feGaussianBlur').attr('in', 'SourceAlpha').attr('stdDeviation', 4);
-        dropShadow.append('feOffset').attr('dx', 0).attr('dy', 4).attr('result', 'offsetblur');
-        dropShadow.append('feComponentTransfer').append('feFuncA').attr('type', 'linear').attr('slope', 0.32);
+        dropShadow.append('feGaussianBlur').attr('in', 'SourceAlpha').attr('stdDeviation', 5);
+        dropShadow.append('feOffset').attr('dx', 0).attr('dy', 5).attr('result', 'offsetblur');
+        dropShadow.append('feComponentTransfer').append('feFuncA').attr('type', 'linear').attr('slope', 0.36);
         var fm = dropShadow.append('feMerge');
         fm.append('feMergeNode');
         fm.append('feMergeNode').attr('in', 'SourceGraphic');
+        // Per-theme sentiment-colored glow halo (sits behind the bubble)
+        themes.forEach(function(t) {
+            var color = SENTIMENT_COLORS[t.sentiment] || SENTIMENT_COLORS.mixed;
+            var hGrad = defs.append('radialGradient')
+                .attr('id', 'pulseHalo-' + t.id)
+                .attr('cx', '50%').attr('cy', '50%').attr('r', '50%');
+            hGrad.append('stop').attr('offset', '40%').attr('stop-color', color).attr('stop-opacity', 0.32);
+            hGrad.append('stop').attr('offset', '70%').attr('stop-color', color).attr('stop-opacity', 0.10);
+            hGrad.append('stop').attr('offset', '100%').attr('stop-color', color).attr('stop-opacity', 0);
+        });
 
-        // Three size tiers (small / medium / large) assigned by hashing theme id
-        // for deterministic but varied-looking bubbles. NOT data-driven.
-        var SIZE_TIERS = [62, 78, 95];
+        // Three size tiers (small / medium / large) — bigger overall + bumped variance
+        var SIZE_TIERS = [88, 108, 130];
         function hashId(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
         var nodes = themes.map(function(t, i) {
             var tier = SIZE_TIERS[hashId(t.id) % SIZE_TIERS.length];
-            // Tiny extra organic jitter
-            var jitter = ((i * 37) % 8) - 4;
+            var jitter = ((i * 37) % 10) - 5;
             return {
                 id: t.id,
                 label: t.label,
@@ -5781,7 +5931,10 @@ async function renderInsightsPanel(data, previousData, force) {
                 theme: t,
                 driftSeedX: Math.random() * Math.PI * 2,
                 driftSeedY: Math.random() * Math.PI * 2,
-                driftSpeed: 0.0008 + Math.random() * 0.0006
+                driftSpeed: 0.0008 + Math.random() * 0.0006,
+                // Per-bubble breathing offset so they don't all pulse in sync
+                breathSeed: Math.random() * Math.PI * 2,
+                breathSpeed: 0.0009 + Math.random() * 0.0004
             };
         });
 
@@ -5837,17 +5990,17 @@ async function renderInsightsPanel(data, previousData, force) {
             })
             .on('mouseenter', function(event, d) {
                 d.hovered = true;
-                d3.select(this).select('circle')
-                    .transition().duration(220)
-                    .attr('r', d.baseR * 1.12)
-                    .attr('filter', 'url(#pulseGlow)');
+                // Tick handler scales the whole node; here we just upgrade the filter
+                // and slightly intensify the glow halo behind it.
+                var sel = d3.select(this);
+                sel.select('circle.pulse-bubble').attr('filter', 'url(#pulseGlow)');
+                sel.select('circle.pulse-bubble-halo').transition().duration(280).attr('r', d.r * 1.95);
             })
             .on('mouseleave', function(event, d) {
                 d.hovered = false;
-                d3.select(this).select('circle')
-                    .transition().duration(280)
-                    .attr('r', d.baseR)
-                    .attr('filter', null);
+                var sel = d3.select(this);
+                sel.select('circle.pulse-bubble').attr('filter', 'url(#pulseDrop)');
+                sel.select('circle.pulse-bubble-halo').transition().duration(360).attr('r', d.r * 1.55);
             })
             .call(d3.drag()
                 .on('start', function(event, d) {
@@ -5860,55 +6013,63 @@ async function renderInsightsPanel(data, previousData, force) {
                     d.fx = null; d.fy = null;
                 }));
 
-        // Bubble body — radial gradient + soft drop shadow at rest
+        // 0. Outer glow halo — sits BEHIND the bubble for sentiment-colored aura
+        node.append('circle')
+            .attr('class', 'pulse-bubble-halo')
+            .attr('r', function(d) { return d.r * 1.55; })
+            .attr('fill', function(d) { return 'url(#pulseHalo-' + d.id + ')'; })
+            .attr('pointer-events', 'none');
+
+        // 1. Bubble body — radial gradient + soft drop shadow
         node.append('circle')
             .attr('class', 'pulse-bubble')
             .attr('r', function(d) { return d.r; })
             .attr('fill', function(d) { return 'url(#pulseGrad-' + d.id + ')'; })
             .attr('stroke', function(d) { return d.color; })
-            .attr('stroke-opacity', 0.55)
-            .attr('stroke-width', 1.5)
+            .attr('stroke-opacity', 0.6)
+            .attr('stroke-width', 1.75)
             .attr('filter', 'url(#pulseDrop)');
 
-        // Inner rim highlight — gives the surface curvature
+        // 2. Inner rim highlight (surface curvature)
         node.append('circle')
             .attr('class', 'pulse-bubble-rim')
             .attr('r', function(d) { return d.r - 2; })
             .attr('fill', 'none')
             .attr('stroke', '#ffffff')
-            .attr('stroke-opacity', 0.45)
-            .attr('stroke-width', 1.2)
+            .attr('stroke-opacity', 0.55)
+            .attr('stroke-width', 1.4)
             .attr('pointer-events', 'none');
 
-        // Primary specular highlight (large soft glint, upper-left)
+        // 3. Big primary glint (upper-left, soft)
         node.append('ellipse')
             .attr('class', 'pulse-bubble-glint')
-            .attr('cx', function(d) { return -d.r * 0.30; })
-            .attr('cy', function(d) { return -d.r * 0.40; })
-            .attr('rx', function(d) { return d.r * 0.34; })
-            .attr('ry', function(d) { return d.r * 0.18; })
+            .attr('cx', function(d) { return -d.r * 0.28; })
+            .attr('cy', function(d) { return -d.r * 0.42; })
+            .attr('rx', function(d) { return d.r * 0.38; })
+            .attr('ry', function(d) { return d.r * 0.22; })
             .attr('fill', '#fff')
-            .attr('fill-opacity', 0.60)
+            .attr('fill-opacity', 0.70)
             .attr('pointer-events', 'none')
-            .attr('transform', 'rotate(-22)');
+            .attr('transform', 'rotate(-20)');
 
-        // Secondary tiny highlight (the "second shine" for extra realism)
+        // 4. Tiny bright spark (the "second shine")
         node.append('circle')
             .attr('class', 'pulse-bubble-spark')
-            .attr('cx', function(d) { return -d.r * 0.18; })
-            .attr('cy', function(d) { return -d.r * 0.55; })
-            .attr('r', function(d) { return d.r * 0.06; })
+            .attr('cx', function(d) { return -d.r * 0.16; })
+            .attr('cy', function(d) { return -d.r * 0.58; })
+            .attr('r', function(d) { return d.r * 0.07; })
             .attr('fill', '#fff')
-            .attr('fill-opacity', 0.85)
+            .attr('fill-opacity', 0.95)
             .attr('pointer-events', 'none');
 
-        // Dark backing under label for contrast — semi-transparent ellipse behind text
-        node.append('ellipse')
-            .attr('class', 'pulse-bubble-textbg')
-            .attr('rx', function(d) { return d.r * 0.78; })
-            .attr('ry', function(d) { return d.r * 0.34; })
-            .attr('fill', '#0f172a')
-            .attr('fill-opacity', 0.22)
+        // 5. Even tinier accent dot opposite the main glint, for sparkle realism
+        node.append('circle')
+            .attr('class', 'pulse-bubble-microspark')
+            .attr('cx', function(d) { return d.r * 0.22; })
+            .attr('cy', function(d) { return d.r * 0.18; })
+            .attr('r', function(d) { return d.r * 0.04; })
+            .attr('fill', '#fff')
+            .attr('fill-opacity', 0.55)
             .attr('pointer-events', 'none');
 
         // Wrap label across multiple lines if needed
@@ -5947,28 +6108,34 @@ async function renderInsightsPanel(data, previousData, force) {
         simulation.on('tick', function() {
             var t = Date.now();
             nodes.forEach(function(d) {
-                // Add gentle sinusoidal drift on top of force-layout motion
                 if (d.fx == null && d.fy == null) {
                     d.vx = (d.vx || 0) + Math.sin(t * d.driftSpeed + d.driftSeedX) * 0.06;
                     d.vy = (d.vy || 0) + Math.cos(t * d.driftSpeed + d.driftSeedY) * 0.06;
-                    // Cursor avoidance — bubbles shy away from the mouse
                     if (mousePos.active) {
                         var dx = d.x - mousePos.x;
                         var dy = d.y - mousePos.y;
                         var dist = Math.sqrt(dx*dx + dy*dy) || 1;
-                        var avoidR = d.r + 60;
+                        var avoidR = d.r + 70;
                         if (dist < avoidR) {
                             var force = (avoidR - dist) / avoidR;
-                            d.vx += (dx / dist) * force * 1.2;
-                            d.vy += (dy / dist) * force * 1.2;
+                            d.vx += (dx / dist) * force * 1.4;
+                            d.vy += (dy / dist) * force * 1.4;
                         }
                     }
                 }
-                // Keep nodes inside the bounding box
                 d.x = Math.max(d.r + 4, Math.min(width - d.r - 4, d.x));
                 d.y = Math.max(d.r + 4, Math.min(height - d.r - 4, d.y));
+                // Subtle breathing: bubbles inhale/exhale ~2% radius. Only when not hovered.
+                if (!d.hovered) {
+                    var breathScale = 1 + Math.sin(t * d.breathSpeed + d.breathSeed) * 0.022;
+                    d.currentScale = breathScale;
+                } else {
+                    d.currentScale = 1.12;
+                }
             });
-            node.attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; });
+            node.attr('transform', function(d) {
+                return 'translate(' + d.x + ',' + d.y + ') scale(' + (d.currentScale || 1) + ')';
+            });
         });
     }
 
@@ -5978,11 +6145,17 @@ async function renderInsightsPanel(data, previousData, force) {
 
         document.getElementById('pulseModalTitle').textContent = theme.label;
         document.getElementById('pulseModalCounts').textContent =
-            (theme.postCount || 0) + ' posts analyzed';
+            (theme.postCount || 0) + ' posts analyzed · ' + (theme.commentsAnalyzed || 0) + ' comments read';
 
         var sentEl = document.getElementById('pulseModalSentiment');
         sentEl.className = 'pulse-modal-sentiment ' + (theme.sentiment || 'low_signal');
         sentEl.textContent = SENTIMENT_LABELS[theme.sentiment] || 'Neutral';
+
+        // Tint the modal header based on sentiment
+        var headerEl = modal.querySelector('.pulse-modal-header');
+        if (headerEl) {
+            headerEl.className = 'pulse-modal-header sentiment-' + (theme.sentiment || 'mixed');
+        }
 
         document.getElementById('pulseModalSummary').textContent = theme.summary || 'No summary available.';
 
