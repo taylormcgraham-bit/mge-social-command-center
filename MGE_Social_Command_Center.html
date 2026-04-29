@@ -1310,33 +1310,29 @@
         .pulse-loading .big { font-size: 17px; font-weight: 600; color: #0f172a; letter-spacing: -0.01em; }
         .pulse-loading .small { font-size: 13px; color: #64748b; max-width: 520px; line-height: 1.5; }
 
-        /* Pulse loader — concentric expanding rings with breathing core */
-        .pulse-loader-svg { width: 160px; height: 160px; margin-bottom: 6px; overflow: visible; }
+        /* Pulse loader — gentle breathing orb (slow inhale/exhale, not radar) */
+        .pulse-loader-svg { width: 140px; height: 140px; margin-bottom: 6px; overflow: visible; }
         .pulse-loader-ring {
             fill: none;
             stroke: #6366f1;
-            stroke-width: 2;
-            opacity: 0;
+            stroke-width: 1.5;
             transform-origin: 80px 80px;
-            animation: pulseLoaderRing 2.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+            animation: pulseLoaderRing 4.5s ease-in-out infinite;
+            opacity: 0.5;
         }
-        .pulse-loader-ring-2 { animation-delay: 0.65s; stroke: #8b5cf6; }
-        .pulse-loader-ring-3 { animation-delay: 1.30s; stroke: #ec4899; }
-        .pulse-loader-ring-4 { animation-delay: 1.95s; stroke: #14b8a6; }
         @keyframes pulseLoaderRing {
-            0%   { transform: scale(0.35); opacity: 0; stroke-width: 5; }
-            15%  { opacity: 0.85; }
-            100% { transform: scale(3.6);  opacity: 0; stroke-width: 1; }
+            0%, 100% { transform: scale(0.95); opacity: 0.35; }
+            50%      { transform: scale(1.18); opacity: 0.6; }
         }
         .pulse-loader-core {
             fill: url(#pulseLoaderCoreGrad);
             transform-origin: 80px 80px;
-            animation: pulseLoaderCore 1.4s ease-in-out infinite;
-            filter: drop-shadow(0 0 12px rgba(99, 102, 241, 0.55));
+            animation: pulseLoaderCore 4.5s ease-in-out infinite;
+            filter: drop-shadow(0 0 14px rgba(99, 102, 241, 0.5));
         }
         @keyframes pulseLoaderCore {
             0%, 100% { transform: scale(1); }
-            50%      { transform: scale(1.18); }
+            50%      { transform: scale(1.10); }
         }
         .pulse-loader-bar {
             position: relative;
@@ -1493,6 +1489,60 @@
             color: #c7d2fe;
             line-height: 1; font-style: normal;
             pointer-events: none;
+        }
+
+        /* Likes / Pain Points dual buckets */
+        .pulse-modal-likes-pain-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+        @media (max-width: 640px) {
+            .pulse-modal-likes-pain-grid { grid-template-columns: 1fr; }
+        }
+        .pulse-modal-bucket {
+            border-radius: 12px;
+            padding: 14px 16px 16px;
+            border: 1px solid;
+        }
+        .pulse-modal-bucket-likes {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border-color: #bbf7d0;
+        }
+        .pulse-modal-bucket-pain {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            border-color: #fecaca;
+        }
+        .pulse-modal-bucket-label {
+            font-size: 12px; font-weight: 800; letter-spacing: 0.5px;
+            text-transform: uppercase; margin-bottom: 10px;
+            display: flex; align-items: center; gap: 7px;
+        }
+        .pulse-modal-bucket-likes .pulse-modal-bucket-label { color: #15803d; }
+        .pulse-modal-bucket-pain  .pulse-modal-bucket-label { color: #b91c1c; }
+        .pulse-modal-bucket-glyph {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 18px; height: 18px; border-radius: 50%;
+            font-size: 11px; font-weight: 900;
+            color: #fff;
+        }
+        .pulse-modal-bucket-likes .pulse-modal-bucket-glyph { background: #16a34a; }
+        .pulse-modal-bucket-pain  .pulse-modal-bucket-glyph { background: #dc2626; }
+        .pulse-modal-bucket-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .pulse-modal-bucket-chip {
+            display: inline-block; padding: 5px 11px;
+            border-radius: 999px;
+            font-size: 12.5px; font-weight: 600;
+            background: #fff;
+        }
+        .pulse-modal-bucket-likes .pulse-modal-bucket-chip {
+            color: #166534; border: 1px solid #86efac;
+        }
+        .pulse-modal-bucket-pain .pulse-modal-bucket-chip {
+            color: #991b1b; border: 1px solid #fca5a5;
+        }
+        .pulse-modal-bucket-empty {
+            font-size: 12px; color: #94a3b8; font-style: italic;
         }
 
         .pulse-modal-themes { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -2312,11 +2362,8 @@
                             <stop offset="100%" stop-color="#4338ca" />
                         </radialGradient>
                     </defs>
-                    <circle class="pulse-loader-ring pulse-loader-ring-1" cx="80" cy="80" r="20"></circle>
-                    <circle class="pulse-loader-ring pulse-loader-ring-2" cx="80" cy="80" r="20"></circle>
-                    <circle class="pulse-loader-ring pulse-loader-ring-3" cx="80" cy="80" r="20"></circle>
-                    <circle class="pulse-loader-ring pulse-loader-ring-4" cx="80" cy="80" r="20"></circle>
-                    <circle class="pulse-loader-core" cx="80" cy="80" r="14"></circle>
+                    <circle class="pulse-loader-ring" cx="80" cy="80" r="36"></circle>
+                    <circle class="pulse-loader-core" cx="80" cy="80" r="20"></circle>
                 </svg>
                 <div class="big">Listening to the audience...</div>
                 <div class="small">Scanning Reddit + summarizing with Claude — this takes about 6 minutes.</div>
@@ -2338,6 +2385,18 @@
         <div class="pulse-modal-section">
             <div class="pulse-modal-label">Summary</div>
             <div class="pulse-modal-summary" id="pulseModalSummary">--</div>
+        </div>
+        <div class="pulse-modal-section pulse-modal-likes-pain" id="pulseModalLikesPainSection">
+            <div class="pulse-modal-likes-pain-grid">
+                <div class="pulse-modal-bucket pulse-modal-bucket-likes" id="pulseModalLikesBucket">
+                    <div class="pulse-modal-bucket-label"><span class="pulse-modal-bucket-glyph">&#10003;</span>What they like</div>
+                    <div class="pulse-modal-bucket-chips" id="pulseModalLikes"></div>
+                </div>
+                <div class="pulse-modal-bucket pulse-modal-bucket-pain" id="pulseModalPainBucket">
+                    <div class="pulse-modal-bucket-label"><span class="pulse-modal-bucket-glyph">&#33;</span>Pain points</div>
+                    <div class="pulse-modal-bucket-chips" id="pulseModalPain"></div>
+                </div>
+            </div>
         </div>
         <div class="pulse-modal-section" id="pulseModalQuoteSection">
             <div class="pulse-modal-label">Notable quote</div>
@@ -5874,21 +5933,21 @@ async function renderInsightsPanel(data, previousData, force) {
         var themes = (data && data.themes) || [];
         if (themes.length === 0) return;
 
-        // Define gradients + filters once per render — soap-bubble look with multi-stop
-        // gradient (white core, color body, deeper rim) for a real "shiny bubble" feel.
+        // Single unified bubble color (sophisticated indigo/purple) — sentiment is
+        // surfaced via the modal header tint, not the bubble color.
+        var BUBBLE_COLOR = '#6366f1';
+        var BUBBLE_COLOR_DEEP = '#4f46e5';
         var defs = svg.append('defs');
-        themes.forEach(function(t) {
-            var color = SENTIMENT_COLORS[t.sentiment] || SENTIMENT_COLORS.mixed;
-            var grad = defs.append('radialGradient')
-                .attr('id', 'pulseGrad-' + t.id)
-                .attr('cx', '32%').attr('cy', '28%')
-                .attr('r', '78%');
-            grad.append('stop').attr('offset', '0%').attr('stop-color', '#ffffff').attr('stop-opacity', 0.85);
-            grad.append('stop').attr('offset', '18%').attr('stop-color', '#ffffff').attr('stop-opacity', 0.45);
-            grad.append('stop').attr('offset', '55%').attr('stop-color', color).attr('stop-opacity', 0.55);
-            grad.append('stop').attr('offset', '88%').attr('stop-color', color).attr('stop-opacity', 0.82);
-            grad.append('stop').attr('offset', '100%').attr('stop-color', color).attr('stop-opacity', 0.95);
-        });
+        // One shared gradient for all bubbles
+        var grad = defs.append('radialGradient')
+            .attr('id', 'pulseGrad-shared')
+            .attr('cx', '32%').attr('cy', '28%')
+            .attr('r', '78%');
+        grad.append('stop').attr('offset', '0%').attr('stop-color', '#ffffff').attr('stop-opacity', 0.85);
+        grad.append('stop').attr('offset', '18%').attr('stop-color', '#ffffff').attr('stop-opacity', 0.45);
+        grad.append('stop').attr('offset', '55%').attr('stop-color', BUBBLE_COLOR).attr('stop-opacity', 0.55);
+        grad.append('stop').attr('offset', '88%').attr('stop-color', BUBBLE_COLOR).attr('stop-opacity', 0.82);
+        grad.append('stop').attr('offset', '100%').attr('stop-color', BUBBLE_COLOR_DEEP).attr('stop-opacity', 0.95);
         // Soft outer glow for hover state
         var glow = defs.append('filter').attr('id', 'pulseGlow').attr('x', '-60%').attr('y', '-60%').attr('width', '220%').attr('height', '220%');
         glow.append('feGaussianBlur').attr('stdDeviation', 10).attr('result', 'blur');
@@ -5903,19 +5962,16 @@ async function renderInsightsPanel(data, previousData, force) {
         var fm = dropShadow.append('feMerge');
         fm.append('feMergeNode');
         fm.append('feMergeNode').attr('in', 'SourceGraphic');
-        // Per-theme sentiment-colored glow halo (sits behind the bubble)
-        themes.forEach(function(t) {
-            var color = SENTIMENT_COLORS[t.sentiment] || SENTIMENT_COLORS.mixed;
-            var hGrad = defs.append('radialGradient')
-                .attr('id', 'pulseHalo-' + t.id)
-                .attr('cx', '50%').attr('cy', '50%').attr('r', '50%');
-            hGrad.append('stop').attr('offset', '40%').attr('stop-color', color).attr('stop-opacity', 0.32);
-            hGrad.append('stop').attr('offset', '70%').attr('stop-color', color).attr('stop-opacity', 0.10);
-            hGrad.append('stop').attr('offset', '100%').attr('stop-color', color).attr('stop-opacity', 0);
-        });
+        // Single shared glow halo (indigo)
+        var hGrad = defs.append('radialGradient')
+            .attr('id', 'pulseHalo-shared')
+            .attr('cx', '50%').attr('cy', '50%').attr('r', '50%');
+        hGrad.append('stop').attr('offset', '40%').attr('stop-color', BUBBLE_COLOR).attr('stop-opacity', 0.32);
+        hGrad.append('stop').attr('offset', '70%').attr('stop-color', BUBBLE_COLOR).attr('stop-opacity', 0.10);
+        hGrad.append('stop').attr('offset', '100%').attr('stop-color', BUBBLE_COLOR).attr('stop-opacity', 0);
 
-        // Three size tiers (small / medium / large) — bigger overall + bumped variance
-        var SIZE_TIERS = [88, 108, 130];
+        // Three size tiers — slightly smaller overall, still varied
+        var SIZE_TIERS = [76, 92, 110];
         function hashId(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
         var nodes = themes.map(function(t, i) {
             var tier = SIZE_TIERS[hashId(t.id) % SIZE_TIERS.length];
@@ -6013,19 +6069,19 @@ async function renderInsightsPanel(data, previousData, force) {
                     d.fx = null; d.fy = null;
                 }));
 
-        // 0. Outer glow halo — sits BEHIND the bubble for sentiment-colored aura
+        // 0. Outer glow halo (sits BEHIND the bubble) — shared indigo aura
         node.append('circle')
             .attr('class', 'pulse-bubble-halo')
             .attr('r', function(d) { return d.r * 1.55; })
-            .attr('fill', function(d) { return 'url(#pulseHalo-' + d.id + ')'; })
+            .attr('fill', 'url(#pulseHalo-shared)')
             .attr('pointer-events', 'none');
 
-        // 1. Bubble body — radial gradient + soft drop shadow
+        // 1. Bubble body — shared indigo gradient + drop shadow
         node.append('circle')
             .attr('class', 'pulse-bubble')
             .attr('r', function(d) { return d.r; })
-            .attr('fill', function(d) { return 'url(#pulseGrad-' + d.id + ')'; })
-            .attr('stroke', function(d) { return d.color; })
+            .attr('fill', 'url(#pulseGrad-shared)')
+            .attr('stroke', BUBBLE_COLOR)
             .attr('stroke-opacity', 0.6)
             .attr('stroke-width', 1.75)
             .attr('filter', 'url(#pulseDrop)');
@@ -6092,8 +6148,8 @@ async function renderInsightsPanel(data, previousData, force) {
                 lines = lines.slice(0, 3);
                 lines[2] = lines[2].slice(0, maxCharsPerLine - 1) + '…';
             }
-            var fontSize = Math.max(11, Math.min(14, d.r / 5.8));
-            var lineH = fontSize * 1.1;
+            var fontSize = Math.max(13, Math.min(17, d.r / 4.8));
+            var lineH = fontSize * 1.12;
             var totalH = lines.length * lineH;
             var startY = -totalH / 2 + lineH * 0.75;
             lines.forEach(function(ln, i) {
@@ -6158,6 +6214,40 @@ async function renderInsightsPanel(data, previousData, force) {
         }
 
         document.getElementById('pulseModalSummary').textContent = theme.summary || 'No summary available.';
+
+        // Likes + Pain Points
+        var likesPainSection = document.getElementById('pulseModalLikesPainSection');
+        var likesEl = document.getElementById('pulseModalLikes');
+        var painEl = document.getElementById('pulseModalPain');
+        var likesArr = theme.likes || [];
+        var painArr = theme.painPoints || [];
+        likesEl.innerHTML = '';
+        painEl.innerHTML = '';
+        if (likesArr.length === 0 && painArr.length === 0) {
+            likesPainSection.style.display = 'none';
+        } else {
+            likesPainSection.style.display = '';
+            if (likesArr.length === 0) {
+                likesEl.innerHTML = '<div class="pulse-modal-bucket-empty">None surfaced</div>';
+            } else {
+                likesArr.forEach(function(item) {
+                    var chip = document.createElement('span');
+                    chip.className = 'pulse-modal-bucket-chip';
+                    chip.textContent = item;
+                    likesEl.appendChild(chip);
+                });
+            }
+            if (painArr.length === 0) {
+                painEl.innerHTML = '<div class="pulse-modal-bucket-empty">None surfaced</div>';
+            } else {
+                painArr.forEach(function(item) {
+                    var chip = document.createElement('span');
+                    chip.className = 'pulse-modal-bucket-chip';
+                    chip.textContent = item;
+                    painEl.appendChild(chip);
+                });
+            }
+        }
 
         var quoteSection = document.getElementById('pulseModalQuoteSection');
         var quoteEl = document.getElementById('pulseModalQuote');
