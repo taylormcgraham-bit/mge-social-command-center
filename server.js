@@ -1921,6 +1921,45 @@ app.get('/api/pulse/cached', (req, res) => {
   res.json(cached);
 });
 
+// Diagnostic endpoint — checks env var presence and tests Claude with a tiny call.
+// Use when summaries are failing to pinpoint the actual error message.
+app.get('/api/pulse/diag', async (req, res) => {
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  const geminiKey = process.env.GEMINI_API_KEY;
+  const out = {
+    anthropicKeyPresent: !!anthropicKey,
+    anthropicKeyPrefix: anthropicKey ? anthropicKey.slice(0, 10) + '...' : null,
+    anthropicKeyLength: anthropicKey ? anthropicKey.length : 0,
+    geminiKeyPresent: !!geminiKey,
+    geminiKeyLength: geminiKey ? geminiKey.length : 0,
+    nodeEnv: process.env.NODE_ENV || 'not-set'
+  };
+  if (anthropicKey) {
+    try {
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': anthropicKey, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 20,
+          messages: [{ role: 'user', content: 'Reply with just the word OK.' }]
+        })
+      });
+      out.claudeStatus = r.status;
+      if (r.ok) {
+        const j = await r.json();
+        out.claudeReply = (j.content && j.content[0] && j.content[0].text) || '(no content)';
+        out.claudeOk = true;
+      } else {
+        const errText = await r.text();
+        out.claudeOk = false;
+        out.claudeError = errText.slice(0, 600);
+      }
+    } catch (e) { out.claudeOk = false; out.claudeException = e.message; }
+  }
+  res.json(out);
+});
+
 // Manual regeneration — bypasses the weekly cache. Rate-limited so it can't
 // be hammered. Useful for testing changes without waiting for the next week.
 let _lastManualPulseRegen = 0;
