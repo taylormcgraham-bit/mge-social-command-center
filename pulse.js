@@ -343,29 +343,40 @@ async function summarizeTheme(theme, posts) {
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   const geminiKey = process.env.GEMINI_API_KEY;
   if (!anthropicKey && !geminiKey) {
-    return { sentiment: 'low_signal', summary: 'No LLM API key configured.', themes: [], notable_quote: '' };
+    return { sentiment: 'low_signal', summary: 'No LLM API key configured (set ANTHROPIC_API_KEY in Render env).', themes: [], notable_quote: '' };
   }
   if (posts.length === 0) {
     return { sentiment: 'low_signal', summary: 'No relevant posts found this week for this theme.', themes: [], notable_quote: '' };
   }
   const userPrompt = buildThemePrompt(theme, posts);
 
-  // Prefer Claude (paid, reliable)
+  // Prefer Claude — capture error if it fails so we can diagnose
+  let claudeError = null;
   if (anthropicKey) {
     try {
       const text = await withRetry(() => callClaude(anthropicKey, userPrompt), 'claude ' + theme.id);
       return parseModelOutput(text);
     } catch (e) {
+      claudeError = e.message;
       console.warn(' [PULSE] Claude permanently failed for ' + theme.id + ': ' + e.message);
-      if (!geminiKey) return { sentiment: 'low_signal', summary: 'Claude call failed: ' + e.message.slice(0, 200), themes: [], notable_quote: '' };
+    }
+  } else {
+    claudeError = 'ANTHROPIC_API_KEY not set';
+  }
+
+  // Gemini fallback — also capture error
+  if (geminiKey) {
+    try {
+      const text = await withRetry(() => callGemini(geminiKey, userPrompt), 'gemini ' + theme.id);
+      return parseModelOutput(text);
+    } catch (e) {
+      // Surface BOTH errors so the user can see what's actually wrong
+      const combined = 'Claude failed: ' + (claudeError || 'not attempted').slice(0, 140) +
+                       ' | Gemini also failed: ' + e.message.slice(0, 140);
+      return { sentiment: 'low_signal', summary: combined, themes: [], notable_quote: '' };
     }
   }
-  try {
-    const text = await withRetry(() => callGemini(geminiKey, userPrompt), 'gemini ' + theme.id);
-    return parseModelOutput(text);
-  } catch (e) {
-    return { sentiment: 'low_signal', summary: 'Summary generation failed: ' + e.message.slice(0, 200), themes: [], notable_quote: '' };
-  }
+  return { sentiment: 'low_signal', summary: 'Claude failed: ' + (claudeError || 'unknown'), themes: [], notable_quote: '' };
 }
 
 // ============================================================
