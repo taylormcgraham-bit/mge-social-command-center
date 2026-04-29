@@ -1282,8 +1282,7 @@
             overflow: hidden;
         }
         #pulseBubblesSvg { display: block; cursor: default; }
-        .pulse-bubble { cursor: pointer; transition: filter 0.2s ease, transform 0.15s ease; }
-        .pulse-bubble:hover { filter: brightness(1.08) drop-shadow(0 6px 16px rgba(0,0,0,0.15)); }
+        .pulse-bubble { cursor: pointer; }
         .pulse-bubble-label {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             font-weight: 700;
@@ -1349,7 +1348,7 @@
         .pulse-modal-sentiment.positive { background: #16a34a; }
         .pulse-modal-sentiment.mixed    { background: #94a3b8; }
         .pulse-modal-sentiment.negative { background: #dc2626; }
-        .pulse-modal-sentiment.low_signal { background: #475569; }
+        .pulse-modal-sentiment.low_signal { background: #94a3b8; }
         .pulse-modal-title { font-size: 22px; font-weight: 700; color: #0f172a; }
         .pulse-modal-counts { font-size: 12px; color: #64748b; margin-top: 4px; }
         .pulse-modal-section { padding: 16px 28px; border-bottom: 1px solid #f1f5f9; }
@@ -2151,7 +2150,7 @@
         <div class="pulse-header">
             <div>
                 <div class="pulse-title">Audience Pulse</div>
-                <div class="pulse-subtitle">Recent public commentary on utility-relevant themes — scraped weekly from Reddit and Bluesky, summarized with sentiment by Claude. Click any bubble for the full read.</div>
+                <div class="pulse-subtitle">Weekly Reddit sentiment scan across utility-relevant themes — click any bubble for the full read.</div>
             </div>
             <div class="pulse-meta">
                 <div>Generated <strong id="pulseGeneratedAt">--</strong></div>
@@ -2161,10 +2160,8 @@
 
         <div class="pulse-legend">
             <span class="pulse-legend-item"><span class="pulse-dot" style="background:#16a34a"></span>Positive</span>
-            <span class="pulse-legend-item"><span class="pulse-dot" style="background:#94a3b8"></span>Mixed</span>
+            <span class="pulse-legend-item"><span class="pulse-dot" style="background:#94a3b8"></span>Neutral</span>
             <span class="pulse-legend-item"><span class="pulse-dot" style="background:#dc2626"></span>Negative</span>
-            <span class="pulse-legend-item"><span class="pulse-dot" style="background:#475569"></span>Low signal</span>
-            <span class="pulse-legend-item pulse-legend-note">Bubble size scales with post volume</span>
         </div>
 
         <div class="pulse-bubbles-container" id="pulseBubblesContainer">
@@ -5582,17 +5579,18 @@ async function renderInsightsPanel(data, previousData, force) {
 // ============================================================
 (function() {
     var PULSE_CACHE_KEY = 'pulseLastSeenWeekId';
+    // low_signal is folded into "Neutral" visually — Taylor doesn't want it called out
     var SENTIMENT_COLORS = {
         positive:   '#16a34a',
         mixed:      '#94a3b8',
         negative:   '#dc2626',
-        low_signal: '#475569'
+        low_signal: '#94a3b8'  // same as mixed/neutral
     };
     var SENTIMENT_LABELS = {
         positive:   'Positive',
-        mixed:      'Mixed',
+        mixed:      'Neutral',
         negative:   'Negative',
-        low_signal: 'Low signal'
+        low_signal: 'Neutral'
     };
 
     var _pulseState = { data: null, loading: false, simulation: null, hasFetched: false };
@@ -5684,34 +5682,74 @@ async function renderInsightsPanel(data, previousData, force) {
         var themes = (data && data.themes) || [];
         if (themes.length === 0) return;
 
-        // Bubble radius scales with post volume (with min/max clamps)
-        var maxPosts = d3.max(themes, function(t) { return t.postCount || 0; }) || 1;
-        var rScale = d3.scaleSqrt().domain([0, Math.max(maxPosts, 5)]).range([42, 95]);
+        // Define gradients + filters once per render — gives bubbles a real "soap-bubble" look
+        var defs = svg.append('defs');
+        themes.forEach(function(t) {
+            var color = SENTIMENT_COLORS[t.sentiment] || SENTIMENT_COLORS.mixed;
+            var grad = defs.append('radialGradient')
+                .attr('id', 'pulseGrad-' + t.id)
+                .attr('cx', '35%').attr('cy', '30%')
+                .attr('r', '70%');
+            grad.append('stop').attr('offset', '0%').attr('stop-color', '#ffffff').attr('stop-opacity', 0.55);
+            grad.append('stop').attr('offset', '40%').attr('stop-color', color).attr('stop-opacity', 0.45);
+            grad.append('stop').attr('offset', '100%').attr('stop-color', color).attr('stop-opacity', 0.78);
+        });
+        // Soft glow for hover
+        var glow = defs.append('filter').attr('id', 'pulseGlow').attr('x', '-50%').attr('y', '-50%').attr('width', '200%').attr('height', '200%');
+        glow.append('feGaussianBlur').attr('stdDeviation', 6).attr('result', 'blur');
+        var feMerge = glow.append('feMerge');
+        feMerge.append('feMergeNode').attr('in', 'blur');
+        feMerge.append('feMergeNode').attr('in', 'SourceGraphic');
 
-        var nodes = themes.map(function(t) {
+        // All bubbles roughly the same size — slight variance keeps it organic.
+        // No volume scaling.
+        var BASE_R = 72;
+        var nodes = themes.map(function(t, i) {
+            // Tiny per-theme variance (deterministic) for organic feel without scaling by metric
+            var variance = ((i * 37) % 12) - 6; // -6..+5
             return {
                 id: t.id,
                 label: t.label,
                 postCount: t.postCount || 0,
-                sentiment: t.sentiment || 'low_signal',
-                color: SENTIMENT_COLORS[t.sentiment] || '#475569',
-                r: rScale(t.postCount || 0),
-                theme: t
+                sentiment: t.sentiment || 'mixed',
+                color: SENTIMENT_COLORS[t.sentiment] || SENTIMENT_COLORS.mixed,
+                r: BASE_R + variance,
+                baseR: BASE_R + variance,
+                theme: t,
+                // Per-node sinusoidal drift offsets for organic floating motion
+                driftSeedX: Math.random() * Math.PI * 2,
+                driftSeedY: Math.random() * Math.PI * 2,
+                driftSpeed: 0.0008 + Math.random() * 0.0006
             };
         });
 
-        // Stop any prior simulation
         if (_pulseState.simulation) _pulseState.simulation.stop();
 
+        // Continuously running simulation — alphaTarget keeps it gently warm.
+        // Lower charge so bubbles don't repel hard; collide handles spacing.
         var simulation = d3.forceSimulation(nodes)
-            .force('charge', d3.forceManyBody().strength(8))
+            .force('charge', d3.forceManyBody().strength(-12))
             .force('center', d3.forceCenter(width / 2, height / 2))
-            .force('collide', d3.forceCollide().radius(function(d) { return d.r + 6; }).strength(0.95))
-            .force('x', d3.forceX(width / 2).strength(0.04))
-            .force('y', d3.forceY(height / 2).strength(0.04))
-            .alphaDecay(0.02);
+            .force('collide', d3.forceCollide()
+                .radius(function(d) { return d.r + 8; })
+                .strength(0.85)
+                .iterations(2))
+            .force('x', d3.forceX(width / 2).strength(0.018))
+            .force('y', d3.forceY(height / 2).strength(0.018))
+            .alphaDecay(0)         // never decays — keeps bubbles drifting forever
+            .alphaTarget(0.06)     // low warmth = gentle drift, not violent jitter
+            .velocityDecay(0.18);  // faster damping = smoother glide
 
         _pulseState.simulation = simulation;
+
+        // Track mouse for "shy bubbles" — bubbles drift away when cursor approaches
+        var mousePos = { x: -9999, y: -9999, active: false };
+        svg.on('mousemove', function(event) {
+            var pt = d3.pointer(event);
+            mousePos.x = pt[0]; mousePos.y = pt[1]; mousePos.active = true;
+        }).on('mouseleave', function() {
+            mousePos.active = false;
+        });
 
         var node = svg.selectAll('g.pulse-node')
             .data(nodes)
@@ -5720,6 +5758,20 @@ async function renderInsightsPanel(data, previousData, force) {
             .attr('class', 'pulse-node')
             .style('cursor', 'pointer')
             .on('click', function(event, d) { openPulseModal(d.theme); })
+            .on('mouseenter', function(event, d) {
+                d.hovered = true;
+                d3.select(this).select('circle')
+                    .transition().duration(220)
+                    .attr('r', d.baseR * 1.12)
+                    .attr('filter', 'url(#pulseGlow)');
+            })
+            .on('mouseleave', function(event, d) {
+                d.hovered = false;
+                d3.select(this).select('circle')
+                    .transition().duration(280)
+                    .attr('r', d.baseR)
+                    .attr('filter', null);
+            })
             .call(d3.drag()
                 .on('start', function(event, d) {
                     if (!event.active) simulation.alphaTarget(0.3).restart();
@@ -5727,24 +5779,39 @@ async function renderInsightsPanel(data, previousData, force) {
                 })
                 .on('drag', function(event, d) { d.fx = event.x; d.fy = event.y; })
                 .on('end', function(event, d) {
-                    if (!event.active) simulation.alphaTarget(0);
+                    if (!event.active) simulation.alphaTarget(0.06);
                     d.fx = null; d.fy = null;
                 }));
 
+        // Bubble — soap-bubble look: radial gradient + thin highlight ring + specular highlight
         node.append('circle')
             .attr('class', 'pulse-bubble')
             .attr('r', function(d) { return d.r; })
-            .attr('fill', function(d) { return d.color; })
-            .attr('fill-opacity', 0.88)
-            .attr('stroke', '#fff')
-            .attr('stroke-width', 2);
+            .attr('fill', function(d) { return 'url(#pulseGrad-' + d.id + ')'; })
+            .attr('stroke', function(d) {
+                // Slightly tinted bubble outline — pulled from sentiment color
+                return d.color;
+            })
+            .attr('stroke-opacity', 0.5)
+            .attr('stroke-width', 1.5);
+
+        // Specular highlight (the little white "glint" on a bubble)
+        node.append('ellipse')
+            .attr('class', 'pulse-bubble-glint')
+            .attr('cx', function(d) { return -d.r * 0.32; })
+            .attr('cy', function(d) { return -d.r * 0.42; })
+            .attr('rx', function(d) { return d.r * 0.28; })
+            .attr('ry', function(d) { return d.r * 0.16; })
+            .attr('fill', '#fff')
+            .attr('fill-opacity', 0.45)
+            .attr('pointer-events', 'none')
+            .attr('transform', 'rotate(-25)');
 
         // Wrap label across multiple lines if needed
         node.each(function(d) {
             var g = d3.select(this);
             var words = d.label.split(/\s+/);
             var lines = [];
-            // Simple wrapping: break into chunks of ~12 chars worth
             var maxCharsPerLine = Math.floor(d.r / 4.5);
             var currentLine = '';
             words.forEach(function(w) {
@@ -5756,13 +5823,12 @@ async function renderInsightsPanel(data, previousData, force) {
                 }
             });
             if (currentLine) lines.push(currentLine.trim());
-            // Cap at 3 lines
             if (lines.length > 3) {
                 lines = lines.slice(0, 3);
                 lines[2] = lines[2].slice(0, maxCharsPerLine - 1) + '…';
             }
-            var fontSize = Math.max(10, Math.min(15, d.r / 5.5));
-            var lineH = fontSize * 1.05;
+            var fontSize = Math.max(11, Math.min(14, d.r / 5.8));
+            var lineH = fontSize * 1.1;
             var totalH = lines.length * lineH;
             var startY = -totalH / 2 + lineH * 0.75;
             lines.forEach(function(ln, i) {
@@ -5772,18 +5838,31 @@ async function renderInsightsPanel(data, previousData, force) {
                     .attr('font-size', fontSize)
                     .text(ln);
             });
-            // Post count below label
-            g.append('text')
-                .attr('class', 'pulse-bubble-count')
-                .attr('y', startY + lines.length * lineH + 4)
-                .text(d.postCount + ' posts');
         });
 
         simulation.on('tick', function() {
-            // Keep nodes inside the bounding box
+            var t = Date.now();
             nodes.forEach(function(d) {
-                d.x = Math.max(d.r + 2, Math.min(width - d.r - 2, d.x));
-                d.y = Math.max(d.r + 2, Math.min(height - d.r - 2, d.y));
+                // Add gentle sinusoidal drift on top of force-layout motion
+                if (d.fx == null && d.fy == null) {
+                    d.vx = (d.vx || 0) + Math.sin(t * d.driftSpeed + d.driftSeedX) * 0.06;
+                    d.vy = (d.vy || 0) + Math.cos(t * d.driftSpeed + d.driftSeedY) * 0.06;
+                    // Cursor avoidance — bubbles shy away from the mouse
+                    if (mousePos.active) {
+                        var dx = d.x - mousePos.x;
+                        var dy = d.y - mousePos.y;
+                        var dist = Math.sqrt(dx*dx + dy*dy) || 1;
+                        var avoidR = d.r + 60;
+                        if (dist < avoidR) {
+                            var force = (avoidR - dist) / avoidR;
+                            d.vx += (dx / dist) * force * 1.2;
+                            d.vy += (dy / dist) * force * 1.2;
+                        }
+                    }
+                }
+                // Keep nodes inside the bounding box
+                d.x = Math.max(d.r + 4, Math.min(width - d.r - 4, d.x));
+                d.y = Math.max(d.r + 4, Math.min(height - d.r - 4, d.y));
             });
             node.attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; });
         });
