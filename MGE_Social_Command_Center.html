@@ -1305,54 +1305,68 @@
 
         .pulse-loading {
             position: absolute; inset: 0; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; gap: 14px; text-align: center; padding: 0 24px;
+            align-items: center; justify-content: center; gap: 6px; text-align: center; padding: 0 24px;
         }
-        .pulse-loading .big { font-size: 17px; font-weight: 600; color: #0f172a; letter-spacing: -0.01em; }
-        .pulse-loading .small { font-size: 13px; color: #64748b; max-width: 520px; line-height: 1.5; }
+        .pulse-loading .big {
+            font-size: 14px; font-weight: 600; color: #334155;
+            letter-spacing: -0.005em;
+        }
+        .pulse-loading .small {
+            font-size: 12px; color: #94a3b8; max-width: 360px;
+            line-height: 1.4;
+        }
 
-        /* Pulse loader — gentle breathing orb (slow inhale/exhale, not radar) */
-        .pulse-loader-svg { width: 140px; height: 140px; margin-bottom: 6px; overflow: visible; }
+        /* Pulse loader — quiet, slow breathing orb */
+        .pulse-loader-svg { width: 100px; height: 100px; margin-bottom: 2px; overflow: visible; }
         .pulse-loader-ring {
             fill: none;
-            stroke: #6366f1;
-            stroke-width: 1.5;
+            stroke: #818cf8;
+            stroke-width: 1;
             transform-origin: 80px 80px;
-            animation: pulseLoaderRing 4.5s ease-in-out infinite;
-            opacity: 0.5;
+            animation: pulseLoaderRing 5.5s ease-in-out infinite;
+            opacity: 0.35;
         }
         @keyframes pulseLoaderRing {
-            0%, 100% { transform: scale(0.95); opacity: 0.35; }
-            50%      { transform: scale(1.18); opacity: 0.6; }
+            0%, 100% { transform: scale(0.96); opacity: 0.18; }
+            50%      { transform: scale(1.10); opacity: 0.42; }
         }
         .pulse-loader-core {
             fill: url(#pulseLoaderCoreGrad);
             transform-origin: 80px 80px;
-            animation: pulseLoaderCore 4.5s ease-in-out infinite;
-            filter: drop-shadow(0 0 14px rgba(99, 102, 241, 0.5));
+            animation: pulseLoaderCore 5.5s ease-in-out infinite;
+            filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.32));
+            opacity: 0.85;
         }
         @keyframes pulseLoaderCore {
-            0%, 100% { transform: scale(1); }
-            50%      { transform: scale(1.10); }
+            0%, 100% { transform: scale(1); opacity: 0.78; }
+            50%      { transform: scale(1.06); opacity: 0.95; }
         }
+        /* Cooler progress bar — smooth gradient sweep */
         .pulse-loader-bar {
             position: relative;
-            width: 240px;
-            height: 4px;
-            background: rgba(99, 102, 241, 0.12);
-            border-radius: 2px;
+            width: 220px;
+            height: 3px;
+            background: rgba(99, 102, 241, 0.08);
+            border-radius: 999px;
             overflow: hidden;
-            margin-top: 4px;
+            margin-top: 8px;
         }
         .pulse-loader-bar::after {
             content: '';
-            position: absolute; top: 0; left: -40%;
-            height: 100%; width: 40%;
-            background: linear-gradient(90deg, transparent, #6366f1 50%, transparent);
-            animation: pulseLoaderBar 1.8s ease-in-out infinite;
+            position: absolute; top: 0; left: 0;
+            height: 100%; width: 100%;
+            background: linear-gradient(90deg,
+                transparent 0%,
+                rgba(99,102,241,0.15) 30%,
+                #6366f1 50%,
+                rgba(99,102,241,0.15) 70%,
+                transparent 100%);
+            background-size: 200% 100%;
+            animation: pulseLoaderBar 2.2s linear infinite;
         }
         @keyframes pulseLoaderBar {
-            0%   { left: -40%; }
-            100% { left: 100%; }
+            0%   { background-position: 100% 0; }
+            100% { background-position: -100% 0; }
         }
 
         /* Pulse modal */
@@ -1490,6 +1504,57 @@
             line-height: 1; font-style: normal;
             pointer-events: none;
         }
+
+        /* Actionable insight — yellow callout */
+        .pulse-modal-action {
+            background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%);
+            border: 1px solid #fde68a;
+            border-left: 4px solid #f59e0b;
+            padding: 14px 18px;
+            border-radius: 0 10px 10px 0;
+            font-size: 14px; line-height: 1.55; color: #78350f;
+            font-weight: 500;
+        }
+
+        /* Competitors mentioned — chip row */
+        .pulse-modal-competitors {
+            display: flex; flex-wrap: wrap; gap: 8px;
+        }
+        .pulse-modal-competitor-chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            border: 1px solid #cbd5e1;
+            border-radius: 999px;
+            font-size: 12.5px; font-weight: 600; color: #334155;
+        }
+        .pulse-modal-competitor-chip.is-mge {
+            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+            border-color: #86efac; color: #166534;
+        }
+        .pulse-modal-competitor-count {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 20px; padding: 0 6px; height: 18px;
+            background: rgba(15,23,42,0.12); border-radius: 9px;
+            font-size: 11px; font-weight: 800;
+        }
+        .pulse-modal-competitor-chip.is-mge .pulse-modal-competitor-count {
+            background: rgba(22,101,52,0.18);
+        }
+
+        /* Sentiment delta indicator (lives next to the sentiment pill) */
+        .pulse-modal-delta {
+            display: inline-flex; align-items: center; gap: 4px;
+            margin-left: 8px;
+            font-size: 11px; font-weight: 700; letter-spacing: 0.3px;
+            padding: 4px 9px; border-radius: 999px;
+            vertical-align: 1px;
+        }
+        .pulse-modal-delta.up   { background: rgba(22,163,74,0.12);  color: #15803d; }
+        .pulse-modal-delta.down { background: rgba(220,38,38,0.12);  color: #b91c1c; }
+        .pulse-modal-delta.flat { background: rgba(100,116,139,0.12); color: #475569; }
+        .pulse-modal-delta.new  { background: rgba(99,102,241,0.12); color: #4338ca; }
+        .pulse-modal-delta-glyph { font-size: 13px; line-height: 1; }
 
         /* Likes / Pain Points dual buckets */
         .pulse-modal-likes-pain-grid {
@@ -2365,8 +2430,8 @@
                     <circle class="pulse-loader-ring" cx="80" cy="80" r="36"></circle>
                     <circle class="pulse-loader-core" cx="80" cy="80" r="20"></circle>
                 </svg>
-                <div class="big">Listening to the audience...</div>
-                <div class="small">Scanning Reddit + summarizing with Claude — this takes about 6 minutes.</div>
+                <div class="big">Listening...</div>
+                <div class="small">Scanning Reddit · ~6 min</div>
                 <div class="pulse-loader-bar" aria-hidden="true"></div>
             </div>
         </div>
@@ -2385,6 +2450,14 @@
         <div class="pulse-modal-section">
             <div class="pulse-modal-label">Summary</div>
             <div class="pulse-modal-summary" id="pulseModalSummary">--</div>
+        </div>
+        <div class="pulse-modal-section" id="pulseModalActionSection" style="display:none;">
+            <div class="pulse-modal-label">What MGE should do</div>
+            <div class="pulse-modal-action" id="pulseModalAction">--</div>
+        </div>
+        <div class="pulse-modal-section" id="pulseModalCompetitorsSection" style="display:none;">
+            <div class="pulse-modal-label">Competitors mentioned</div>
+            <div class="pulse-modal-competitors" id="pulseModalCompetitors"></div>
         </div>
         <div class="pulse-modal-section pulse-modal-likes-pain" id="pulseModalLikesPainSection">
             <div class="pulse-modal-likes-pain-grid">
@@ -5873,11 +5946,11 @@ async function renderInsightsPanel(data, previousData, force) {
                     if (loadingEl) {
                         var bigEl = loadingEl.querySelector('.big');
                         var smallEl = loadingEl.querySelector('.small');
-                        if (bigEl) bigEl.textContent = 'Generating this week’s audience pulse...';
+                        if (bigEl) bigEl.textContent = 'Listening...';
                         if (smallEl) {
                             var elapsed = pollAttempt * 15;
-                            smallEl.textContent = 'Scanning Reddit + summarizing with Claude — about ' +
-                                Math.max(0, 360 - elapsed) + 's remaining (refreshes automatically).';
+                            var remaining = Math.max(0, 360 - elapsed);
+                            smallEl.textContent = 'Scanning Reddit · ~' + Math.ceil(remaining / 60) + ' min left';
                         }
                     }
                     // First call kicks off the generation if cache was empty.
@@ -5905,8 +5978,8 @@ async function renderInsightsPanel(data, previousData, force) {
                 if (loadingEl) {
                     var bigEl = loadingEl.querySelector('.big');
                     var smallEl = loadingEl.querySelector('.small');
-                    if (bigEl) bigEl.textContent = 'Audience Pulse is taking longer than expected';
-                    if (smallEl) smallEl.textContent = 'Try reloading the page in a minute. If still empty, hit the diag endpoint.';
+                    if (bigEl) bigEl.textContent = 'Taking longer than expected';
+                    if (smallEl) smallEl.textContent = 'Try reloading in a minute.';
                 }
                 return;
             }
@@ -6207,6 +6280,24 @@ async function renderInsightsPanel(data, previousData, force) {
         sentEl.className = 'pulse-modal-sentiment ' + (theme.sentiment || 'low_signal');
         sentEl.textContent = SENTIMENT_LABELS[theme.sentiment] || 'Neutral';
 
+        // Sentiment delta vs last week — small chip next to the sentiment pill
+        // Remove any previous delta so reopens stay clean
+        var prevDelta = document.getElementById('pulseModalDelta');
+        if (prevDelta) prevDelta.parentNode.removeChild(prevDelta);
+        var d = theme.sentimentDelta;
+        if (d && d.change) {
+            var deltaEl = document.createElement('span');
+            deltaEl.id = 'pulseModalDelta';
+            deltaEl.className = 'pulse-modal-delta ' + d.change;
+            var glyph = '', label = '';
+            if (d.change === 'up')   { glyph = '↑'; label = 'Improving from ' + (SENTIMENT_LABELS[d.priorSentiment] || 'last week').toLowerCase(); }
+            if (d.change === 'down') { glyph = '↓'; label = 'Worsening from ' + (SENTIMENT_LABELS[d.priorSentiment] || 'last week').toLowerCase(); }
+            if (d.change === 'flat') { glyph = '→'; label = 'Steady vs last week'; }
+            if (d.change === 'new')  { glyph = '★'; label = 'New this week'; }
+            deltaEl.innerHTML = '<span class="pulse-modal-delta-glyph">' + glyph + '</span>' + label;
+            sentEl.parentNode.insertBefore(deltaEl, sentEl.nextSibling);
+        }
+
         // Tint the modal header based on sentiment
         var headerEl = modal.querySelector('.pulse-modal-header');
         if (headerEl) {
@@ -6214,6 +6305,34 @@ async function renderInsightsPanel(data, previousData, force) {
         }
 
         document.getElementById('pulseModalSummary').textContent = theme.summary || 'No summary available.';
+
+        // Actionable insight (yellow callout)
+        var actionSection = document.getElementById('pulseModalActionSection');
+        var actionEl = document.getElementById('pulseModalAction');
+        if (theme.actionableInsight && theme.actionableInsight.trim().length > 10) {
+            actionEl.textContent = theme.actionableInsight.trim();
+            actionSection.style.display = '';
+        } else {
+            actionSection.style.display = 'none';
+        }
+
+        // Competitors mentioned
+        var compSection = document.getElementById('pulseModalCompetitorsSection');
+        var compEl = document.getElementById('pulseModalCompetitors');
+        compEl.innerHTML = '';
+        var comps = theme.competitorMentions || [];
+        if (comps.length > 0) {
+            comps.forEach(function(c) {
+                var chip = document.createElement('span');
+                chip.className = 'pulse-modal-competitor-chip' + (c.name === 'MGE' ? ' is-mge' : '');
+                chip.title = (c.samples || []).map(function(s) { return '"' + s.snippet + '" — ' + s.context; }).join('\n\n');
+                chip.innerHTML = c.name + '<span class="pulse-modal-competitor-count">' + c.count + '</span>';
+                compEl.appendChild(chip);
+            });
+            compSection.style.display = '';
+        } else {
+            compSection.style.display = 'none';
+        }
 
         // Likes + Pain Points
         var likesPainSection = document.getElementById('pulseModalLikesPainSection');
