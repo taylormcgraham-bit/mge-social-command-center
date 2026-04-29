@@ -5633,44 +5633,84 @@ async function renderInsightsPanel(data, previousData, force) {
         if (pill) pill.style.display = 'none';
     }
 
+    // Poll /api/pulse/cached until data shows up. Never call the synchronous /api/pulse
+    // endpoint from the browser — it blocks 5-6 min on cold cache and hits Render's
+    // 30s proxy timeout. Generation runs server-side; we just wait for the cache file.
+    var _pulsePollInterval = null;
+    function clearPulsePoll() {
+        if (_pulsePollInterval) { clearInterval(_pulsePollInterval); _pulsePollInterval = null; }
+    }
+
     window.loadPulseData = function() {
         if (_pulseState.loading) return;
         var loadingEl = document.getElementById('pulseLoading');
-        // If we already rendered fresh data, don't refetch
         if (_pulseState.data && _pulseState.data.themes && _pulseState.data.themes.length > 0) return;
         _pulseState.loading = true;
         if (loadingEl) loadingEl.style.display = 'flex';
 
-        // Try cached endpoint first (instant), then fall back to full /api/pulse if empty
-        fetch('/api/pulse/cached')
-            .then(function(r) { return r.json(); })
-            .then(function(cached) {
-                if (cached && cached.themes && cached.themes.length > 0) {
-                    return cached;
-                }
-                // Cache empty — trigger full generation (long wait)
+        var pollAttempt = 0;
+
+        function tick() {
+            pollAttempt++;
+            return fetch('/api/pulse/cached', { cache: 'no-store' })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    var hasThemes = data && data.themes && data.themes.length > 0;
+                    if (hasThemes) {
+                        // Done — render and stop polling
+                        clearPulsePoll();
+                        _pulseState.data = data;
+                        _pulseState.hasFetched = true;
+                        _pulseState.loading = false;
+                        if (loadingEl) loadingEl.style.display = 'none';
+                        renderPulseHeader(data);
+                        renderPulseBubbles(data);
+                        checkNewPill(data && data.weekId);
+                        return;
+                    }
+                    // Still pending — update UI message and keep polling
+                    if (loadingEl) {
+                        var bigEl = loadingEl.querySelector('.big');
+                        var smallEl = loadingEl.querySelector('.small');
+                        if (bigEl) bigEl.textContent = 'Generating this week’s audience pulse...';
+                        if (smallEl) {
+                            var elapsed = pollAttempt * 15;
+                            smallEl.textContent = 'Scanning Reddit + summarizing with Claude — about ' +
+                                Math.max(0, 360 - elapsed) + 's remaining (refreshes automatically).';
+                        }
+                    }
+                    // First call kicks off the generation if cache was empty.
+                    // Subsequent polls just wait for it to finish.
+                    if (pollAttempt === 1) {
+                        fetch('/api/pulse/regenerate', { method: 'POST', cache: 'no-store' }).catch(function() {});
+                    }
+                })
+                .catch(function(err) {
+                    console.warn('Pulse poll error:', err);
+                    if (loadingEl) {
+                        var smallEl = loadingEl.querySelector('.small');
+                        if (smallEl) smallEl.textContent = 'Network hiccup — retrying...';
+                    }
+                });
+        }
+
+        // First tick immediately, then poll every 15 seconds for up to ~7 minutes
+        clearPulsePoll();
+        tick();
+        _pulsePollInterval = setInterval(function() {
+            if (pollAttempt >= 30) {
+                clearPulsePoll();
+                _pulseState.loading = false;
                 if (loadingEl) {
-                    loadingEl.querySelector('.big').textContent = 'Generating this week’s audience pulse...';
-                    loadingEl.querySelector('.small').textContent = 'First run takes about 60 seconds. Future loads are instant.';
+                    var bigEl = loadingEl.querySelector('.big');
+                    var smallEl = loadingEl.querySelector('.small');
+                    if (bigEl) bigEl.textContent = 'Audience Pulse is taking longer than expected';
+                    if (smallEl) smallEl.textContent = 'Try reloading the page in a minute. If still empty, hit the diag endpoint.';
                 }
-                return fetch('/api/pulse').then(function(r) { return r.json(); });
-            })
-            .then(function(data) {
-                _pulseState.data = data;
-                _pulseState.hasFetched = true;
-                if (loadingEl) loadingEl.style.display = 'none';
-                renderPulseHeader(data);
-                renderPulseBubbles(data);
-                checkNewPill(data && data.weekId);
-            })
-            .catch(function(err) {
-                console.warn('Pulse load error:', err);
-                if (loadingEl) {
-                    loadingEl.querySelector('.big').textContent = 'Couldn’t load Audience Pulse';
-                    loadingEl.querySelector('.small').textContent = err.message || 'Try refreshing the page.';
-                }
-            })
-            .finally(function() { _pulseState.loading = false; });
+                return;
+            }
+            tick();
+        }, 15000);
     };
 
     function renderPulseHeader(data) {
