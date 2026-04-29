@@ -15,6 +15,7 @@ const fs = require('fs');
 const path = require('path');
 
 const CACHE_FILE = path.join(__dirname, 'pulse-cache.json');
+const PREV_CACHE_FILE = path.join(__dirname, 'pulse-cache-prev.json');
 const HAIKU_MODEL = process.env.PULSE_CLAUDE_MODEL || 'claude-haiku-4-5-20251001';
 const GEMINI_MODEL = process.env.PULSE_GEMINI_MODEL || 'gemini-2.0-flash';
 const REDDIT_UA = 'MGE-Social-Command-Center/1.0 (by u/taylormcgraham; Audience Pulse theme monitoring)';
@@ -23,6 +24,22 @@ const REDDIT_UA = 'MGE-Social-Command-Center/1.0 (by u/taylormcgraham; Audience 
 const REDDIT_DELAY_MS = 3000;       // bumped from 1.5s — Reddit 429s consistently around theme 7 with 1.5s
 const CLAUDE_DELAY_MS = 3000;       // ~20 RPM, well under tier-1 50 RPM limit
 const MAX_RETRIES = 4;              // bumped from 3 — gives us 3+6+12+24=45s of total backoff per call
+
+// Competitor / brand detection — surfaces utility-name mentions in posts and comments.
+// Patterns are case-insensitive word-boundaried regexes; results are reported with sample snippets.
+const COMPETITORS = [
+  { name: 'MGE',                pattern: /\b(?:MGE|Madison Gas (?:and|&) Electric|Madison Gas)\b/i },
+  { name: 'Alliant Energy',     pattern: /\bAlliant(?: Energy)?\b/i },
+  { name: 'We Energies',        pattern: /\bWe Energies\b/i },
+  { name: 'Xcel Energy',        pattern: /\bXcel(?: Energy)?\b/i },
+  { name: 'ComEd',              pattern: /\b(?:ComEd|Commonwealth Edison)\b/i },
+  { name: 'MidAmerican',        pattern: /\bMidAmerican(?: Energy)?\b/i },
+  { name: 'DTE Energy',         pattern: /\bDTE(?: Energy)?\b/i },
+  { name: 'Consumers Energy',   pattern: /\bConsumers Energy\b/i },
+  { name: 'Ameren',             pattern: /\bAmeren\b/i },
+  { name: 'Focus on Energy',    pattern: /\bFocus on Energy\b/i },
+  { name: 'WPPI',               pattern: /\bWPPI(?: Energy)?\b/i }
+];
 
 // ============================================================
 // Theme config — curated subreddits per theme.
@@ -107,6 +124,34 @@ function loadCache() {
 function saveCache(cache) {
   try { fs.writeFileSync(CACHE_FILE, JSON.stringify(cache, null, 2), 'utf8'); }
   catch (e) { console.warn(' [PULSE] Failed to save cache:', e.message); }
+}
+
+function loadPrevCache() {
+  try {
+    if (!fs.existsSync(PREV_CACHE_FILE)) return null;
+    return JSON.parse(fs.readFileSync(PREV_CACHE_FILE, 'utf8'));
+  } catch (e) { return null; }
+}
+
+function rollPrevCache(currentCache) {
+  // Promote current cache to prev only if it has a real weekId different from prev's
+  if (!currentCache || !currentCache.weekId || !currentCache.themes || currentCache.themes.length === 0) return;
+  try {
+    const prev = loadPrevCache();
+    if (prev && prev.weekId === currentCache.weekId) return; // same week, don't shift
+    fs.writeFileSync(PREV_CACHE_FILE, JSON.stringify(currentCache, null, 2), 'utf8');
+  } catch (e) { console.warn(' [PULSE] Failed to roll prev cache:', e.message); }
+}
+
+// Sentiment ranking for delta calculation
+const SENTIMENT_RANK = { negative: -1, low_signal: 0, mixed: 0, positive: 1 };
+function sentimentDelta(currentSent, priorSent) {
+  if (!priorSent) return { change: 'new', priorSentiment: null };
+  const cur = SENTIMENT_RANK[currentSent] || 0;
+  const prv = SENTIMENT_RANK[priorSent] || 0;
+  if (cur > prv) return { change: 'up',   priorSentiment: priorSent };
+  if (cur < prv) return { change: 'down', priorSentiment: priorSent };
+  return { change: 'flat', priorSentiment: priorSent };
 }
 
 // ============================================================
@@ -231,7 +276,8 @@ const PULSE_SYSTEM_PROMPT =
   '(6) Notable quote: pick a real comment (preferred) or post snippet that captures a representative sentiment. ' +
   '(7) "likes" = 3-5 SHORT keywords/buzzwords (1-3 words each) capturing what users PRAISE, ENJOY, or are EXCITED about in this theme. ' +
   '(8) "pain_points" = 3-5 SHORT keywords/buzzwords (1-3 words each) capturing what users COMPLAIN about, FEAR, or find FRUSTRATING. ' +
-  '(9) Output strict JSON only — no preamble, no markdown.';
+  '(9) "actionable_insight" = ONE concrete, specific sentence the MGE marketing team could act on next week — a messaging angle, FAQ topic, content idea, or framing pivot. Tied to what users actually said. NO platitudes ("engage authentically"). Example good: "Lead with rebate dollar amounts up front rather than payback periods — multiple commenters cited sticker-shock fatigue." ' +
+  '(10) Output strict JSON only — no preamble, no markdown.';
 
 function buildThemePrompt(theme, posts) {
   const top = posts.slice(0, 8);
@@ -263,7 +309,8 @@ function buildThemePrompt(theme, posts) {
          '  "themes": ["short phrase", "short phrase", "short phrase"],\n' +
          '  "notable_quote": "one short representative quote — preferably from a user comment, not a post title",\n' +
          '  "likes": ["short keyword", "short keyword", "short keyword"],\n' +
-         '  "pain_points": ["short keyword", "short keyword", "short keyword"]\n' +
+         '  "pain_points": ["short keyword", "short keyword", "short keyword"],\n' +
+         '  "actionable_insight": "one specific, actionable sentence the MGE marketing team could use next week"\n' +
          '}';
 }
 
@@ -277,11 +324,47 @@ function parseModelOutput(text) {
       themes: Array.isArray(parsed.themes) ? parsed.themes.map(String).slice(0, 5) : [],
       notable_quote: String(parsed.notable_quote || '').slice(0, 320),
       likes: Array.isArray(parsed.likes) ? parsed.likes.map(String).slice(0, 5) : [],
-      pain_points: Array.isArray(parsed.pain_points) ? parsed.pain_points.map(String).slice(0, 5) : []
+      pain_points: Array.isArray(parsed.pain_points) ? parsed.pain_points.map(String).slice(0, 5) : [],
+      actionable_insight: String(parsed.actionable_insight || '').slice(0, 500)
     };
   } catch (e) {
-    return { sentiment: 'mixed', summary: cleaned.slice(0, 400), themes: [], notable_quote: '', likes: [], pain_points: [] };
+    return { sentiment: 'mixed', summary: cleaned.slice(0, 400), themes: [], notable_quote: '', likes: [], pain_points: [], actionable_insight: '' };
   }
+}
+
+// Detect competitor / brand mentions in post titles, bodies, and top comments.
+// Returns sorted list: [{ name, count, samples: [{ snippet, context }] }, ...]
+function detectCompetitors(posts) {
+  const tally = {};
+  function recordHit(name, snippet, context) {
+    if (!tally[name]) tally[name] = { name, count: 0, samples: [] };
+    tally[name].count++;
+    if (tally[name].samples.length < 3) {
+      // Trim to ~140 chars centered on the match if possible
+      const trimmed = snippet.length > 180 ? snippet.slice(0, 180).trim() + '…' : snippet.trim();
+      tally[name].samples.push({ snippet: trimmed, context });
+    }
+  }
+  for (const post of posts) {
+    const titleBody = ((post.title || '') + ' ' + (post.selftext || '')).trim();
+    for (const c of COMPETITORS) {
+      if (c.pattern.test(titleBody)) {
+        // Use the title (or first 180 chars of body) as the snippet
+        recordHit(c.name, post.title || titleBody.slice(0, 180),
+                  'r/' + (post.subreddit || '') + ' post');
+      }
+    }
+    if (post.topComments && post.topComments.length > 0) {
+      for (const cm of post.topComments) {
+        for (const c of COMPETITORS) {
+          if (c.pattern.test(cm.body || '')) {
+            recordHit(c.name, cm.body, 'comment by u/' + (cm.author || 'unknown'));
+          }
+        }
+      }
+    }
+  }
+  return Object.values(tally).sort((a, b) => b.count - a.count);
 }
 
 async function callClaude(apiKey, userPrompt) {
@@ -391,6 +474,12 @@ async function summarizeTheme(theme, posts) {
 async function generatePulse() {
   console.log(' [PULSE] Starting generation for week ' + getIsoWeekId(new Date()));
   const startedAt = Date.now();
+  // Roll the current cache to prev BEFORE we overwrite it (week-over-week tracking)
+  const beforeStart = loadCache();
+  if (beforeStart && beforeStart.weekId !== getIsoWeekId(new Date())) {
+    rollPrevCache(beforeStart);
+  }
+  const prevCache = loadPrevCache();
   const themes = [];
   let lastClaudeCallAt = 0;
 
@@ -433,6 +522,16 @@ async function generatePulse() {
         topComments: (p.topComments || []).slice(0, 3) // surface 3 in UI to keep modal scannable
       }));
 
+      // Detect competitor / brand mentions across the analyzed posts and comments
+      const competitorMentions = detectCompetitors(top8);
+
+      // Week-over-week sentiment delta — look up this theme in prev cache
+      let delta = { change: 'new', priorSentiment: null };
+      if (prevCache && Array.isArray(prevCache.themes)) {
+        const prevTheme = prevCache.themes.find(p => p.id === theme.id);
+        if (prevTheme) delta = sentimentDelta(ai.sentiment, prevTheme.sentiment);
+      }
+
       themes.push({
         id: theme.id,
         label: theme.label,
@@ -447,6 +546,9 @@ async function generatePulse() {
         notableQuote: ai.notable_quote,
         likes: ai.likes || [],
         painPoints: ai.pain_points || [],
+        actionableInsight: ai.actionable_insight || '',
+        competitorMentions: competitorMentions,
+        sentimentDelta: delta,
         sources: sources
       });
       console.log(' [PULSE]   ' + theme.label + ': ' + allPosts.length + ' posts, ' +
@@ -457,7 +559,9 @@ async function generatePulse() {
         id: theme.id, label: theme.label, color: theme.color,
         postCount: 0, redditCount: 0, blueskyCount: 0, commentsAnalyzed: 0,
         sentiment: 'low_signal', summary: 'Generation failed: ' + e.message,
-        keyThemes: [], notableQuote: '', likes: [], painPoints: [], sources: []
+        keyThemes: [], notableQuote: '', likes: [], painPoints: [],
+        actionableInsight: '', competitorMentions: [],
+        sentimentDelta: { change: 'new', priorSentiment: null }, sources: []
       });
     }
   }
