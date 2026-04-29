@@ -1921,6 +1921,42 @@ app.get('/api/pulse/cached', (req, res) => {
   res.json(cached);
 });
 
+// Manual regeneration — bypasses the weekly cache. Rate-limited so it can't
+// be hammered. Useful for testing changes without waiting for the next week.
+let _lastManualPulseRegen = 0;
+app.post('/api/pulse/regenerate', async (req, res) => {
+  const now = Date.now();
+  if (now - _lastManualPulseRegen < 60000) {
+    return res.status(429).json({ error: 'Manual regeneration is rate-limited to once per minute.' });
+  }
+  _lastManualPulseRegen = now;
+  // Kick off generation but don't make the client wait — return immediately.
+  pulse.forceRegenerate().catch(err => console.warn(' [PULSE] Manual regen error:', err.message));
+  res.json({ ok: true, message: 'Regeneration started. Reload /api/pulse/cached in ~60-90s.' });
+});
+
+// 24h fingerprint cache for AI Insights — avoids regenerating the same view
+// repeatedly throughout the day (and across users). Keyed by SHA1 of the request body.
+const INSIGHTS_CACHE_FILE = path.join(__dirname, 'insights-cache.json');
+const INSIGHTS_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h
+
+function _loadInsightsCache() {
+  try {
+    if (!fs.existsSync(INSIGHTS_CACHE_FILE)) return {};
+    return JSON.parse(fs.readFileSync(INSIGHTS_CACHE_FILE, 'utf8')) || {};
+  } catch (e) { return {}; }
+}
+function _saveInsightsCache(obj) {
+  try { fs.writeFileSync(INSIGHTS_CACHE_FILE, JSON.stringify(obj), 'utf8'); }
+  catch (e) { console.warn(' [INSIGHTS] cache save failed:', e.message); }
+}
+function _insightsFingerprint(body) {
+  const crypto = require('crypto');
+  // Stable serialization: stringify with sorted keys
+  const stable = JSON.stringify(body, Object.keys(body || {}).sort());
+  return crypto.createHash('sha1').update(stable).digest('hex');
+}
+
 app.post('/api/insights', express.json({ limit: '1mb' }), async (req, res) => {
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   const geminiKey = process.env.GEMINI_API_KEY;
@@ -1934,12 +1970,39 @@ app.post('/api/insights', express.json({ limit: '1mb' }), async (req, res) => {
   if (!body.metrics || body.metrics.postCount === 0) {
     return res.status(400).json({ error: 'No posts in the requested window.' });
   }
+
+  // 24h fingerprint cache lookup
+  const fp = _insightsFingerprint(body);
+  const cache = _loadInsightsCache();
+  const cached = cache[fp];
+  if (cached && (Date.now() - cached.cachedAt) < INSIGHTS_CACHE_TTL_MS) {
+    const result = Object.assign({}, cached.result, { _cached: true, _cachedAt: cached.cachedAt });
+    return res.json(result);
+  }
+
   try {
     const userPrompt = buildInsightsUserPrompt(body);
-    const provider = anthropicKey ? 'anthropic' : 'gemini';
-    const raw = anthropicKey
-      ? await callAnthropicInsights(anthropicKey, userPrompt)
-      : await callGeminiInsights(geminiKey, userPrompt);
+    // Prefer Gemini (free tier) since Pulse uses it too — keeps both features on the same model.
+    // Fall back to Claude only if Gemini errors and an Anthropic key is available.
+    let provider = 'gemini';
+    let raw;
+    if (geminiKey) {
+      try {
+        raw = await callGeminiInsights(geminiKey, userPrompt);
+      } catch (e) {
+        if (anthropicKey) {
+          console.warn(' [INSIGHTS] Gemini failed, falling back to Claude:', e.message);
+          provider = 'anthropic';
+          raw = await callAnthropicInsights(anthropicKey, userPrompt);
+        } else {
+          throw e;
+        }
+      }
+    } else {
+      provider = 'anthropic';
+      raw = await callAnthropicInsights(anthropicKey, userPrompt);
+    }
+
     const parsed = parseInsightsJson(raw);
     if (!parsed) {
       return res.status(502).json({
@@ -1950,6 +2013,16 @@ app.post('/api/insights', express.json({ limit: '1mb' }), async (req, res) => {
     }
     const result = shapeInsightsResult(parsed);
     result._provider = provider;
+
+    // Save to cache (prune entries older than TTL while we're here)
+    const fresh = {};
+    const now = Date.now();
+    for (const [k, v] of Object.entries(cache)) {
+      if (v && v.cachedAt && (now - v.cachedAt) < INSIGHTS_CACHE_TTL_MS) fresh[k] = v;
+    }
+    fresh[fp] = { result: result, cachedAt: now };
+    _saveInsightsCache(fresh);
+
     return res.json(result);
   } catch (err) {
     console.warn(' [INSIGHTS] Server error:', err.message);
