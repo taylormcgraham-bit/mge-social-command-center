@@ -20,9 +20,9 @@ const GEMINI_MODEL = process.env.PULSE_GEMINI_MODEL || 'gemini-2.0-flash';
 const REDDIT_UA = 'MGE-Social-Command-Center/1.0 (by u/taylormcgraham; Audience Pulse theme monitoring)';
 
 // Rate limiting / retry
-const REDDIT_DELAY_MS = 1500;
+const REDDIT_DELAY_MS = 3000;       // bumped from 1.5s — Reddit 429s consistently around theme 7 with 1.5s
 const CLAUDE_DELAY_MS = 3000;       // ~20 RPM, well under tier-1 50 RPM limit
-const MAX_RETRIES = 3;
+const MAX_RETRIES = 4;              // bumped from 3 — gives us 3+6+12+24=45s of total backoff per call
 
 // ============================================================
 // Theme config — curated subreddits per theme.
