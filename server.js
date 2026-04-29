@@ -1982,25 +1982,24 @@ app.post('/api/insights', express.json({ limit: '1mb' }), async (req, res) => {
 
   try {
     const userPrompt = buildInsightsUserPrompt(body);
-    // Prefer Gemini (free tier) since Pulse uses it too — keeps both features on the same model.
-    // Fall back to Claude only if Gemini errors and an Anthropic key is available.
-    let provider = 'gemini';
+    // Prefer Claude (paid, reliable) — falls back to Gemini if Claude errors.
+    let provider = 'anthropic';
     let raw;
-    if (geminiKey) {
+    if (anthropicKey) {
       try {
-        raw = await callGeminiInsights(geminiKey, userPrompt);
+        raw = await callAnthropicInsights(anthropicKey, userPrompt);
       } catch (e) {
-        if (anthropicKey) {
-          console.warn(' [INSIGHTS] Gemini failed, falling back to Claude:', e.message);
-          provider = 'anthropic';
-          raw = await callAnthropicInsights(anthropicKey, userPrompt);
+        if (geminiKey) {
+          console.warn(' [INSIGHTS] Claude failed, falling back to Gemini:', e.message);
+          provider = 'gemini';
+          raw = await callGeminiInsights(geminiKey, userPrompt);
         } else {
           throw e;
         }
       }
     } else {
-      provider = 'anthropic';
-      raw = await callAnthropicInsights(anthropicKey, userPrompt);
+      provider = 'gemini';
+      raw = await callGeminiInsights(geminiKey, userPrompt);
     }
 
     const parsed = parseInsightsJson(raw);
