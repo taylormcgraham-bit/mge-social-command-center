@@ -9,6 +9,7 @@
     <meta property="og:description" content="Marketing & Communications dashboard for Madison Gas and Electric.">
     <meta property="og:type" content="website">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.8.5/dist/d3.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body {
@@ -1239,6 +1240,159 @@
         .view-panel { display: none; }
         .view-panel.active { display: block; }
 
+        /* Audience Pulse — NEW pill on tab nav */
+        .pulse-new-pill {
+            display: inline-block;
+            margin-left: 8px;
+            padding: 1px 7px;
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            color: #fff;
+            background: #dc2626;
+            border-radius: 10px;
+            vertical-align: 1px;
+            animation: pulsePillBlink 2.4s ease-in-out infinite;
+        }
+        @keyframes pulsePillBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.55; }
+        }
+
+        /* Audience Pulse — main wrap */
+        .pulse-wrap { padding: 24px 32px 80px; max-width: 1400px; margin: 0 auto; }
+        .pulse-header {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            gap: 24px; margin-bottom: 16px;
+        }
+        .pulse-title { font-size: 22px; font-weight: 700; color: #0f172a; letter-spacing: -0.01em; }
+        .pulse-subtitle { font-size: 13px; color: #64748b; margin-top: 4px; max-width: 720px; line-height: 1.45; }
+        .pulse-meta { font-size: 12px; color: #475569; text-align: right; white-space: nowrap; }
+        .pulse-meta strong { color: #0f172a; font-weight: 600; }
+
+        .pulse-legend {
+            display: flex; gap: 18px; flex-wrap: wrap; align-items: center;
+            margin: 8px 0 18px; padding: 10px 14px; background: #fff;
+            border: 1px solid #e2e8f0; border-radius: 8px; font-size: 12px; color: #475569;
+        }
+        .pulse-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+        .pulse-legend-note { color: #94a3b8; font-style: italic; margin-left: auto; }
+        .pulse-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+
+        .pulse-bubbles-container {
+            position: relative;
+            background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            min-height: 600px;
+            overflow: hidden;
+        }
+        #pulseBubblesSvg { display: block; cursor: default; }
+        .pulse-bubble { cursor: pointer; transition: filter 0.2s ease, transform 0.15s ease; }
+        .pulse-bubble:hover { filter: brightness(1.08) drop-shadow(0 6px 16px rgba(0,0,0,0.15)); }
+        .pulse-bubble-label {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-weight: 700;
+            fill: #fff;
+            text-anchor: middle;
+            pointer-events: none;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+        }
+        .pulse-bubble-count {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 10px;
+            fill: rgba(255,255,255,0.85);
+            text-anchor: middle;
+            pointer-events: none;
+        }
+
+        .pulse-loading {
+            position: absolute; inset: 0; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 8px; text-align: center; padding: 0 24px;
+        }
+        .pulse-loading .big { font-size: 16px; font-weight: 600; color: #0f172a; }
+        .pulse-loading .small { font-size: 13px; color: #64748b; max-width: 480px; }
+
+        /* Pulse modal */
+        .pulse-modal {
+            position: fixed; inset: 0; z-index: 9999;
+            background: rgba(15, 23, 42, 0.58);
+            display: flex; align-items: center; justify-content: center;
+            padding: 24px;
+            animation: pulseModalFadeIn 0.18s ease-out;
+        }
+        @keyframes pulseModalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .pulse-modal-card {
+            background: #fff;
+            border-radius: 12px;
+            max-width: 720px;
+            width: 100%;
+            max-height: 86vh;
+            overflow-y: auto;
+            box-shadow: 0 18px 48px rgba(0,0,0,0.28);
+            position: relative;
+            animation: pulseModalRise 0.22s ease-out;
+        }
+        @keyframes pulseModalRise {
+            from { transform: translateY(12px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .pulse-modal-close {
+            position: absolute; top: 12px; right: 14px;
+            background: transparent; border: none; font-size: 26px; line-height: 1;
+            color: #64748b; cursor: pointer; padding: 4px 10px; border-radius: 6px;
+        }
+        .pulse-modal-close:hover { background: #f1f5f9; color: #0f172a; }
+        .pulse-modal-header { padding: 22px 28px 14px; border-bottom: 1px solid #e2e8f0; }
+        .pulse-modal-sentiment {
+            display: inline-block; padding: 3px 10px; border-radius: 12px;
+            font-size: 11px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase;
+            color: #fff; margin-bottom: 8px;
+        }
+        .pulse-modal-sentiment.positive { background: #16a34a; }
+        .pulse-modal-sentiment.mixed    { background: #94a3b8; }
+        .pulse-modal-sentiment.negative { background: #dc2626; }
+        .pulse-modal-sentiment.low_signal { background: #475569; }
+        .pulse-modal-title { font-size: 22px; font-weight: 700; color: #0f172a; }
+        .pulse-modal-counts { font-size: 12px; color: #64748b; margin-top: 4px; }
+        .pulse-modal-section { padding: 16px 28px; border-bottom: 1px solid #f1f5f9; }
+        .pulse-modal-section:last-child { border-bottom: none; padding-bottom: 24px; }
+        .pulse-modal-label { font-size: 11px; font-weight: 700; letter-spacing: 0.6px;
+            color: #64748b; text-transform: uppercase; margin-bottom: 8px; }
+        .pulse-modal-summary { font-size: 14px; line-height: 1.55; color: #1e293b; }
+        .pulse-modal-quote {
+            font-size: 13px; line-height: 1.5; color: #334155;
+            font-style: italic; padding: 10px 14px;
+            border-left: 3px solid #cbd5e1; background: #f8fafc; border-radius: 0 6px 6px 0;
+        }
+        .pulse-modal-themes { display: flex; flex-wrap: wrap; gap: 6px; }
+        .pulse-modal-theme-chip {
+            display: inline-block; padding: 4px 10px;
+            background: #eef2ff; color: #3730a3;
+            border-radius: 12px; font-size: 12px; font-weight: 500;
+        }
+        .pulse-modal-sources { display: flex; flex-direction: column; gap: 8px; }
+        .pulse-modal-source {
+            display: block; padding: 10px 12px; border: 1px solid #e2e8f0;
+            border-radius: 8px; text-decoration: none; color: inherit;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .pulse-modal-source:hover { border-color: #6366f1; background: #f8fafc; }
+        .pulse-modal-source-meta {
+            font-size: 11px; color: #64748b; margin-bottom: 3px;
+            display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+        }
+        .pulse-modal-source-platform {
+            display: inline-block; padding: 1px 7px; border-radius: 4px;
+            font-size: 10px; font-weight: 700; letter-spacing: 0.3px;
+        }
+        .pulse-modal-source-platform.reddit { background: #ff4500; color: #fff; }
+        .pulse-modal-source-platform.bluesky { background: #0085ff; color: #fff; }
+        .pulse-modal-source-title { font-size: 13px; color: #1e293b; line-height: 1.4; }
+
         /* Mentions view layout */
         .mentions-wrap { padding: 24px 32px 80px; max-width: 1400px; margin: 0 auto; }
         .mentions-header {
@@ -1620,6 +1774,7 @@
 <div class="view-nav">
     <button class="view-nav-btn active" data-view="dashboard" onclick="switchView('dashboard')">Social Performance</button>
     <button class="view-nav-btn" data-view="mentions" onclick="switchView('mentions')">Media Monitoring</button>
+    <button class="view-nav-btn" data-view="pulse" onclick="switchView('pulse')">Audience Pulse<span class="pulse-new-pill" id="pulseNewPill" style="display:none;">NEW</span></button>
 </div>
 
 <div id="dashboardView" class="view-panel active">
@@ -1954,6 +2109,65 @@
         </div>
     </div>
 </div><!-- /#mentionsView -->
+
+<div id="pulseView" class="view-panel">
+    <div class="pulse-wrap">
+        <div class="pulse-header">
+            <div>
+                <div class="pulse-title">Audience Pulse</div>
+                <div class="pulse-subtitle">Recent public commentary on utility-relevant themes — scraped weekly from Reddit and Bluesky, summarized with sentiment by Claude. Click any bubble for the full read.</div>
+            </div>
+            <div class="pulse-meta">
+                <div>Generated <strong id="pulseGeneratedAt">--</strong></div>
+                <div id="pulseWeekId" style="opacity:0.7; margin-top:2px;">--</div>
+            </div>
+        </div>
+
+        <div class="pulse-legend">
+            <span class="pulse-legend-item"><span class="pulse-dot" style="background:#16a34a"></span>Positive</span>
+            <span class="pulse-legend-item"><span class="pulse-dot" style="background:#94a3b8"></span>Mixed</span>
+            <span class="pulse-legend-item"><span class="pulse-dot" style="background:#dc2626"></span>Negative</span>
+            <span class="pulse-legend-item"><span class="pulse-dot" style="background:#475569"></span>Low signal</span>
+            <span class="pulse-legend-item pulse-legend-note">Bubble size scales with post volume</span>
+        </div>
+
+        <div class="pulse-bubbles-container" id="pulseBubblesContainer">
+            <svg id="pulseBubblesSvg" width="100%" height="600"></svg>
+            <div class="pulse-loading" id="pulseLoading">
+                <div class="big">Generating this week's audience pulse...</div>
+                <div class="small">First run takes about 60 seconds. Future loads are instant — we only regenerate once a week.</div>
+            </div>
+        </div>
+    </div>
+</div><!-- /#pulseView -->
+
+<!-- Pulse modal -->
+<div id="pulseModal" class="pulse-modal" style="display:none;" onclick="closePulseModal(event)">
+    <div class="pulse-modal-card" onclick="event.stopPropagation()">
+        <button class="pulse-modal-close" onclick="closePulseModal()" aria-label="Close">&times;</button>
+        <div class="pulse-modal-header">
+            <div class="pulse-modal-sentiment" id="pulseModalSentiment"></div>
+            <div class="pulse-modal-title" id="pulseModalTitle">--</div>
+            <div class="pulse-modal-counts" id="pulseModalCounts">--</div>
+        </div>
+        <div class="pulse-modal-section">
+            <div class="pulse-modal-label">Summary</div>
+            <div class="pulse-modal-summary" id="pulseModalSummary">--</div>
+        </div>
+        <div class="pulse-modal-section" id="pulseModalQuoteSection">
+            <div class="pulse-modal-label">Notable quote</div>
+            <div class="pulse-modal-quote" id="pulseModalQuote">--</div>
+        </div>
+        <div class="pulse-modal-section" id="pulseModalThemesSection">
+            <div class="pulse-modal-label">Key themes</div>
+            <div class="pulse-modal-themes" id="pulseModalThemes"></div>
+        </div>
+        <div class="pulse-modal-section">
+            <div class="pulse-modal-label">Top sources</div>
+            <div class="pulse-modal-sources" id="pulseModalSources"></div>
+        </div>
+    </div>
+</div>
 
 <script>
 // ============================================================
@@ -4890,7 +5104,10 @@ async function renderInsightsPanel(data, previousData, force) {
         document.querySelectorAll('.view-nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
         document.getElementById('dashboardView').classList.toggle('active', view === 'dashboard');
         document.getElementById('mentionsView').classList.toggle('active', view === 'mentions');
+        var pulseViewEl = document.getElementById('pulseView');
+        if (pulseViewEl) pulseViewEl.classList.toggle('active', view === 'pulse');
         if (view === 'mentions' && !_mentionsState.data) loadMentionsWithAutoRefresh();
+        if (view === 'pulse' && typeof loadPulseData === 'function') loadPulseData();
     };
 
     window.filterMentionsSource = function(source, el) {
@@ -5321,6 +5538,337 @@ async function renderInsightsPanel(data, previousData, force) {
 
     // Auto-refresh feed every 5 min (reads from our own cache, no external API calls)
     setInterval(() => { if (document.getElementById('mentionsView').classList.contains('active')) loadMentions(); }, 5 * 60 * 1000);
+})();
+</script>
+
+<script>
+// ============================================================
+// AUDIENCE PULSE — D3 force-layout floating bubbles + modal
+// ============================================================
+(function() {
+    var PULSE_CACHE_KEY = 'pulseLastSeenWeekId';
+    var SENTIMENT_COLORS = {
+        positive:   '#16a34a',
+        mixed:      '#94a3b8',
+        negative:   '#dc2626',
+        low_signal: '#475569'
+    };
+    var SENTIMENT_LABELS = {
+        positive:   'Positive',
+        mixed:      'Mixed',
+        negative:   'Negative',
+        low_signal: 'Low signal'
+    };
+
+    var _pulseState = { data: null, loading: false, simulation: null, hasFetched: false };
+
+    function fmtRelative(iso) {
+        if (!iso) return '--';
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return '--';
+        var diffMs = Date.now() - d.getTime();
+        var hrs = Math.round(diffMs / 3600000);
+        if (hrs < 1) return 'just now';
+        if (hrs < 24) return hrs + ' hour' + (hrs === 1 ? '' : 's') + ' ago';
+        var days = Math.round(hrs / 24);
+        return days + ' day' + (days === 1 ? '' : 's') + ' ago';
+    }
+
+    function checkNewPill(weekId) {
+        if (!weekId) return;
+        var pill = document.getElementById('pulseNewPill');
+        if (!pill) return;
+        var lastSeen = '';
+        try { lastSeen = localStorage.getItem(PULSE_CACHE_KEY) || ''; } catch(e) {}
+        pill.style.display = (weekId !== lastSeen) ? 'inline-block' : 'none';
+    }
+
+    function markSeen(weekId) {
+        if (!weekId) return;
+        try { localStorage.setItem(PULSE_CACHE_KEY, weekId); } catch(e) {}
+        var pill = document.getElementById('pulseNewPill');
+        if (pill) pill.style.display = 'none';
+    }
+
+    window.loadPulseData = function() {
+        if (_pulseState.loading) return;
+        var loadingEl = document.getElementById('pulseLoading');
+        // If we already rendered fresh data, don't refetch
+        if (_pulseState.data && _pulseState.data.themes && _pulseState.data.themes.length > 0) return;
+        _pulseState.loading = true;
+        if (loadingEl) loadingEl.style.display = 'flex';
+
+        // Try cached endpoint first (instant), then fall back to full /api/pulse if empty
+        fetch('/api/pulse/cached')
+            .then(function(r) { return r.json(); })
+            .then(function(cached) {
+                if (cached && cached.themes && cached.themes.length > 0) {
+                    return cached;
+                }
+                // Cache empty — trigger full generation (long wait)
+                if (loadingEl) {
+                    loadingEl.querySelector('.big').textContent = 'Generating this week’s audience pulse...';
+                    loadingEl.querySelector('.small').textContent = 'First run takes about 60 seconds. Future loads are instant.';
+                }
+                return fetch('/api/pulse').then(function(r) { return r.json(); });
+            })
+            .then(function(data) {
+                _pulseState.data = data;
+                _pulseState.hasFetched = true;
+                if (loadingEl) loadingEl.style.display = 'none';
+                renderPulseHeader(data);
+                renderPulseBubbles(data);
+                checkNewPill(data && data.weekId);
+            })
+            .catch(function(err) {
+                console.warn('Pulse load error:', err);
+                if (loadingEl) {
+                    loadingEl.querySelector('.big').textContent = 'Couldn’t load Audience Pulse';
+                    loadingEl.querySelector('.small').textContent = err.message || 'Try refreshing the page.';
+                }
+            })
+            .finally(function() { _pulseState.loading = false; });
+    };
+
+    function renderPulseHeader(data) {
+        var genEl = document.getElementById('pulseGeneratedAt');
+        var weekEl = document.getElementById('pulseWeekId');
+        if (genEl) genEl.textContent = fmtRelative(data && data.generatedAt);
+        if (weekEl) weekEl.textContent = data && data.weekId ? 'Week ' + data.weekId : '';
+    }
+
+    function renderPulseBubbles(data) {
+        var svg = d3.select('#pulseBubblesSvg');
+        svg.selectAll('*').remove();
+        var container = document.getElementById('pulseBubblesContainer');
+        var width = container.clientWidth;
+        var height = 600;
+        svg.attr('viewBox', '0 0 ' + width + ' ' + height)
+           .attr('preserveAspectRatio', 'xMidYMid meet');
+
+        var themes = (data && data.themes) || [];
+        if (themes.length === 0) return;
+
+        // Bubble radius scales with post volume (with min/max clamps)
+        var maxPosts = d3.max(themes, function(t) { return t.postCount || 0; }) || 1;
+        var rScale = d3.scaleSqrt().domain([0, Math.max(maxPosts, 5)]).range([42, 95]);
+
+        var nodes = themes.map(function(t) {
+            return {
+                id: t.id,
+                label: t.label,
+                postCount: t.postCount || 0,
+                sentiment: t.sentiment || 'low_signal',
+                color: SENTIMENT_COLORS[t.sentiment] || '#475569',
+                r: rScale(t.postCount || 0),
+                theme: t
+            };
+        });
+
+        // Stop any prior simulation
+        if (_pulseState.simulation) _pulseState.simulation.stop();
+
+        var simulation = d3.forceSimulation(nodes)
+            .force('charge', d3.forceManyBody().strength(8))
+            .force('center', d3.forceCenter(width / 2, height / 2))
+            .force('collide', d3.forceCollide().radius(function(d) { return d.r + 6; }).strength(0.95))
+            .force('x', d3.forceX(width / 2).strength(0.04))
+            .force('y', d3.forceY(height / 2).strength(0.04))
+            .alphaDecay(0.02);
+
+        _pulseState.simulation = simulation;
+
+        var node = svg.selectAll('g.pulse-node')
+            .data(nodes)
+            .enter()
+            .append('g')
+            .attr('class', 'pulse-node')
+            .style('cursor', 'pointer')
+            .on('click', function(event, d) { openPulseModal(d.theme); })
+            .call(d3.drag()
+                .on('start', function(event, d) {
+                    if (!event.active) simulation.alphaTarget(0.3).restart();
+                    d.fx = d.x; d.fy = d.y;
+                })
+                .on('drag', function(event, d) { d.fx = event.x; d.fy = event.y; })
+                .on('end', function(event, d) {
+                    if (!event.active) simulation.alphaTarget(0);
+                    d.fx = null; d.fy = null;
+                }));
+
+        node.append('circle')
+            .attr('class', 'pulse-bubble')
+            .attr('r', function(d) { return d.r; })
+            .attr('fill', function(d) { return d.color; })
+            .attr('fill-opacity', 0.88)
+            .attr('stroke', '#fff')
+            .attr('stroke-width', 2);
+
+        // Wrap label across multiple lines if needed
+        node.each(function(d) {
+            var g = d3.select(this);
+            var words = d.label.split(/\s+/);
+            var lines = [];
+            // Simple wrapping: break into chunks of ~12 chars worth
+            var maxCharsPerLine = Math.floor(d.r / 4.5);
+            var currentLine = '';
+            words.forEach(function(w) {
+                if ((currentLine + ' ' + w).trim().length > maxCharsPerLine && currentLine) {
+                    lines.push(currentLine.trim());
+                    currentLine = w;
+                } else {
+                    currentLine = (currentLine + ' ' + w).trim();
+                }
+            });
+            if (currentLine) lines.push(currentLine.trim());
+            // Cap at 3 lines
+            if (lines.length > 3) {
+                lines = lines.slice(0, 3);
+                lines[2] = lines[2].slice(0, maxCharsPerLine - 1) + '…';
+            }
+            var fontSize = Math.max(10, Math.min(15, d.r / 5.5));
+            var lineH = fontSize * 1.05;
+            var totalH = lines.length * lineH;
+            var startY = -totalH / 2 + lineH * 0.75;
+            lines.forEach(function(ln, i) {
+                g.append('text')
+                    .attr('class', 'pulse-bubble-label')
+                    .attr('y', startY + i * lineH)
+                    .attr('font-size', fontSize)
+                    .text(ln);
+            });
+            // Post count below label
+            g.append('text')
+                .attr('class', 'pulse-bubble-count')
+                .attr('y', startY + lines.length * lineH + 4)
+                .text(d.postCount + ' posts');
+        });
+
+        simulation.on('tick', function() {
+            // Keep nodes inside the bounding box
+            nodes.forEach(function(d) {
+                d.x = Math.max(d.r + 2, Math.min(width - d.r - 2, d.x));
+                d.y = Math.max(d.r + 2, Math.min(height - d.r - 2, d.y));
+            });
+            node.attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; });
+        });
+    }
+
+    function openPulseModal(theme) {
+        var modal = document.getElementById('pulseModal');
+        if (!modal || !theme) return;
+
+        document.getElementById('pulseModalTitle').textContent = theme.label;
+        document.getElementById('pulseModalCounts').textContent =
+            (theme.postCount || 0) + ' posts analyzed' +
+            ' · Reddit: ' + (theme.redditCount || 0) +
+            ' · Bluesky: ' + (theme.blueskyCount || 0);
+
+        var sentEl = document.getElementById('pulseModalSentiment');
+        sentEl.className = 'pulse-modal-sentiment ' + (theme.sentiment || 'low_signal');
+        sentEl.textContent = SENTIMENT_LABELS[theme.sentiment] || 'Mixed';
+
+        document.getElementById('pulseModalSummary').textContent = theme.summary || 'No summary available.';
+
+        var quoteSection = document.getElementById('pulseModalQuoteSection');
+        var quoteEl = document.getElementById('pulseModalQuote');
+        if (theme.notableQuote && theme.notableQuote.trim().length > 0) {
+            quoteEl.textContent = '“' + theme.notableQuote + '”';
+            quoteSection.style.display = '';
+        } else {
+            quoteSection.style.display = 'none';
+        }
+
+        var themesEl = document.getElementById('pulseModalThemes');
+        var themesSection = document.getElementById('pulseModalThemesSection');
+        themesEl.innerHTML = '';
+        if (theme.keyThemes && theme.keyThemes.length > 0) {
+            theme.keyThemes.forEach(function(t) {
+                var chip = document.createElement('span');
+                chip.className = 'pulse-modal-theme-chip';
+                chip.textContent = t;
+                themesEl.appendChild(chip);
+            });
+            themesSection.style.display = '';
+        } else {
+            themesSection.style.display = 'none';
+        }
+
+        var sourcesEl = document.getElementById('pulseModalSources');
+        sourcesEl.innerHTML = '';
+        var sources = theme.sources || [];
+        if (sources.length === 0) {
+            sourcesEl.innerHTML = '<div style="font-size:13px; color:#94a3b8;">No source posts captured this week.</div>';
+        } else {
+            sources.forEach(function(s) {
+                var a = document.createElement('a');
+                a.className = 'pulse-modal-source';
+                a.href = s.url || '#';
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+                var meta = document.createElement('div');
+                meta.className = 'pulse-modal-source-meta';
+                var platformPill = document.createElement('span');
+                platformPill.className = 'pulse-modal-source-platform ' + (s.source || 'reddit');
+                platformPill.textContent = (s.source || 'reddit').toUpperCase();
+                meta.appendChild(platformPill);
+                var subtxt = document.createElement('span');
+                var bits = [];
+                if (s.subreddit) bits.push('r/' + s.subreddit);
+                if (s.author) bits.push('u/' + s.author);
+                bits.push((s.score || 0) + ' upvotes');
+                bits.push((s.comments || 0) + ' comments');
+                subtxt.textContent = bits.join(' · ');
+                meta.appendChild(subtxt);
+                a.appendChild(meta);
+                var title = document.createElement('div');
+                title.className = 'pulse-modal-source-title';
+                title.textContent = s.title || '(untitled)';
+                a.appendChild(title);
+                sourcesEl.appendChild(a);
+            });
+        }
+
+        modal.style.display = 'flex';
+        if (_pulseState.data && _pulseState.data.weekId) markSeen(_pulseState.data.weekId);
+    }
+
+    window.closePulseModal = function(event) {
+        if (event && event.target && event.target.id !== 'pulseModal' && event.currentTarget !== event.target) {
+            // clicked inside the card — ignore
+            if (!event.target.classList || !event.target.classList.contains('pulse-modal-close')) return;
+        }
+        var modal = document.getElementById('pulseModal');
+        if (modal) modal.style.display = 'none';
+    };
+
+    // ESC closes modal
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            var modal = document.getElementById('pulseModal');
+            if (modal && modal.style.display !== 'none') modal.style.display = 'none';
+        }
+    });
+
+    // Re-render bubbles on window resize
+    var _resizeTimer;
+    window.addEventListener('resize', function() {
+        clearTimeout(_resizeTimer);
+        _resizeTimer = setTimeout(function() {
+            if (_pulseState.data && document.getElementById('pulseView').classList.contains('active')) {
+                renderPulseBubbles(_pulseState.data);
+            }
+        }, 250);
+    });
+
+    // Background-poll the cached endpoint on page load so the NEW pill can light up
+    // even if the user never opens the tab. Cheap — single HEAD-like JSON read.
+    fetch('/api/pulse/cached')
+        .then(function(r) { return r.json(); })
+        .then(function(cached) {
+            if (cached && cached.weekId) checkNewPill(cached.weekId);
+        })
+        .catch(function() {});
 })();
 </script>
 
