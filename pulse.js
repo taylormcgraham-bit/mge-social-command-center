@@ -229,7 +229,9 @@ const PULSE_SYSTEM_PROMPT =
   '(4) Themes are 3-5 short noun-phrases describing what users are actually saying or asking about. ' +
   '(5) Summary is 2-3 sentences in plain professional tone — no marketing buzzwords, no hedging filler. ' +
   '(6) Notable quote: pick a real comment (preferred) or post snippet that captures a representative sentiment. ' +
-  '(7) Output strict JSON only — no preamble, no markdown.';
+  '(7) "likes" = 3-5 SHORT keywords/buzzwords (1-3 words each) capturing what users PRAISE, ENJOY, or are EXCITED about in this theme. ' +
+  '(8) "pain_points" = 3-5 SHORT keywords/buzzwords (1-3 words each) capturing what users COMPLAIN about, FEAR, or find FRUSTRATING. ' +
+  '(9) Output strict JSON only — no preamble, no markdown.';
 
 function buildThemePrompt(theme, posts) {
   const top = posts.slice(0, 8);
@@ -259,7 +261,9 @@ function buildThemePrompt(theme, posts) {
          '  "sentiment": "positive" | "mixed" | "negative" | "low_signal",\n' +
          '  "summary": "2-3 sentence editorial summary grounded in what users are actually saying",\n' +
          '  "themes": ["short phrase", "short phrase", "short phrase"],\n' +
-         '  "notable_quote": "one short representative quote — preferably from a user comment, not a post title"\n' +
+         '  "notable_quote": "one short representative quote — preferably from a user comment, not a post title",\n' +
+         '  "likes": ["short keyword", "short keyword", "short keyword"],\n' +
+         '  "pain_points": ["short keyword", "short keyword", "short keyword"]\n' +
          '}';
 }
 
@@ -271,10 +275,12 @@ function parseModelOutput(text) {
       sentiment: ['positive', 'mixed', 'negative', 'low_signal'].includes(parsed.sentiment) ? parsed.sentiment : 'mixed',
       summary: String(parsed.summary || '').slice(0, 800),
       themes: Array.isArray(parsed.themes) ? parsed.themes.map(String).slice(0, 5) : [],
-      notable_quote: String(parsed.notable_quote || '').slice(0, 320)
+      notable_quote: String(parsed.notable_quote || '').slice(0, 320),
+      likes: Array.isArray(parsed.likes) ? parsed.likes.map(String).slice(0, 5) : [],
+      pain_points: Array.isArray(parsed.pain_points) ? parsed.pain_points.map(String).slice(0, 5) : []
     };
   } catch (e) {
-    return { sentiment: 'mixed', summary: cleaned.slice(0, 400), themes: [], notable_quote: '' };
+    return { sentiment: 'mixed', summary: cleaned.slice(0, 400), themes: [], notable_quote: '', likes: [], pain_points: [] };
   }
 }
 
@@ -439,6 +445,8 @@ async function generatePulse() {
         summary: ai.summary,
         keyThemes: ai.themes,
         notableQuote: ai.notable_quote,
+        likes: ai.likes || [],
+        painPoints: ai.pain_points || [],
         sources: sources
       });
       console.log(' [PULSE]   ' + theme.label + ': ' + allPosts.length + ' posts, ' +
@@ -449,7 +457,7 @@ async function generatePulse() {
         id: theme.id, label: theme.label, color: theme.color,
         postCount: 0, redditCount: 0, blueskyCount: 0, commentsAnalyzed: 0,
         sentiment: 'low_signal', summary: 'Generation failed: ' + e.message,
-        keyThemes: [], notableQuote: '', sources: []
+        keyThemes: [], notableQuote: '', likes: [], painPoints: [], sources: []
       });
     }
   }
