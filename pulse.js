@@ -234,8 +234,10 @@ async function fetchBlueskyForTheme(theme) {
 }
 
 // ============================================================
-// Claude Haiku summarization — one call per theme
+// Summarization — one call per theme
+// Dual-provider: prefer Gemini (free tier), fall back to Claude Haiku.
 // ============================================================
+const GEMINI_MODEL = process.env.PULSE_GEMINI_MODEL || 'gemini-2.0-flash';
 const PULSE_SYSTEM_PROMPT =
   'You are an audience-research analyst at Madison Gas and Electric (MGE), a Wisconsin utility. ' +
   'You read recent public commentary from Reddit and Bluesky and produce a tight, neutral, ' +
@@ -266,12 +268,77 @@ function buildThemeUserPrompt(theme, posts) {
          '}';
 }
 
-async function summarizeWithClaude(theme, posts) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
+function parseModelOutput(text) {
+  const cleaned = (text || '').replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+  try {
+    const parsed = JSON.parse(cleaned);
+    return {
+      sentiment: ['positive', 'mixed', 'negative', 'low_signal'].includes(parsed.sentiment) ? parsed.sentiment : 'mixed',
+      summary: String(parsed.summary || '').slice(0, 800),
+      themes: Array.isArray(parsed.themes) ? parsed.themes.map(String).slice(0, 5) : [],
+      notable_quote: String(parsed.notable_quote || '').slice(0, 280)
+    };
+  } catch (e) {
+    return { sentiment: 'mixed', summary: cleaned.slice(0, 400), themes: [], notable_quote: '' };
+  }
+}
+
+async function callGemini(apiKey, userPrompt) {
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
+              encodeURIComponent(GEMINI_MODEL) + ':generateContent?key=' + encodeURIComponent(apiKey);
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: PULSE_SYSTEM_PROMPT }] },
+      contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+      generationConfig: {
+        temperature: 0.4,
+        maxOutputTokens: 800,
+        responseMimeType: 'application/json'
+      }
+    })
+  });
+  if (!resp.ok) {
+    const errText = await resp.text();
+    throw new Error('Gemini ' + resp.status + ': ' + errText.slice(0, 200));
+  }
+  const payload = await resp.json();
+  const parts = payload.candidates && payload.candidates[0] &&
+                payload.candidates[0].content && payload.candidates[0].content.parts;
+  return (parts && parts[0] && parts[0].text) || '';
+}
+
+async function callClaude(apiKey, userPrompt) {
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: HAIKU_MODEL,
+      max_tokens: 600,
+      system: PULSE_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: userPrompt }]
+    })
+  });
+  if (!resp.ok) {
+    const errText = await resp.text();
+    throw new Error('Claude ' + resp.status + ': ' + errText.slice(0, 200));
+  }
+  const payload = await resp.json();
+  return (payload.content && payload.content[0] && payload.content[0].text) || '';
+}
+
+async function summarizeTheme(theme, posts) {
+  const geminiKey = process.env.GEMINI_API_KEY;
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  if (!geminiKey && !anthropicKey) {
     return {
       sentiment: 'low_signal',
-      summary: 'Anthropic API key not configured; cannot generate summary.',
+      summary: 'No LLM API key configured (GEMINI_API_KEY or ANTHROPIC_API_KEY).',
       themes: [],
       notable_quote: ''
     };
@@ -285,44 +352,24 @@ async function summarizeWithClaude(theme, posts) {
     };
   }
   const userPrompt = buildThemeUserPrompt(theme, posts);
-  try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: HAIKU_MODEL,
-        max_tokens: 600,
-        system: PULSE_SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: userPrompt }]
-      })
-    });
-    if (!resp.ok) {
-      const errText = await resp.text();
-      console.warn(' [PULSE] Claude error ' + resp.status + ' for ' + theme.id + ':', errText.slice(0, 200));
-      return { sentiment: 'low_signal', summary: 'Summary generation failed.', themes: [], notable_quote: '' };
-    }
-    const payload = await resp.json();
-    const text = (payload.content && payload.content[0] && payload.content[0].text) || '';
-    // Strip code fences if present, then parse
-    const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+  // Prefer Gemini (free tier); fall back to Claude on error or if Gemini key missing.
+  if (geminiKey) {
     try {
-      const parsed = JSON.parse(cleaned);
-      return {
-        sentiment: ['positive', 'mixed', 'negative', 'low_signal'].includes(parsed.sentiment) ? parsed.sentiment : 'mixed',
-        summary: String(parsed.summary || '').slice(0, 800),
-        themes: Array.isArray(parsed.themes) ? parsed.themes.map(String).slice(0, 5) : [],
-        notable_quote: String(parsed.notable_quote || '').slice(0, 280)
-      };
+      const text = await callGemini(geminiKey, userPrompt);
+      return parseModelOutput(text);
     } catch (e) {
-      console.warn(' [PULSE] Failed to parse Claude JSON for ' + theme.id + ':', cleaned.slice(0, 200));
-      return { sentiment: 'mixed', summary: text.slice(0, 400), themes: [], notable_quote: '' };
+      console.warn(' [PULSE] Gemini failed for ' + theme.id + ': ' + e.message);
+      if (!anthropicKey) {
+        return { sentiment: 'low_signal', summary: 'Gemini call failed: ' + e.message, themes: [], notable_quote: '' };
+      }
+      // fall through to Claude
     }
+  }
+  try {
+    const text = await callClaude(anthropicKey, userPrompt);
+    return parseModelOutput(text);
   } catch (e) {
-    console.warn(' [PULSE] Claude exception for ' + theme.id + ':', e.message);
+    console.warn(' [PULSE] Claude fallback failed for ' + theme.id + ': ' + e.message);
     return { sentiment: 'low_signal', summary: 'Summary generation failed.', themes: [], notable_quote: '' };
   }
 }
@@ -343,7 +390,7 @@ async function generatePulse() {
         fetchBlueskyForTheme(theme)
       ]);
       const allPosts = [...redditPosts, ...blueskyPosts];
-      const ai = await summarizeWithClaude(theme, allPosts);
+      const ai = await summarizeTheme(theme, allPosts);
       // Top sources: 5 highest-engagement posts
       const sources = [...allPosts]
         .sort((a, b) => (b.score + b.comments) - (a.score + a.comments))
@@ -448,8 +495,8 @@ function maybeBackgroundGenerate() {
     console.log(' [PULSE] Cache fresh for week ' + currentWeek + ', no generation needed');
     return;
   }
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.log(' [PULSE] Skipping background generation — ANTHROPIC_API_KEY not set');
+  if (!process.env.GEMINI_API_KEY && !process.env.ANTHROPIC_API_KEY) {
+    console.log(' [PULSE] Skipping background generation — no LLM key (set GEMINI_API_KEY or ANTHROPIC_API_KEY)');
     return;
   }
   // Delay 30s so server is fully up before we start hammering Reddit
