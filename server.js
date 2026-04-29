@@ -5,6 +5,7 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const pulse = require('./pulse');
 const app = express();
 app.use(express.json());
 
@@ -94,7 +95,10 @@ app.get('/api/status', (req, res) => {
     facebook: !!(config.facebook?.enabled && config.facebook?.pageAccessToken && config.facebook?.pageId),
     instagram: !!(config.instagram?.enabled && config.instagram?.accessToken && config.instagram?.igUserId),
     linkedin: !!(config.linkedin?.enabled && config.linkedin?.accessToken && config.linkedin?.organizationId),
-    refreshInterval: config.server?.refreshIntervalSeconds || 3600
+    refreshInterval: config.server?.refreshIntervalSeconds || 3600,
+    // Public FB App ID (not a secret — shown in every OAuth URL). Exposed so the
+    // dashboard can assemble OAuth dialog URLs for token regeneration.
+    facebookAppId: config.facebook?.appId || null
   });
 });
 
@@ -1896,6 +1900,27 @@ async function callGeminiInsights(apiKey, userPrompt) {
   return (parts && parts[0] && parts[0].text) || '';
 }
 
+// ============================================================
+// AUDIENCE PULSE — weekly Reddit + Bluesky sentiment scan
+// GET  /api/pulse        → returns the cached weekly summary (regenerates if a new week has started)
+// GET  /api/pulse/cached → returns whatever's on disk without ever triggering a regeneration
+// ============================================================
+app.get('/api/pulse', async (req, res) => {
+  try {
+    const data = await pulse.getPulseData(false);
+    res.json(data);
+  } catch (err) {
+    console.warn(' [PULSE] /api/pulse error:', err.message);
+    res.status(500).json({ error: err.message || 'Pulse generation failed' });
+  }
+});
+
+app.get('/api/pulse/cached', (req, res) => {
+  const cached = pulse.getCachedPulse();
+  if (!cached) return res.json({ weekId: null, generatedAt: null, themes: [], pending: true });
+  res.json(cached);
+});
+
 app.post('/api/insights', express.json({ limit: '1mb' }), async (req, res) => {
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   const geminiKey = process.env.GEMINI_API_KEY;
@@ -1950,4 +1975,6 @@ app.listen(PORT, () => {
   console.log(`   Instagram  ${config.instagram?.enabled ? '[OK] Configured' : '[ ] Not configured'}`);
   console.log(`   LinkedIn   ${config.linkedin?.enabled ? '[OK] Configured' : '[ ] Not configured'}`);
   console.log('');
+  // Audience Pulse: trigger background generation if cache is empty or stale (week rollover)
+  pulse.maybeBackgroundGenerate();
 });
