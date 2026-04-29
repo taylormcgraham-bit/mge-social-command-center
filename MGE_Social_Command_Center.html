@@ -1273,34 +1273,160 @@
         .pulse-legend-note { color: #94a3b8; font-style: italic; margin-left: auto; }
         .pulse-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
 
-        .pulse-bubbles-container {
+        /* ============ Theme cards grid (replaces floating bubbles) ============ */
+        .pulse-cards-wrap {
             position: relative;
-            background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+            min-height: 580px;
+        }
+        .pulse-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+        @media (max-width: 1100px) { .pulse-cards-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 600px)  { .pulse-cards-grid { grid-template-columns: 1fr; } }
+
+        .pulse-card {
+            position: relative;
+            background: #fff;
             border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            min-height: 600px;
+            border-radius: 14px;
             overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            display: flex; flex-direction: column;
+            opacity: 0;
+            transform: translateY(8px);
+            animation: pulseCardEnter 0.5s ease-out forwards;
         }
-        #pulseBubblesSvg { display: block; cursor: default; }
-        .pulse-bubble { cursor: pointer; }
-        .pulse-bubble-label {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            font-weight: 700;
-            letter-spacing: 0.2px;
-            fill: #fff;
-            text-anchor: middle;
-            pointer-events: none;
-            paint-order: stroke;
-            stroke: rgba(15, 23, 42, 0.55);
-            stroke-width: 3px;
+        @keyframes pulseCardEnter { to { opacity: 1; transform: translateY(0); } }
+        .pulse-card:nth-child(1) { animation-delay: 0.04s; }
+        .pulse-card:nth-child(2) { animation-delay: 0.10s; }
+        .pulse-card:nth-child(3) { animation-delay: 0.16s; }
+        .pulse-card:nth-child(4) { animation-delay: 0.22s; }
+        .pulse-card:nth-child(5) { animation-delay: 0.28s; }
+        .pulse-card:nth-child(6) { animation-delay: 0.34s; }
+        .pulse-card:nth-child(7) { animation-delay: 0.40s; }
+        .pulse-card:nth-child(8) { animation-delay: 0.46s; }
+        .pulse-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 14px 32px -10px rgba(15, 23, 42, 0.18);
+            border-color: #c7d2fe;
+        }
+
+        /* EKG waveform header */
+        .pulse-card-ekg {
+            position: relative;
+            height: 70px;
+            overflow: hidden;
+            background: linear-gradient(180deg, #fafbff 0%, #f1f5ff 100%);
+            border-bottom: 1px solid #e0e7ff;
+        }
+        .pulse-card-ekg-svg {
+            position: absolute; top: 0; left: 0;
+            width: 200%; height: 100%;
+        }
+        .pulse-card-ekg-path {
+            fill: none;
+            stroke-width: 1.8;
+            stroke-linecap: round;
             stroke-linejoin: round;
+            animation: ekgScroll 8s linear infinite;
+            filter: drop-shadow(0 0 4px currentColor);
         }
-        .pulse-bubble-count {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            font-size: 10px;
-            fill: rgba(255,255,255,0.85);
-            text-anchor: middle;
-            pointer-events: none;
+        .pulse-card-ekg-path.positive   { stroke: #16a34a; color: rgba(22,163,74,0.4); }
+        .pulse-card-ekg-path.negative   { stroke: #dc2626; color: rgba(220,38,38,0.4); }
+        .pulse-card-ekg-path.mixed,
+        .pulse-card-ekg-path.low_signal { stroke: #6366f1; color: rgba(99,102,241,0.35); }
+        @keyframes ekgScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+        /* Card body */
+        .pulse-card-body {
+            padding: 14px 16px 16px;
+            display: flex; flex-direction: column; gap: 10px;
+            flex: 1;
+        }
+        .pulse-card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #0f172a;
+            letter-spacing: -0.01em;
+            line-height: 1.25;
+            min-height: 40px;
+        }
+
+        /* Vitals row */
+        .pulse-card-vitals {
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+            font-size: 11px;
+        }
+        .pulse-card-sentiment {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 9px; border-radius: 999px;
+            font-size: 10.5px; font-weight: 800; letter-spacing: 0.5px;
+            text-transform: uppercase; color: #fff;
+        }
+        .pulse-card-sentiment::before {
+            content: ''; width: 5px; height: 5px; border-radius: 50%; background: #fff;
+        }
+        .pulse-card-sentiment.positive   { background: linear-gradient(135deg, #16a34a, #22c55e); }
+        .pulse-card-sentiment.mixed,
+        .pulse-card-sentiment.low_signal { background: linear-gradient(135deg, #64748b, #94a3b8); }
+        .pulse-card-sentiment.negative   { background: linear-gradient(135deg, #b91c1c, #ef4444); }
+
+        .pulse-card-delta {
+            display: inline-flex; align-items: center;
+            font-size: 13px; font-weight: 700;
+            padding: 0 6px; border-radius: 6px;
+        }
+        .pulse-card-delta.up   { color: #15803d; background: rgba(22,163,74,0.10); }
+        .pulse-card-delta.down { color: #b91c1c; background: rgba(220,38,38,0.10); }
+        .pulse-card-delta.flat { color: #64748b; background: rgba(100,116,139,0.10); }
+        .pulse-card-delta.new  { color: #4338ca; background: rgba(99,102,241,0.10); }
+        .pulse-card-posts {
+            margin-left: auto;
+            color: #94a3b8;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        /* Inline like/pain chips */
+        .pulse-card-chips {
+            display: flex; flex-direction: column; gap: 6px;
+            margin-top: auto;
+        }
+        .pulse-card-chip {
+            display: flex; align-items: center; gap: 6px;
+            padding: 5px 9px;
+            border-radius: 7px;
+            font-size: 12px;
+            line-height: 1.3;
+            border: 1px solid;
+        }
+        .pulse-card-chip-glyph {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 14px; height: 14px; border-radius: 4px;
+            font-size: 10px; font-weight: 900; color: #fff;
+            flex-shrink: 0;
+        }
+        .pulse-card-chip-text { font-weight: 600; }
+        .pulse-card-chip.like {
+            background: linear-gradient(90deg, #f0fdf4 0%, transparent 100%);
+            border-color: #bbf7d0;
+            color: #166534;
+        }
+        .pulse-card-chip.like .pulse-card-chip-glyph { background: #16a34a; }
+        .pulse-card-chip.pain {
+            background: linear-gradient(90deg, #fef2f2 0%, transparent 100%);
+            border-color: #fecaca;
+            color: #991b1b;
+        }
+        .pulse-card-chip.pain .pulse-card-chip-glyph { background: #dc2626; }
+        .pulse-card-chip-empty {
+            font-size: 11.5px;
+            color: #cbd5e1;
+            font-style: italic;
+            padding: 3px 0;
         }
 
         .pulse-loading {
@@ -2416,8 +2542,8 @@
             </div>
         </div>
 
-        <div class="pulse-bubbles-container" id="pulseBubblesContainer">
-            <svg id="pulseBubblesSvg" width="100%" height="600"></svg>
+        <div class="pulse-cards-wrap" id="pulseCardsWrap">
+            <div class="pulse-cards-grid" id="pulseCardsGrid"></div>
             <div class="pulse-loading" id="pulseLoading">
                 <svg class="pulse-loader-svg" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <defs>
@@ -5938,7 +6064,7 @@ async function renderInsightsPanel(data, previousData, force) {
                         _pulseState.loading = false;
                         if (loadingEl) loadingEl.style.display = 'none';
                         renderPulseHeader(data);
-                        renderPulseBubbles(data);
+                        renderPulseCards(data);
                         checkNewPill(data && data.weekId);
                         return;
                     }
@@ -5994,278 +6120,174 @@ async function renderInsightsPanel(data, previousData, force) {
         if (weekEl) weekEl.textContent = data && data.weekId ? 'Week ' + data.weekId : '';
     }
 
-    function renderPulseBubbles(data) {
-        var svg = d3.select('#pulseBubblesSvg');
-        svg.selectAll('*').remove();
-        var container = document.getElementById('pulseBubblesContainer');
-        var width = container.clientWidth;
-        var height = 600;
-        svg.attr('viewBox', '0 0 ' + width + ' ' + height)
-           .attr('preserveAspectRatio', 'xMidYMid meet');
+    // Generate a deterministic EKG-style waveform path for a given theme + sentiment.
+    // Output is a single-cycle pattern that we duplicate into a 2x-wide SVG so
+    // CSS translate(-50%) loops seamlessly.
+    function pulseHashSeed(s) {
+        var h = 2166136261;
+        for (var i = 0; i < s.length; i++) h = ((h * 16777619) ^ s.charCodeAt(i)) >>> 0;
+        return h >>> 0;
+    }
+    function pulseSeededRand(seed) {
+        var state = seed || 1;
+        return function() {
+            state = ((state * 1664525) + 1013904223) >>> 0;
+            return state / 4294967296;
+        };
+    }
+    function generateEkgPath(themeId, sentiment, cycleWidth, height) {
+        var rand = pulseSeededRand(pulseHashSeed(themeId));
+        var baseY = height / 2;
+        var step = 4;
+        var pts = [];
+        for (var x = 0; x <= cycleWidth; x += step) {
+            var y = baseY;
+            if (sentiment === 'positive') {
+                y += Math.sin(x * 0.06) * 4 + (rand() - 0.5) * 1.5;
+                if (x % 90 < step && x > 20) y -= 14;
+                if ((x - 20) % 90 < step && x > 30) y += 6;
+            } else if (sentiment === 'negative') {
+                y += (rand() - 0.5) * 13;
+                if (rand() < 0.13) y += (rand() - 0.5) * 30;
+            } else if (sentiment === 'low_signal') {
+                y += (rand() - 0.5) * 1;
+                if (rand() < 0.04) y += (rand() - 0.5) * 10;
+            } else {
+                // mixed / default — gentle wave
+                y += Math.sin(x * 0.035) * 4 + (rand() - 0.5) * 2;
+            }
+            pts.push(x.toFixed(0) + ',' + y.toFixed(1));
+        }
+        // Duplicate the cycle so a -50% translate loops seamlessly
+        var endY = pts[pts.length - 1].split(',')[1];
+        var first = pts[0].split(',')[1];
+        // ensure last and first y match at the seam (smooth join)
+        var dup = [];
+        for (var j = 0; j < pts.length; j++) {
+            var parts = pts[j].split(',');
+            dup.push((parseFloat(parts[0]) + cycleWidth).toFixed(0) + ',' + parts[1]);
+        }
+        var all = pts.concat(dup);
+        return 'M ' + all[0] + ' L ' + all.slice(1).join(' L ');
+    }
 
+    function renderPulseCards(data) {
+        var grid = document.getElementById('pulseCardsGrid');
+        if (!grid) return;
+        grid.innerHTML = '';
         var themes = (data && data.themes) || [];
         if (themes.length === 0) return;
 
-        // Single unified bubble color (sophisticated indigo/purple) — sentiment is
-        // surfaced via the modal header tint, not the bubble color.
-        var BUBBLE_COLOR = '#6366f1';
-        var BUBBLE_COLOR_DEEP = '#4f46e5';
-        var defs = svg.append('defs');
-        // One shared gradient for all bubbles
-        var grad = defs.append('radialGradient')
-            .attr('id', 'pulseGrad-shared')
-            .attr('cx', '32%').attr('cy', '28%')
-            .attr('r', '78%');
-        grad.append('stop').attr('offset', '0%').attr('stop-color', '#ffffff').attr('stop-opacity', 0.85);
-        grad.append('stop').attr('offset', '18%').attr('stop-color', '#ffffff').attr('stop-opacity', 0.45);
-        grad.append('stop').attr('offset', '55%').attr('stop-color', BUBBLE_COLOR).attr('stop-opacity', 0.55);
-        grad.append('stop').attr('offset', '88%').attr('stop-color', BUBBLE_COLOR).attr('stop-opacity', 0.82);
-        grad.append('stop').attr('offset', '100%').attr('stop-color', BUBBLE_COLOR_DEEP).attr('stop-opacity', 0.95);
-        // Soft outer glow for hover state
-        var glow = defs.append('filter').attr('id', 'pulseGlow').attr('x', '-60%').attr('y', '-60%').attr('width', '220%').attr('height', '220%');
-        glow.append('feGaussianBlur').attr('stdDeviation', 10).attr('result', 'blur');
-        var feMerge = glow.append('feMerge');
-        feMerge.append('feMergeNode').attr('in', 'blur');
-        feMerge.append('feMergeNode').attr('in', 'SourceGraphic');
-        // Drop-shadow filter for subtle depth at rest
-        var dropShadow = defs.append('filter').attr('id', 'pulseDrop').attr('x', '-30%').attr('y', '-30%').attr('width', '160%').attr('height', '160%');
-        dropShadow.append('feGaussianBlur').attr('in', 'SourceAlpha').attr('stdDeviation', 5);
-        dropShadow.append('feOffset').attr('dx', 0).attr('dy', 5).attr('result', 'offsetblur');
-        dropShadow.append('feComponentTransfer').append('feFuncA').attr('type', 'linear').attr('slope', 0.36);
-        var fm = dropShadow.append('feMerge');
-        fm.append('feMergeNode');
-        fm.append('feMergeNode').attr('in', 'SourceGraphic');
-        // Single shared glow halo (indigo)
-        var hGrad = defs.append('radialGradient')
-            .attr('id', 'pulseHalo-shared')
-            .attr('cx', '50%').attr('cy', '50%').attr('r', '50%');
-        hGrad.append('stop').attr('offset', '40%').attr('stop-color', BUBBLE_COLOR).attr('stop-opacity', 0.32);
-        hGrad.append('stop').attr('offset', '70%').attr('stop-color', BUBBLE_COLOR).attr('stop-opacity', 0.10);
-        hGrad.append('stop').attr('offset', '100%').attr('stop-color', BUBBLE_COLOR).attr('stop-opacity', 0);
+        var EKG_CYCLE = 320;
+        var EKG_HEIGHT = 70;
 
-        // Three size tiers — slightly smaller overall, still varied
-        var SIZE_TIERS = [76, 92, 110];
-        function hashId(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
-        var nodes = themes.map(function(t, i) {
-            var tier = SIZE_TIERS[hashId(t.id) % SIZE_TIERS.length];
-            var jitter = ((i * 37) % 10) - 5;
-            return {
-                id: t.id,
-                label: t.label,
-                postCount: t.postCount || 0,
-                sentiment: t.sentiment || 'mixed',
-                color: SENTIMENT_COLORS[t.sentiment] || SENTIMENT_COLORS.mixed,
-                r: tier + jitter,
-                baseR: tier + jitter,
-                theme: t,
-                driftSeedX: Math.random() * Math.PI * 2,
-                driftSeedY: Math.random() * Math.PI * 2,
-                driftSpeed: 0.0008 + Math.random() * 0.0006,
-                // Per-bubble breathing offset so they don't all pulse in sync
-                breathSeed: Math.random() * Math.PI * 2,
-                breathSpeed: 0.0009 + Math.random() * 0.0004
-            };
-        });
+        themes.forEach(function(theme, idx) {
+            var card = document.createElement('div');
+            card.className = 'pulse-card';
+            card.dataset.themeId = theme.id;
 
-        if (_pulseState.simulation) _pulseState.simulation.stop();
+            // EKG header
+            var ekgWrap = document.createElement('div');
+            ekgWrap.className = 'pulse-card-ekg';
+            var pathD = generateEkgPath(theme.id, theme.sentiment || 'mixed', EKG_CYCLE, EKG_HEIGHT);
+            ekgWrap.innerHTML =
+                '<svg class="pulse-card-ekg-svg" viewBox="0 0 ' + (EKG_CYCLE * 2) + ' ' + EKG_HEIGHT +
+                '" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+                '<path class="pulse-card-ekg-path ' + (theme.sentiment || 'mixed') + '" d="' + pathD + '"/>' +
+                '</svg>';
+            card.appendChild(ekgWrap);
 
-        // Continuously running simulation — alphaTarget keeps it gently warm.
-        // Lower charge so bubbles don't repel hard; collide handles spacing.
-        var simulation = d3.forceSimulation(nodes)
-            .force('charge', d3.forceManyBody().strength(-12))
-            .force('center', d3.forceCenter(width / 2, height / 2))
-            .force('collide', d3.forceCollide()
-                .radius(function(d) { return d.r + 8; })
-                .strength(0.85)
-                .iterations(2))
-            .force('x', d3.forceX(width / 2).strength(0.018))
-            .force('y', d3.forceY(height / 2).strength(0.018))
-            .alphaDecay(0)         // never decays — keeps bubbles drifting forever
-            .alphaTarget(0.06)     // low warmth = gentle drift, not violent jitter
-            .velocityDecay(0.18);  // faster damping = smoother glide
+            // Body
+            var body = document.createElement('div');
+            body.className = 'pulse-card-body';
 
-        _pulseState.simulation = simulation;
+            var title = document.createElement('div');
+            title.className = 'pulse-card-title';
+            title.textContent = theme.label;
+            body.appendChild(title);
 
-        // Track mouse for "shy bubbles" — bubbles drift away when cursor approaches
-        var mousePos = { x: -9999, y: -9999, active: false };
-        svg.on('mousemove', function(event) {
-            var pt = d3.pointer(event);
-            mousePos.x = pt[0]; mousePos.y = pt[1]; mousePos.active = true;
-        }).on('mouseleave', function() {
-            mousePos.active = false;
-        });
+            // Vitals row
+            var vitals = document.createElement('div');
+            vitals.className = 'pulse-card-vitals';
+            var sentimentEl = document.createElement('span');
+            sentimentEl.className = 'pulse-card-sentiment ' + (theme.sentiment || 'low_signal');
+            sentimentEl.textContent = SENTIMENT_LABELS[theme.sentiment] || 'Neutral';
+            vitals.appendChild(sentimentEl);
 
-        var node = svg.selectAll('g.pulse-node')
-            .data(nodes)
-            .enter()
-            .append('g')
-            .attr('class', 'pulse-node')
-            .style('cursor', 'pointer')
-            .on('click', function(event, d) {
-                // Set bloom origin from the click point (relative to viewport) so the
-                // modal expands out of where the bubble was clicked.
-                var modal = document.getElementById('pulseModal');
-                if (modal) {
-                    var card = modal.querySelector('.pulse-modal-card');
-                    if (card) {
-                        var rect = modal.getBoundingClientRect();
+            var d = theme.sentimentDelta;
+            if (d && d.change) {
+                var deltaEl = document.createElement('span');
+                deltaEl.className = 'pulse-card-delta ' + d.change;
+                var glyph = d.change === 'up' ? '↑' : d.change === 'down' ? '↓' : d.change === 'flat' ? '→' : '★';
+                deltaEl.textContent = glyph;
+                deltaEl.title = d.change === 'up' ? 'Improving from ' + (SENTIMENT_LABELS[d.priorSentiment] || 'last week').toLowerCase() :
+                               d.change === 'down' ? 'Worsening from ' + (SENTIMENT_LABELS[d.priorSentiment] || 'last week').toLowerCase() :
+                               d.change === 'flat' ? 'Steady vs last week' : 'New this week';
+                vitals.appendChild(deltaEl);
+            }
+            var posts = document.createElement('span');
+            posts.className = 'pulse-card-posts';
+            posts.textContent = (theme.postCount || 0) + ' posts';
+            vitals.appendChild(posts);
+            body.appendChild(vitals);
+
+            // Inline like + pain chips (top item from each)
+            var chipsWrap = document.createElement('div');
+            chipsWrap.className = 'pulse-card-chips';
+            var firstLike = (theme.likes || [])[0];
+            var firstPain = (theme.painPoints || [])[0];
+            if (firstLike) {
+                chipsWrap.appendChild(buildPulseCardChip('like', '+', firstLike));
+            } else {
+                var emp = document.createElement('div');
+                emp.className = 'pulse-card-chip-empty';
+                emp.textContent = 'No likes surfaced';
+                chipsWrap.appendChild(emp);
+            }
+            if (firstPain) {
+                chipsWrap.appendChild(buildPulseCardChip('pain', '!', firstPain));
+            } else {
+                var emp2 = document.createElement('div');
+                emp2.className = 'pulse-card-chip-empty';
+                emp2.textContent = 'No pain points surfaced';
+                chipsWrap.appendChild(emp2);
+            }
+            body.appendChild(chipsWrap);
+
+            card.appendChild(body);
+
+            // Click → open modal with bloom-from-click origin
+            card.addEventListener('click', function(event) {
+                var modalEl = document.getElementById('pulseModal');
+                if (modalEl) {
+                    var modalCard = modalEl.querySelector('.pulse-modal-card');
+                    if (modalCard) {
+                        var rect = modalEl.getBoundingClientRect();
                         var bx = ((event.clientX - rect.left) / rect.width) * 100;
                         var by = ((event.clientY - rect.top) / rect.height) * 100;
-                        card.style.setProperty('--bloom-x', bx + '%');
-                        card.style.setProperty('--bloom-y', by + '%');
+                        modalCard.style.setProperty('--bloom-x', bx + '%');
+                        modalCard.style.setProperty('--bloom-y', by + '%');
                     }
                 }
-                openPulseModal(d.theme);
-            })
-            .on('mouseenter', function(event, d) {
-                d.hovered = true;
-                // Tick handler scales the whole node; here we just upgrade the filter
-                // and slightly intensify the glow halo behind it.
-                var sel = d3.select(this);
-                sel.select('circle.pulse-bubble').attr('filter', 'url(#pulseGlow)');
-                sel.select('circle.pulse-bubble-halo').transition().duration(280).attr('r', d.r * 1.95);
-            })
-            .on('mouseleave', function(event, d) {
-                d.hovered = false;
-                var sel = d3.select(this);
-                sel.select('circle.pulse-bubble').attr('filter', 'url(#pulseDrop)');
-                sel.select('circle.pulse-bubble-halo').transition().duration(360).attr('r', d.r * 1.55);
-            })
-            .call(d3.drag()
-                .on('start', function(event, d) {
-                    if (!event.active) simulation.alphaTarget(0.3).restart();
-                    d.fx = d.x; d.fy = d.y;
-                })
-                .on('drag', function(event, d) { d.fx = event.x; d.fy = event.y; })
-                .on('end', function(event, d) {
-                    if (!event.active) simulation.alphaTarget(0.06);
-                    d.fx = null; d.fy = null;
-                }));
-
-        // 0. Outer glow halo (sits BEHIND the bubble) — shared indigo aura
-        node.append('circle')
-            .attr('class', 'pulse-bubble-halo')
-            .attr('r', function(d) { return d.r * 1.55; })
-            .attr('fill', 'url(#pulseHalo-shared)')
-            .attr('pointer-events', 'none');
-
-        // 1. Bubble body — shared indigo gradient + drop shadow
-        node.append('circle')
-            .attr('class', 'pulse-bubble')
-            .attr('r', function(d) { return d.r; })
-            .attr('fill', 'url(#pulseGrad-shared)')
-            .attr('stroke', BUBBLE_COLOR)
-            .attr('stroke-opacity', 0.6)
-            .attr('stroke-width', 1.75)
-            .attr('filter', 'url(#pulseDrop)');
-
-        // 2. Inner rim highlight (surface curvature)
-        node.append('circle')
-            .attr('class', 'pulse-bubble-rim')
-            .attr('r', function(d) { return d.r - 2; })
-            .attr('fill', 'none')
-            .attr('stroke', '#ffffff')
-            .attr('stroke-opacity', 0.55)
-            .attr('stroke-width', 1.4)
-            .attr('pointer-events', 'none');
-
-        // 3. Big primary glint (upper-left, soft)
-        node.append('ellipse')
-            .attr('class', 'pulse-bubble-glint')
-            .attr('cx', function(d) { return -d.r * 0.28; })
-            .attr('cy', function(d) { return -d.r * 0.42; })
-            .attr('rx', function(d) { return d.r * 0.38; })
-            .attr('ry', function(d) { return d.r * 0.22; })
-            .attr('fill', '#fff')
-            .attr('fill-opacity', 0.70)
-            .attr('pointer-events', 'none')
-            .attr('transform', 'rotate(-20)');
-
-        // 4. Tiny bright spark (the "second shine")
-        node.append('circle')
-            .attr('class', 'pulse-bubble-spark')
-            .attr('cx', function(d) { return -d.r * 0.16; })
-            .attr('cy', function(d) { return -d.r * 0.58; })
-            .attr('r', function(d) { return d.r * 0.07; })
-            .attr('fill', '#fff')
-            .attr('fill-opacity', 0.95)
-            .attr('pointer-events', 'none');
-
-        // 5. Even tinier accent dot opposite the main glint, for sparkle realism
-        node.append('circle')
-            .attr('class', 'pulse-bubble-microspark')
-            .attr('cx', function(d) { return d.r * 0.22; })
-            .attr('cy', function(d) { return d.r * 0.18; })
-            .attr('r', function(d) { return d.r * 0.04; })
-            .attr('fill', '#fff')
-            .attr('fill-opacity', 0.55)
-            .attr('pointer-events', 'none');
-
-        // Wrap label across multiple lines if needed
-        node.each(function(d) {
-            var g = d3.select(this);
-            var words = d.label.split(/\s+/);
-            var lines = [];
-            var maxCharsPerLine = Math.floor(d.r / 4.5);
-            var currentLine = '';
-            words.forEach(function(w) {
-                if ((currentLine + ' ' + w).trim().length > maxCharsPerLine && currentLine) {
-                    lines.push(currentLine.trim());
-                    currentLine = w;
-                } else {
-                    currentLine = (currentLine + ' ' + w).trim();
-                }
+                openPulseModal(theme);
             });
-            if (currentLine) lines.push(currentLine.trim());
-            if (lines.length > 3) {
-                lines = lines.slice(0, 3);
-                lines[2] = lines[2].slice(0, maxCharsPerLine - 1) + '…';
-            }
-            var fontSize = Math.max(13, Math.min(17, d.r / 4.8));
-            var lineH = fontSize * 1.12;
-            var totalH = lines.length * lineH;
-            var startY = -totalH / 2 + lineH * 0.75;
-            lines.forEach(function(ln, i) {
-                g.append('text')
-                    .attr('class', 'pulse-bubble-label')
-                    .attr('y', startY + i * lineH)
-                    .attr('font-size', fontSize)
-                    .text(ln);
-            });
+
+            grid.appendChild(card);
         });
+    }
 
-        simulation.on('tick', function() {
-            var t = Date.now();
-            nodes.forEach(function(d) {
-                if (d.fx == null && d.fy == null) {
-                    d.vx = (d.vx || 0) + Math.sin(t * d.driftSpeed + d.driftSeedX) * 0.06;
-                    d.vy = (d.vy || 0) + Math.cos(t * d.driftSpeed + d.driftSeedY) * 0.06;
-                    if (mousePos.active) {
-                        var dx = d.x - mousePos.x;
-                        var dy = d.y - mousePos.y;
-                        var dist = Math.sqrt(dx*dx + dy*dy) || 1;
-                        var avoidR = d.r + 70;
-                        if (dist < avoidR) {
-                            var force = (avoidR - dist) / avoidR;
-                            d.vx += (dx / dist) * force * 1.4;
-                            d.vy += (dy / dist) * force * 1.4;
-                        }
-                    }
-                }
-                d.x = Math.max(d.r + 4, Math.min(width - d.r - 4, d.x));
-                d.y = Math.max(d.r + 4, Math.min(height - d.r - 4, d.y));
-                // Subtle breathing: bubbles inhale/exhale ~2% radius. Only when not hovered.
-                if (!d.hovered) {
-                    var breathScale = 1 + Math.sin(t * d.breathSpeed + d.breathSeed) * 0.022;
-                    d.currentScale = breathScale;
-                } else {
-                    d.currentScale = 1.12;
-                }
-            });
-            node.attr('transform', function(d) {
-                return 'translate(' + d.x + ',' + d.y + ') scale(' + (d.currentScale || 1) + ')';
-            });
-        });
+    function buildPulseCardChip(kind, glyph, text) {
+        var wrap = document.createElement('div');
+        wrap.className = 'pulse-card-chip ' + kind;
+        var g = document.createElement('span');
+        g.className = 'pulse-card-chip-glyph';
+        g.textContent = glyph;
+        wrap.appendChild(g);
+        var t = document.createElement('span');
+        t.className = 'pulse-card-chip-text';
+        t.textContent = text;
+        wrap.appendChild(t);
+        return wrap;
     }
 
     function openPulseModal(theme) {
@@ -6487,7 +6509,7 @@ async function renderInsightsPanel(data, previousData, force) {
         clearTimeout(_resizeTimer);
         _resizeTimer = setTimeout(function() {
             if (_pulseState.data && document.getElementById('pulseView').classList.contains('active')) {
-                renderPulseBubbles(_pulseState.data);
+                renderPulseCards(_pulseState.data);
             }
         }, 250);
     });
