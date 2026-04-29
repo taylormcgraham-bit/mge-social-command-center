@@ -1393,6 +1393,49 @@
         .pulse-modal-source-platform.bluesky { background: #0085ff; color: #fff; }
         .pulse-modal-source-title { font-size: 13px; color: #1e293b; line-height: 1.4; }
 
+        /* Top user comments — surfaced inside each source card */
+        .pulse-modal-source-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #fff;
+            margin-bottom: 8px;
+        }
+        .pulse-modal-source-card .pulse-modal-source {
+            border: none;
+            border-radius: 0;
+            border-bottom: 1px solid #f1f5f9;
+            margin: 0;
+        }
+        .pulse-modal-source-card .pulse-modal-source:hover {
+            background: #f8fafc;
+        }
+        .pulse-modal-comments-list {
+            background: #fafbfc;
+            padding: 8px 12px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .pulse-modal-comment {
+            padding: 6px 10px;
+            background: #fff;
+            border-left: 2px solid #cbd5e1;
+            border-radius: 0 4px 4px 0;
+        }
+        .pulse-modal-comment-meta {
+            font-size: 10px;
+            color: #94a3b8;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+            margin-bottom: 2px;
+        }
+        .pulse-modal-comment-body {
+            font-size: 12.5px;
+            color: #334155;
+            line-height: 1.45;
+        }
+
         /* Mentions view layout */
         .mentions-wrap { padding: 24px 32px 80px; max-width: 1400px; margin: 0 auto; }
         .mentions-header {
@@ -5801,6 +5844,9 @@ async function renderInsightsPanel(data, previousData, force) {
             sourcesEl.innerHTML = '<div style="font-size:13px; color:#94a3b8;">No source posts captured this week.</div>';
         } else {
             sources.forEach(function(s) {
+                var card = document.createElement('div');
+                card.className = 'pulse-modal-source-card';
+                // Header link to source post
                 var a = document.createElement('a');
                 a.className = 'pulse-modal-source';
                 a.href = s.url || '#';
@@ -5825,7 +5871,29 @@ async function renderInsightsPanel(data, previousData, force) {
                 title.className = 'pulse-modal-source-title';
                 title.textContent = s.title || '(untitled)';
                 a.appendChild(title);
-                sourcesEl.appendChild(a);
+                card.appendChild(a);
+
+                // Top user comments — show inline so user voice is visible
+                if (s.topComments && s.topComments.length > 0) {
+                    var commentsWrap = document.createElement('div');
+                    commentsWrap.className = 'pulse-modal-comments-list';
+                    s.topComments.forEach(function(c) {
+                        var commentEl = document.createElement('div');
+                        commentEl.className = 'pulse-modal-comment';
+                        var commentMeta = document.createElement('div');
+                        commentMeta.className = 'pulse-modal-comment-meta';
+                        commentMeta.textContent = (c.author ? 'u/' + c.author : 'anonymous') +
+                            ' · ' + (c.score || 0) + ' upvotes';
+                        var commentBody = document.createElement('div');
+                        commentBody.className = 'pulse-modal-comment-body';
+                        commentBody.textContent = c.body || '';
+                        commentEl.appendChild(commentMeta);
+                        commentEl.appendChild(commentBody);
+                        commentsWrap.appendChild(commentEl);
+                    });
+                    card.appendChild(commentsWrap);
+                }
+                sourcesEl.appendChild(card);
             });
         }
 
