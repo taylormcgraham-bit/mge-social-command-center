@@ -2748,7 +2748,48 @@ const SENT_PHRASES = [
     ['so proud', 4], ['so cool', 3], ['so beautiful', 4],
     ['thank you', 3], ['thanks for', 2], ['appreciate it', 3],
     ['love this', 4], ['love it', 4], ['love that', 3],
-    ['how cool', 3], ['thats awesome', 4], ["that's awesome", 4]
+    ['how cool', 3], ['thats awesome', 4], ["that's awesome", 4],
+
+    // Brand-defense phrases (commenters defending MGE / correcting misinformation)
+    ['well said', 4], ['well put', 4], ['well stated', 4],
+    ['good point', 3], ['great point', 4], ['valid point', 3], ['fair point', 3],
+    ['exactly right', 4], ['spot on', 4], ['100% correct', 4], ['100 percent correct', 4],
+    ['agree completely', 4], ['completely agree', 4],
+    ["couldn't agree more", 4], ['couldnt agree more', 4],
+    ['agree with mge', 4], ['support mge', 4], ['mge is right', 4],
+    ['mge is correct', 4], ['mge is doing', 3],
+    ['thanks for explaining', 3], ['thank you for explaining', 4],
+    ['appreciate the explanation', 4], ['appreciate the transparency', 5],
+    ['well explained', 4], ['nicely explained', 3], ['great explanation', 4],
+    ['makes total sense', 3], ['makes sense', 2], ['this is true', 3],
+    ["that's true", 3], ['thats true', 3], ['actually true', 3],
+    ['people forget', 2], ['people dont realize', 3], ["people don't realize", 3],
+    ['people dont understand', 3], ["people don't understand", 3],
+    ['important to note', 2], ['worth noting', 2], ['worth remembering', 2],
+    ['have to remember', 2], ['need to remember', 2],
+    ['the truth is', 2], ['fact is', 2], ['reality is', 2], ['reality check', 2],
+    ['standing up for', 3], ['in defense of', 3], ['defending mge', 4],
+    ['glad they', 3], ['glad mge', 4], ['proud of mge', 5],
+    ['critics dont understand', 3], ["critics don't understand", 3],
+    ['armchair experts', 2], ['keyboard warriors', 2],
+
+    // Sarcasm phrases (sound positive but read negative — common online idioms)
+    ['yeah right', -3], ['yea right', -3], ['yeah sure', -3], ['yea sure', -3],
+    ['oh sure', -2], ['oh great', -3], ['oh wonderful', -3], ['oh perfect', -3],
+    ['oh boy', -2], ['oh joy', -3], ['oh look', -2],
+    ['just great', -3], ['just wonderful', -3], ['just perfect', -3], ['just awesome', -3],
+    ['real great', -3], ['real nice', -3], ['real smart', -3], ['real cute', -3],
+    ['thanks for nothing', -5],
+    ['what a surprise', -3], ['big surprise', -3], ['huge surprise', -3],
+    ['shocker', -3], ['shocking', -2], ['how convenient', -3],
+    ['how shocking', -3], ['how surprising', -3],
+    ['as if', -2], ['as usual', -1], ['typical mge', -3], ['typical utility', -3],
+    ['cool story', -3], ['nice try', -2], ['sure jan', -3],
+    ['must be nice', -2], ['must be great', -2],
+    [' /s', -4], ['(/s)', -4], ['/sarcasm', -4],
+    ['eye roll', -2], ['eyeroll', -2], ['rolling my eyes', -3],
+    ['give me a break', -3], ['gimme a break', -3], ['spare me', -3],
+    ['totally believe', -3], ['sure i do', -2]
 ];
 
 // 3. Emoji sentiment
@@ -2820,6 +2861,57 @@ function analyzeSentiment(text) {
     const exclamations = (text.match(/!/g) || []).length;
     if (exclamations >= 2 && count > 0) {
         total *= 1 + (exclamations * 0.05);
+    }
+
+    // G. Sarcasm detection — flips/dampens positive sentiment when sarcasm signals appear.
+    // People often express negative views sarcastically using positive words.
+    let sarcasmHits = 0;
+    // G1. Scare quotes around positive words: "great", 'wonderful', "amazing", etc.
+    //     Quoting a positive word almost always signals sarcasm online.
+    const scareQuoteWords = ['great','wonderful','amazing','awesome','perfect','nice','helpful',
+                             'clean','green','sustainable','reliable','renewable','smart','safe',
+                             'affordable','transparent','honest','fair','progress','innovative'];
+    for (const w of scareQuoteWords) {
+        const re = new RegExp('["“”‘’\']' + w + '["“”‘’\']', 'i');
+        if (re.test(text)) sarcasmHits++;
+    }
+    // G2. Reddit-style "/s" sarcasm tag
+    if (/(^|\s)\/s\b/i.test(text) || /\(\s*\/s\s*\)/i.test(text)) sarcasmHits += 2;
+    // G3. Mock-positive openings: "Oh, [positive word]" or "Wow, [positive word]" with skeptical tone
+    if (/^\s*(oh|wow|gee|gosh)[,!\s]+(great|wonderful|nice|cool|amazing|awesome|perfect)\b/i.test(text)) {
+        sarcasmHits++;
+    }
+    // G4. Sarcastic tells co-occurring with positive words
+    const hasPositiveWord = /\b(great|amazing|awesome|wonderful|perfect|love|fantastic|brilliant)\b/i.test(text);
+    const hasSkepticTell  = /\b(sure|right|totally|absolutely|definitely|of course)\b.*\b(not|never|nope|lol|lmao)\b/i.test(text)
+                         || /\b(lol|lmao|lmfao)\b.*\b(great|amazing|awesome|wonderful|perfect)\b/i.test(text);
+    if (hasPositiveWord && hasSkepticTell) sarcasmHits++;
+
+    if (sarcasmHits > 0) {
+        // If sarcasm detected, flip positive sum to negative and add penalty.
+        // Sarcasm = positive words used negatively, so the "positive" signal in `total` is misleading.
+        if (total > 0) total = -total * 0.8;
+        total -= 3 * sarcasmHits;
+        if (count === 0) count = 1;
+    }
+
+    // H. Brand-defense booster — comments that defend MGE / correct misinformation get a lift.
+    //    Pattern: brand reference + correction signal + non-negative tone -> boost.
+    const brandRef       = /\b(mge|madison gas|the utility|the company|electric company)\b/i;
+    const correctionTell = /\b(actually|in fact|to be fair|to be clear|the truth|fact is|reality is|reality check|misinformation|misleading|misunderstand|don'?t understand|don'?t realize|critics|haters|naysayers|trolls|complainers|do(?:ing)? their job|hard job|tough job|thankless)\b/i;
+    if (brandRef.test(text) && correctionTell.test(text) && total >= -1) {
+        total += 3;
+        count = Math.max(count, 1);
+    }
+    // H2. Direct support framing — "I support / I stand with / props to MGE"
+    if (/\b(i\s+(support|stand\s+with|back|side\s+with|agree\s+with))\s+(mge|madison gas|the utility|the company)\b/i.test(text)) {
+        total += 4;
+        count = Math.max(count, 1);
+    }
+    // H3. Educational corrections that often defend the brand without naming it
+    if (/\b(people\s+(don'?t|do\s+not)\s+(understand|realize|know))\b/i.test(text)) {
+        total += 2;
+        count = Math.max(count, 1);
     }
 
     // Score calculation â use weighted sum, not pure average
