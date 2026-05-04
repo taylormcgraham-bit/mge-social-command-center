@@ -214,11 +214,12 @@ app.get('/api/facebook/page', async (req, res) => {
 app.get('/api/facebook/posts', async (req, res) => {
   const { pageAccessToken, pageId } = config.facebook || {};
   if (!pageAccessToken || !pageId) return res.json({ error: true, message: 'Facebook not configured' });
-  // NOTE 2026-05-04: insights.metric(post_impressions,post_impressions_unique) field expansion
-  // was added then removed because at least one of those post-level metrics is also deprecated
-  // and was breaking the entire posts response. Use /api/facebook/posts-insights-diag to probe
-  // which post-level metrics still work before re-adding the expansion.
-  let url = `${META_BASE}/${pageId}/posts?fields=id,message,created_time,full_picture,permalink_url,status_type,shares,reactions.summary(true),reactions.type(LIKE).limit(0).summary(total_count).as(reactions_like),reactions.type(LOVE).limit(0).summary(total_count).as(reactions_love),reactions.type(WOW).limit(0).summary(total_count).as(reactions_wow),reactions.type(HAHA).limit(0).summary(total_count).as(reactions_haha),reactions.type(SAD).limit(0).summary(total_count).as(reactions_sad),reactions.type(ANGRY).limit(0).summary(total_count).as(reactions_angry),reactions.type(CARE).limit(0).summary(total_count).as(reactions_care),comments.summary(true)&limit=50&access_token=${pageAccessToken}`;
+  // Post-level insights metrics confirmed working via /facebook/posts-insights-diag (2026-05-04):
+  // post_impressions_unique = unique people who saw THIS post (used as cross-post impressions proxy
+  // because Meta deprecated post_impressions). post_clicks = link/CTA clicks. post_video_views = video plays.
+  // We deliberately do NOT request post_impressions / post_engaged_users / post_clicks_unique
+  // (all return error #100 — silently kills the entire posts response if included).
+  let url = `${META_BASE}/${pageId}/posts?fields=id,message,created_time,full_picture,permalink_url,status_type,shares,reactions.summary(true),reactions.type(LIKE).limit(0).summary(total_count).as(reactions_like),reactions.type(LOVE).limit(0).summary(total_count).as(reactions_love),reactions.type(WOW).limit(0).summary(total_count).as(reactions_wow),reactions.type(HAHA).limit(0).summary(total_count).as(reactions_haha),reactions.type(SAD).limit(0).summary(total_count).as(reactions_sad),reactions.type(ANGRY).limit(0).summary(total_count).as(reactions_angry),reactions.type(CARE).limit(0).summary(total_count).as(reactions_care),comments.summary(true),insights.metric(post_impressions_unique,post_clicks,post_video_views)&limit=50&access_token=${pageAccessToken}`;
   url += dateRangeParams(req);
   const data = await apiFetch(url);
   res.json(data);
