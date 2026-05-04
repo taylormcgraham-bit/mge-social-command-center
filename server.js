@@ -138,7 +138,8 @@ app.get('/api/youtube/videos', async (req, res) => {
 app.get('/api/youtube/comments/:videoId', async (req, res) => {
   const { apiKey } = config.youtube || {};
   if (!apiKey) return res.json({ error: true, message: 'YouTube not configured' });
-  const data = await apiFetch(`${YT_BASE}/commentThreads?part=snippet&videoId=${req.params.videoId}&maxResults=50&order=time&key=${apiKey}`);
+  // part=snippet,replies returns up to 5 replies per thread inline (item.replies.comments[])
+  const data = await apiFetch(`${YT_BASE}/commentThreads?part=snippet,replies&videoId=${req.params.videoId}&maxResults=50&order=time&key=${apiKey}`);
   res.json(data);
 });
 
@@ -151,8 +152,10 @@ app.get('/api/youtube/all-comments', async (req, res) => {
   const playlist = await apiFetch(`${YT_BASE}/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=20&key=${apiKey}`);
   if (playlist.error) return res.json(playlist);
   const videoIds = playlist.items?.map(i => i.snippet.resourceId.videoId) || [];
+  // part=snippet,replies returns up to ~5 inline replies per thread for free; deeper threads
+  // would need a per-thread /comments?parentId= follow-up but that would burn quota fast.
   const commentPromises = videoIds.map(vid =>
-    apiFetch(`${YT_BASE}/commentThreads?part=snippet&videoId=${vid}&maxResults=50&order=time&key=${apiKey}`)
+    apiFetch(`${YT_BASE}/commentThreads?part=snippet,replies&videoId=${vid}&maxResults=50&order=time&key=${apiKey}`)
   );
   const results = await Promise.all(commentPromises);
   const allComments = [];
@@ -160,6 +163,7 @@ app.get('/api/youtube/all-comments', async (req, res) => {
     if (!r.error && r.items) {
       r.items.forEach(item => {
         const c = item.snippet.topLevelComment.snippet;
+        const parentCommentId = item.snippet.topLevelComment.id;
         allComments.push({
           platform: 'youtube',
           author: c.authorDisplayName,
@@ -169,6 +173,24 @@ app.get('/api/youtube/all-comments', async (req, res) => {
           likeCount: c.likeCount,
           videoId: videoIds[i],
           videoTitle: playlist.items[i]?.snippet?.title || ''
+        });
+        // Threaded replies (item.replies.comments[]) — flatten so they count just like top-level comments
+        const replies = item.replies?.comments || [];
+        replies.forEach(reply => {
+          const rs = reply.snippet || {};
+          allComments.push({
+            platform: 'youtube',
+            author: rs.authorDisplayName,
+            authorImage: rs.authorProfileImageUrl,
+            text: rs.textDisplay,
+            publishedAt: rs.publishedAt,
+            likeCount: rs.likeCount || 0,
+            videoId: videoIds[i],
+            videoTitle: playlist.items[i]?.snippet?.title || '',
+            isReply: true,
+            parentCommentId: parentCommentId,
+            parentAuthor: c.authorDisplayName || ''
+          });
         });
       });
     }
@@ -198,14 +220,16 @@ app.get('/api/facebook/posts', async (req, res) => {
 app.get('/api/facebook/comments/:postId', async (req, res) => {
   const { pageAccessToken } = config.facebook || {};
   if (!pageAccessToken) return res.json({ error: true, message: 'Facebook not configured' });
-  const data = await apiFetch(`${META_BASE}/${req.params.postId}/comments?fields=id,message,created_time,from,like_count,comment_count&limit=50&order=reverse_chronological&access_token=${pageAccessToken}`);
+  // Include nested comments{} so threaded replies come back in one round-trip
+  const data = await apiFetch(`${META_BASE}/${req.params.postId}/comments?fields=id,message,created_time,from,like_count,comment_count,comments.limit(50){id,message,created_time,from,like_count,parent}&limit=50&order=reverse_chronological&access_token=${pageAccessToken}`);
   res.json(data);
 });
 
 app.get('/api/facebook/all-comments', async (req, res) => {
   const { pageAccessToken, pageId } = config.facebook || {};
   if (!pageAccessToken || !pageId) return res.json({ error: true, message: 'Facebook not configured' });
-  let url = `${META_BASE}/${pageId}/posts?fields=id,message,created_time,full_picture,comments{message,created_time,from,like_count}&limit=50&access_token=${pageAccessToken}`;
+  // Field expansion: top-level comments{} now includes nested comments{} for replies
+  let url = `${META_BASE}/${pageId}/posts?fields=id,message,created_time,full_picture,comments.limit(50){id,message,created_time,from,like_count,comments.limit(50){id,message,created_time,from,like_count}}&limit=50&access_token=${pageAccessToken}`;
   url += dateRangeParams(req);
   const postsData = await apiFetch(url);
   if (postsData.error) return res.json(postsData);
@@ -222,6 +246,23 @@ app.get('/api/facebook/all-comments', async (req, res) => {
         postId: post.id,
         postMessage: post.message || '',
         postImage: post.full_picture || ''
+      });
+      // Threaded replies on this comment — flatten so they count just like top-level comments
+      const replies = c.comments?.data || [];
+      replies.forEach(r => {
+        allComments.push({
+          platform: 'facebook',
+          author: r.from?.name || 'Facebook User',
+          text: r.message,
+          publishedAt: r.created_time,
+          likeCount: r.like_count || 0,
+          postId: post.id,
+          postMessage: post.message || '',
+          postImage: post.full_picture || '',
+          isReply: true,
+          parentCommentId: c.id,
+          parentAuthor: c.from?.name || ''
+        });
       });
     });
   });
@@ -257,14 +298,16 @@ app.get('/api/instagram/media', async (req, res) => {
 app.get('/api/instagram/comments/:mediaId', async (req, res) => {
   const { accessToken } = config.instagram || {};
   if (!accessToken) return res.json({ error: true, message: 'Instagram not configured' });
-  const data = await apiFetch(`${META_BASE}/${req.params.mediaId}/comments?fields=id,text,timestamp,username,like_count&limit=50&access_token=${accessToken}`);
+  // IG calls nested replies "replies" (not "comments"). Add field expansion to grab them in one shot.
+  const data = await apiFetch(`${META_BASE}/${req.params.mediaId}/comments?fields=id,text,timestamp,username,like_count,replies.limit(50){id,text,timestamp,username,like_count}&limit=50&access_token=${accessToken}`);
   res.json(data);
 });
 
 app.get('/api/instagram/all-comments', async (req, res) => {
   const { accessToken, igUserId } = config.instagram || {};
   if (!accessToken || !igUserId) return res.json({ error: true, message: 'Instagram not configured' });
-  let url = `${META_BASE}/${igUserId}/media?fields=id,caption,media_url,thumbnail_url,timestamp,comments{text,timestamp,username,like_count}&limit=50&access_token=${accessToken}`;
+  // Field expansion: comments{} now includes replies{} so threaded responses come back too
+  let url = `${META_BASE}/${igUserId}/media?fields=id,caption,media_url,thumbnail_url,timestamp,comments.limit(50){id,text,timestamp,username,like_count,replies.limit(50){id,text,timestamp,username,like_count}}&limit=50&access_token=${accessToken}`;
   if (req.query.since) { const sinceUnix = Math.floor(new Date(req.query.since).getTime() / 1000); url += '&since=' + sinceUnix; }
   const mediaData = await apiFetch(url);
   if (mediaData.error) return res.json(mediaData);
@@ -281,6 +324,23 @@ app.get('/api/instagram/all-comments', async (req, res) => {
         postId: post.id,
         postCaption: post.caption || '',
         postImage: post.media_url || post.thumbnail_url || ''
+      });
+      // Threaded replies — flatten so they count just like top-level comments
+      const replies = c.replies?.data || [];
+      replies.forEach(r => {
+        allComments.push({
+          platform: 'instagram',
+          author: r.username || 'Instagram User',
+          text: r.text,
+          publishedAt: r.timestamp,
+          likeCount: r.like_count || 0,
+          postId: post.id,
+          postCaption: post.caption || '',
+          postImage: post.media_url || post.thumbnail_url || '',
+          isReply: true,
+          parentCommentId: c.id,
+          parentAuthor: c.username || ''
+        });
       });
     });
   });
@@ -355,17 +415,21 @@ app.get('/api/linkedin/page-stats', async (req, res) => {
 app.get('/api/linkedin/all-comments', async (req, res) => {
   const { accessToken, organizationId } = config.linkedin || {};
   if (!accessToken || !organizationId) return res.json({ error: true, message: 'LinkedIn not configured' });
+  const liHeaders = { 'Authorization': `Bearer ${accessToken}`, 'LinkedIn-Version': '202503' };
   const postsData = await apiFetch(
     `${LI_REST}/posts?author=urn:li:organization:${organizationId}&q=author&count=50&sortBy=LAST_MODIFIED`,
-    { headers: { 'Authorization': `Bearer ${accessToken}`, 'LinkedIn-Version': '202503' } }
+    { headers: liHeaders }
   );
   if (postsData.error) return res.json(postsData);
   const posts = postsData.elements || [];
+  // Pass 1: fetch top-level comments for each post
   const commentPromises = posts.map(p =>
-    apiFetch(`${LI_REST}/socialActions/${encodeURIComponent(p.id)}/comments?count=50`, { headers: { 'Authorization': `Bearer ${accessToken}`, 'LinkedIn-Version': '202503' } })
+    apiFetch(`${LI_REST}/socialActions/${encodeURIComponent(p.id)}/comments?count=50`, { headers: liHeaders })
   );
   const results = await Promise.all(commentPromises);
   const allComments = [];
+  // Build a list of (postIndex, comment) pairs, and collect comment URNs that may have replies
+  const replyTargets = []; // { postIndex, commentUrn, parentAuthor }
   results.forEach((r, i) => {
     if (!r.error && r.elements) {
       r.elements.forEach(c => {
@@ -378,8 +442,44 @@ app.get('/api/linkedin/all-comments', async (req, res) => {
           postId: posts[i].id,
           postText: posts[i].commentary || posts[i].specificContent?.['com.linkedin.ugc.ShareContent']?.shareCommentary?.text || ''
         });
+        // Queue a reply fetch for this comment if we have a URN to target.
+        // LinkedIn surfaces the comment URN as $URN (or sometimes object.$URN); fall back to neither.
+        const commentUrn = c.$URN || c.object?.$URN || null;
+        if (commentUrn) {
+          replyTargets.push({
+            postIndex: i,
+            commentUrn,
+            parentAuthor: c.actor?.name || ''
+          });
+        }
       });
     }
+  });
+  // Pass 2: fetch second-level replies for every top-level comment that exposed a URN.
+  // Capped at 100 reply-fetches per refresh to keep this bounded.
+  const cappedTargets = replyTargets.slice(0, 100);
+  const replyResults = await Promise.all(
+    cappedTargets.map(t =>
+      apiFetch(`${LI_REST}/socialActions/${encodeURIComponent(t.commentUrn)}/comments?count=20`, { headers: liHeaders })
+    )
+  );
+  replyResults.forEach((rr, idx) => {
+    const t = cappedTargets[idx];
+    if (!rr || rr.error || !rr.elements) return;
+    rr.elements.forEach(rc => {
+      allComments.push({
+        platform: 'linkedin',
+        author: rc.actor?.name || 'LinkedIn User',
+        text: rc.message?.text || rc.comment || '',
+        publishedAt: rc.created?.time ? new Date(rc.created.time).toISOString() : new Date().toISOString(),
+        likeCount: rc.likeCount || 0,
+        postId: posts[t.postIndex].id,
+        postText: posts[t.postIndex].commentary || posts[t.postIndex].specificContent?.['com.linkedin.ugc.ShareContent']?.shareCommentary?.text || '',
+        isReply: true,
+        parentCommentUrn: t.commentUrn,
+        parentAuthor: t.parentAuthor
+      });
+    });
   });
   allComments.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
   res.json({ comments: allComments });
