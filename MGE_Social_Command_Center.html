@@ -3095,6 +3095,13 @@ function processData(raw, dateRangeOverride) {
             const reactions = p.reactions?.summary?.total_count || 0;
             const comments = p.comments?.summary?.total_count || 0;
             const shares = p.shares?.count || 0;
+            // Per-post insights (from /facebook/posts insights.metric expansion).
+            // Sum into audience.fb.impressions because Meta deprecated the page-level metric.
+            // Note: we do NOT roll into audience.fb.reach — page-level page_impressions_unique
+            // (set later from the insights endpoint) is the canonical reach number.
+            const postIns = p.insights?.data || [];
+            const postImpr = (postIns.find(m => m.name === 'post_impressions')?.values?.[0]?.value) || 0;
+            result.audience.fb.impressions += postImpr;
             // Extract typed reactions from aliased Graph API fields
             const rLike  = p.reactions_like?.summary?.total_count  || 0;
             const rLove  = p.reactions_love?.summary?.total_count  || 0;
