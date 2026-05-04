@@ -3096,12 +3096,14 @@ function processData(raw, dateRangeOverride) {
             const comments = p.comments?.summary?.total_count || 0;
             const shares = p.shares?.count || 0;
             // Per-post insights (from /facebook/posts insights.metric expansion).
-            // Sum into audience.fb.impressions because Meta deprecated the page-level metric.
-            // Note: we do NOT roll into audience.fb.reach — page-level page_impressions_unique
-            // (set later from the insights endpoint) is the canonical reach number.
+            // Meta deprecated all "total impressions" variants for Page posts in 2024 — only
+            // post_impressions_unique (unique reach per post) survives. Summing per-post unique
+            // reach across the period gives us cross-post cumulative exposure: someone who saw
+            // 3 of MGE's posts contributes 3 to this number. It's the closest thing to "impressions"
+            // the public Page API still exposes. KPI breakdown footnote calls this out.
             const postIns = p.insights?.data || [];
-            const postImpr = (postIns.find(m => m.name === 'post_impressions')?.values?.[0]?.value) || 0;
-            result.audience.fb.impressions += postImpr;
+            const postReachUnique = (postIns.find(m => m.name === 'post_impressions_unique')?.values?.[0]?.value) || 0;
+            result.audience.fb.impressions += postReachUnique;
             // Extract typed reactions from aliased Graph API fields
             const rLike  = p.reactions_like?.summary?.total_count  || 0;
             const rLove  = p.reactions_love?.summary?.total_count  || 0;
@@ -3543,13 +3545,14 @@ var KPI_META = {
     },
     impressions: {
         label: 'Total Impressions',
-        description: 'Total times your content was displayed (includes repeat views). FB: page_impressions. IG: media impressions + reel views. YT: video viewCount (proxy). LI: requires Community Management API approval (pending).',
+        description: 'Total times your content was displayed. FB: sum of per-post unique reach (Meta deprecated true post impressions in 2024 — this is the closest available proxy and counts cross-post cumulative exposure). IG: media impressions + reel views. YT: video viewCount (proxy). LI: requires Community Management API approval (pending).',
         platformValue: function(pe, k) {
             var aud = window._lastProcessedData && window._lastProcessedData.audience;
             return (aud && aud[k]) ? (aud[k].impressions || 0) : 0;
         },
         platformNote: function(k, value) {
             if (k === 'li' && value === 0) return 'Community Management API approval pending';
+            if (k === 'fb') return 'Cross-post unique reach (Meta deprecated true impressions)';
             if (k === 'yt') return 'Video views proxy (no Analytics OAuth yet)';
             return '';
         }
