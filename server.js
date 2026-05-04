@@ -285,6 +285,76 @@ app.get('/api/facebook/insights', async (req, res) => {
   res.json(data);
 });
 
+// DIAGNOSTIC — tries each FB page-insights metric individually so we can see which ones still work
+// after Meta's periodic deprecations. Visit /api/facebook/insights-diag to get a per-metric report.
+app.get('/api/facebook/insights-diag', async (req, res) => {
+  const { pageAccessToken, pageId } = config.facebook || {};
+  if (!pageAccessToken || !pageId) return res.json({ error: true, message: 'Facebook not configured' });
+  // Candidates — anything currently or recently used in the dashboard, plus likely replacements
+  const candidates = [
+    'page_impressions',           // total impressions
+    'page_impressions_unique',    // reach (unique people) — possibly deprecated
+    'page_engaged_users',         // possibly deprecated
+    'page_post_engagements',      // total reactions/comments/shares/clicks on posts
+    'page_fan_adds',              // new page likes
+    'page_fan_adds_unique',       // possibly deprecated
+    'page_views_total',           // possibly deprecated
+    'page_total_actions',         // replacement for page_views_total in newer API versions
+    'page_video_views',           // total video views
+    'page_video_views_unique',    // possibly deprecated
+    'page_followers',             // current follower count
+  ];
+  const results = await Promise.all(candidates.map(async (m) => {
+    const url = `${META_BASE}/${pageId}/insights?metric=${m}&period=day&date_preset=last_30d&access_token=${pageAccessToken}`;
+    const r = await apiFetch(url);
+    if (r && r.error) {
+      let detail = '';
+      try {
+        const inner = JSON.parse(r.message || '{}');
+        detail = (inner.error && (inner.error.message || inner.error.code)) || '';
+      } catch (e) { detail = r.message || ''; }
+      return { metric: m, ok: false, error: detail.toString().slice(0, 160) };
+    }
+    const arr = (r && r.data) || [];
+    const sample = arr[0] || {};
+    const totalValue = (sample.values || []).reduce((s, v) => s + (Number(v.value) || 0), 0);
+    return { metric: m, ok: true, period: sample.period, points: (sample.values || []).length, total_30d: totalValue };
+  }));
+  res.json({
+    ok: true,
+    note: 'Each metric tested individually. ok:false = deprecated or unavailable for this token.',
+    pageId,
+    apiVersion: META_BASE.match(/v\d+\.\d+/)[0],
+    results
+  });
+});
+
+// DIAGNOSTIC — checks IG token scopes + tries account-level insights to see which permissions are missing
+app.get('/api/instagram/diag', async (req, res) => {
+  const { accessToken, igUserId } = config.instagram || {};
+  if (!accessToken || !igUserId) return res.json({ error: true, message: 'Instagram not configured' });
+  const out = {};
+  // 1) Token introspection — what scopes does this token have?
+  const tokenInfo = await apiFetch(`https://graph.facebook.com/v22.0/debug_token?input_token=${accessToken}&access_token=${accessToken}`);
+  out.tokenScopes = (tokenInfo && tokenInfo.data && tokenInfo.data.scopes) || [];
+  out.tokenIsValid = (tokenInfo && tokenInfo.data && tokenInfo.data.is_valid) || false;
+  out.tokenAppId = (tokenInfo && tokenInfo.data && tokenInfo.data.app_id) || null;
+  // 2) Try account-level insights endpoint — separate from media insights
+  const acctIns = await apiFetch(`${META_BASE}/${igUserId}/insights?metric=reach&period=day&access_token=${accessToken}`);
+  out.accountInsightsTest = acctIns && acctIns.error ? { ok: false, error: acctIns.message } : { ok: true, sample: acctIns };
+  // 3) Try media insights with field expansion (current dashboard call)
+  const mediaIns = await apiFetch(`${META_BASE}/${igUserId}/media?fields=id,timestamp,media_type,insights.metric(reach)&limit=3&access_token=${accessToken}`);
+  out.mediaInsightsTest = mediaIns && mediaIns.error ? { ok: false, error: mediaIns.message } : { ok: true, sampleCount: (mediaIns.data || []).length };
+  // 4) Recommendations
+  const needed = ['instagram_basic', 'instagram_manage_insights'];
+  const missing = needed.filter(s => !out.tokenScopes.includes(s));
+  out.missingScopes = missing;
+  out.recommendation = missing.length
+    ? 'Token is missing scope(s): ' + missing.join(', ') + '. Generate a new long-lived token via Meta Graph API Explorer with these permissions, then update INSTAGRAM_ACCESS_TOKEN on Render.'
+    : 'All required scopes present. If insights still error, the IG account may not be linked to a Business Page in Meta Business Suite.';
+  res.json(out);
+});
+
 app.get('/api/instagram/profile', async (req, res) => {
   const { accessToken, igUserId } = config.instagram || {};
   if (!accessToken || !igUserId) return res.json({ error: true, message: 'Instagram not configured' });
