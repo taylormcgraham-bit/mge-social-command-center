@@ -876,10 +876,9 @@
         .no-comments .icon { font-size: 32px; margin-bottom: 8px; }
 
         /* --- KPI cards --- */
-        /* 4-column grid: Reach / Interactions / Comments / Video Views in one row on desktop.
-           Collapses to 2 cols on narrower viewports. */
-        .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-        @media (max-width: 1100px) { .kpi-grid { grid-template-columns: 1fr 1fr; } }
+        /* 2x2 grid: Reach / Interactions on top row, Comments / Video Views below.
+           Bigger cards, more breathing room than the 4-across layout. */
+        .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .kpi-card {
             background: #F8FAFC; border-radius: 12px; padding: 16px; text-align: center;
             border: 1px solid transparent; cursor: pointer;
@@ -3163,9 +3162,20 @@ function processData(raw, dateRangeOverride) {
             result.platformComments.fb.push(item);
         });
     }
-    if (raw.facebook.insights && raw.facebook.insights.page_views_total) {
-        result.kpis.views += raw.facebook.insights.page_views_total;
-        result.platformEngagement.fb.views += raw.facebook.insights.page_views_total;
+    // FB video views from page-level insights (sums all video plays >3s across all posts in window).
+    // Previous code looked at raw.facebook.insights.page_views_total as a flat property — but the
+    // Graph API returns insights as { data: [{name, values}, ...] } so that lookup always returned
+    // undefined. That meant FB video views were silently 0 in the dashboard.
+    if (raw.facebook.insights && raw.facebook.insights.data) {
+        const insArr = raw.facebook.insights.data;
+        const sumByName = (name) => {
+            const m = insArr.find(x => x && x.name === name);
+            if (!m || !Array.isArray(m.values)) return 0;
+            return m.values.reduce((s, v) => s + (Number(v.value) || 0), 0);
+        };
+        const fbVideoViews = sumByName('page_video_views');
+        result.kpis.views += fbVideoViews;
+        result.platformEngagement.fb.views += fbVideoViews;
     }
 
     // --- Instagram ---
@@ -3408,6 +3418,12 @@ function processData(raw, dateRangeOverride) {
                 // IG: legacy photo/carousel returns 'impressions'; reels/videos return 'views'.
                 // Both contribute to total impressions for our KPI.
                 if (metric.name === 'impressions' || metric.name === 'views') result.audience.ig.impressions += v;
+                // Reels and video posts return 'views' — also count those as Video Views in the KPI.
+                // (Photos return 'impressions' instead, so we don't double-count photo views as video.)
+                if (metric.name === 'views') {
+                    result.kpis.views += v;
+                    result.platformEngagement.ig.views += v;
+                }
             });
         });
     }
@@ -3526,8 +3542,14 @@ var KPI_META = {
     },
     views: {
         label: 'Total Video Views',
-        description: 'Video views on YouTube and Instagram Reels. Facebook and LinkedIn do not publish per-post view counts via their public APIs.',
-        platformValue: function(pe, k) { return pe[k] ? (pe[k].views || 0) : 0; }
+        description: 'Video plays across all platforms. YT: video viewCount. FB: page-level video plays >3s (page_video_views). IG: Reel + video post views (Stories not included — separate API + 24h data lifetime). LI: pending Community Management API approval.',
+        platformValue: function(pe, k) { return pe[k] ? (pe[k].views || 0) : 0; },
+        platformNote: function(k, value) {
+            if (k === 'li' && value === 0) return 'Community Management API approval pending';
+            if (k === 'ig' && value === 0) return 'No Reel/video posts in this window';
+            if (k === 'fb' && value === 0) return 'No video posts in this window';
+            return '';
+        }
     }
 };
 
