@@ -829,19 +829,24 @@
             background: currentColor; opacity: 0.45; margin-right: 2px;
             box-shadow: 0 0 0 2px rgba(255,255,255,0.6);
         }
-        .comment-sentiment-badge[data-tooltip] { cursor: help; position: relative; }
-        .comment-sentiment-badge[data-tooltip]:hover::after {
-            content: attr(data-tooltip);
-            position: absolute; bottom: calc(100% + 8px); right: 0;
+        /* Cursor cue for any element with our custom tooltip */
+        .comment-sentiment-badge[data-tt],
+        .reply-context-chip[data-tt] { cursor: help; }
+        /* Global tooltip element (one for the whole page) — positioned via JS */
+        #mge-tt {
+            position: fixed; z-index: 99999;
+            max-width: 340px;
+            padding: 9px 12px;
             background: #0F172A; color: #F8FAFC;
-            padding: 8px 12px; border-radius: 8px;
-            font-size: 12px; font-weight: 500; line-height: 1.4;
+            font-size: 12px; font-weight: 500; line-height: 1.45;
             text-transform: none; letter-spacing: normal;
-            width: max-content; max-width: 280px;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+            pointer-events: none; opacity: 0;
+            transition: opacity 100ms ease;
             white-space: normal; text-align: left;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.18);
-            z-index: 100; pointer-events: none;
         }
+        #mge-tt.show { opacity: 1; }
         /* Reply comments: indented + left rail */
         .comment-card.is-reply {
             margin-left: 28px; position: relative;
@@ -858,17 +863,7 @@
             border-radius: 12px; font-size: 11px; font-weight: 500;
             cursor: help; position: relative;
         }
-        .reply-context-chip[data-tooltip]:hover::after {
-            content: attr(data-tooltip);
-            position: absolute; top: calc(100% + 6px); left: 0;
-            background: #0F172A; color: #F8FAFC;
-            padding: 8px 12px; border-radius: 8px;
-            font-size: 12px; font-weight: 500; line-height: 1.4;
-            width: max-content; max-width: 320px;
-            white-space: normal; text-align: left;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.18);
-            z-index: 100; pointer-events: none;
-        }
+        /* Reply chip tooltip handled by global #mge-tt JS, not pseudo-element (overflow safe) */
         .comment-stat {
             display: flex; align-items: center; gap: 4px;
             font-size: 11px; color: #94A3B8; font-weight: 500;
@@ -3689,6 +3684,71 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
+// ------------------------------------------------------------
+// Global tooltip system — works for any element with data-tt="..."
+// Uses position:fixed so overflow:hidden parents (like .comment-feed) can't clip it.
+// One tooltip element for the whole page, lazily created on first hover.
+// ------------------------------------------------------------
+(function setupGlobalTooltip() {
+    if (window._mgeTooltipInited) return;
+    window._mgeTooltipInited = true;
+    let tt = null;
+    let hideTimer = null;
+
+    function ensureTt() {
+        if (tt) return tt;
+        tt = document.createElement('div');
+        tt.id = 'mge-tt';
+        document.body.appendChild(tt);
+        return tt;
+    }
+
+    function show(el) {
+        const text = el.getAttribute('data-tt');
+        if (!text) return;
+        const node = ensureTt();
+        clearTimeout(hideTimer);
+        node.textContent = text;
+        node.style.display = 'block';
+        // Force layout so we can measure, then position above (or below if no room)
+        const rect = el.getBoundingClientRect();
+        // Initial off-screen positioning to measure width
+        node.style.left = '0px';
+        node.style.top = '0px';
+        const ttW = node.offsetWidth;
+        const ttH = node.offsetHeight;
+        let x = rect.left + rect.width / 2 - ttW / 2;
+        let y = rect.top - ttH - 8;
+        if (y < 8) y = rect.bottom + 8; // flip below if no room above
+        x = Math.max(8, Math.min(window.innerWidth - ttW - 8, x));
+        node.style.left = x + 'px';
+        node.style.top = y + 'px';
+        // Trigger fade-in on next frame so transition runs
+        requestAnimationFrame(() => node.classList.add('show'));
+    }
+    function hide() {
+        if (!tt) return;
+        tt.classList.remove('show');
+        hideTimer = setTimeout(() => { if (tt) tt.style.display = 'none'; }, 140);
+    }
+
+    document.addEventListener('mouseover', e => {
+        const el = e.target.closest('[data-tt]');
+        if (el) show(el);
+    });
+    document.addEventListener('mouseout', e => {
+        const el = e.target.closest('[data-tt]');
+        if (!el) return;
+        // Only hide if mouse is actually leaving the element (not entering a child)
+        const to = e.relatedTarget;
+        if (to && el.contains(to)) return;
+        hide();
+    });
+    // Hide on scroll / resize so a stale tooltip doesn't float over the wrong place
+    window.addEventListener('scroll', hide, true);
+    window.addEventListener('resize', hide);
+})();
+
 function timeAgo(date) {
     const now = new Date();
     const diff = Math.floor((now - date) / 1000);
@@ -4482,7 +4542,7 @@ function renderCommentFeed(comments) {
         // Reply chip for comments-on-comments — shows "↳ Replying to @parentAuthor", parent text on hover
         const replyChipHtml = c.isReply
             ? '<div class="reply-context-chip"' +
-                (c.parentCommentText ? ' title="Parent comment: ' + escapeHtml(c.parentCommentText.substring(0, 280)) + (c.parentCommentText.length > 280 ? '…' : '') + '"' : '') +
+                (c.parentCommentText ? ' data-tt="Parent comment: ' + escapeHtml(c.parentCommentText.substring(0, 280)) + (c.parentCommentText.length > 280 ? '…' : '') + '"' : '') +
               '>↳ Replying to ' + escapeHtml(c.parentAuthor || 'a comment') + '</div>'
             : '';
         const cardClass = 'comment-card' + (c.isReply ? ' is-reply' : '');
@@ -4512,7 +4572,7 @@ function renderCommentFeed(comments) {
                 '</div>' +
                 '<div class="comment-header-sentiment">' +
                     '<div class="comment-sentiment-badge ' + labelClass + aiBadgeClass + '"' +
-                        (tooltip ? ' title="' + escapeHtml(tooltip) + '"' : '') + '>' +
+                        (tooltip ? ' data-tt="' + escapeHtml(tooltip) + '"' : '') + '>' +
                         '<span class="score-num">' + s.score + '</span>' +
                         '<span class="score-label">' + escapeHtml(s.label) + '</span>' +
                     '</div>' +
