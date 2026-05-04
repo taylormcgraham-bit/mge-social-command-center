@@ -876,8 +876,9 @@
         .no-comments .icon { font-size: 32px; margin-bottom: 8px; }
 
         /* --- KPI cards --- */
-        /* 3-column grid: 6 cards arrange as 3 cols × 2 rows on desktop, collapse to 2 cols on narrower viewports */
-        .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        /* 4-column grid: Reach / Interactions / Comments / Video Views in one row on desktop.
+           Collapses to 2 cols on narrower viewports. */
+        .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
         @media (max-width: 1100px) { .kpi-grid { grid-template-columns: 1fr 1fr; } }
         .kpi-card {
             background: #F8FAFC; border-radius: 12px; padding: 16px; text-align: center;
@@ -2403,35 +2404,25 @@
         <div class="card" style="margin-bottom:24px;">
             <div class="card-title">Engagement Overview</div>
             <div class="kpi-grid">
-                <button type="button" class="kpi-card" data-kpi="reactions" onclick="toggleKpiBreakdown(this)" aria-expanded="false">
-                    <div class="kpi-value" id="kpiReactions">0</div>
-                    <div class="kpi-label">Total Reactions <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
-                    <div class="kpi-change" id="kpiReactionsChange"></div>
+                <button type="button" class="kpi-card" data-kpi="reach" onclick="toggleKpiBreakdown(this)" aria-expanded="false">
+                    <div class="kpi-value" id="kpiReach">0</div>
+                    <div class="kpi-label">Total Reach <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
+                    <div class="kpi-change" id="kpiReachChange"></div>
+                </button>
+                <button type="button" class="kpi-card" data-kpi="interactions" onclick="toggleKpiBreakdown(this)" aria-expanded="false">
+                    <div class="kpi-value" id="kpiInteractions">0</div>
+                    <div class="kpi-label">Total Interactions <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
+                    <div class="kpi-change" id="kpiInteractionsChange"></div>
                 </button>
                 <button type="button" class="kpi-card" data-kpi="comments" onclick="toggleKpiBreakdown(this)" aria-expanded="false">
                     <div class="kpi-value" id="kpiComments">0</div>
                     <div class="kpi-label">Total Comments <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
                     <div class="kpi-change" id="kpiCommentsChange"></div>
                 </button>
-                <button type="button" class="kpi-card" data-kpi="shares" onclick="toggleKpiBreakdown(this)" aria-expanded="false">
-                    <div class="kpi-value" id="kpiShares">0</div>
-                    <div class="kpi-label">Total Shares <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
-                    <div class="kpi-change" id="kpiSharesChange"></div>
-                </button>
                 <button type="button" class="kpi-card" data-kpi="views" onclick="toggleKpiBreakdown(this)" aria-expanded="false">
                     <div class="kpi-value" id="kpiViews">0</div>
                     <div class="kpi-label">Total Video Views <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
                     <div class="kpi-change" id="kpiViewsChange"></div>
-                </button>
-                <button type="button" class="kpi-card" data-kpi="reach" onclick="toggleKpiBreakdown(this)" aria-expanded="false">
-                    <div class="kpi-value" id="kpiReach">0</div>
-                    <div class="kpi-label">Total Reach <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
-                    <div class="kpi-change" id="kpiReachChange"></div>
-                </button>
-                <button type="button" class="kpi-card" data-kpi="impressions" onclick="toggleKpiBreakdown(this)" aria-expanded="false">
-                    <div class="kpi-value" id="kpiImpressions">0</div>
-                    <div class="kpi-label">Total Impressions <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
-                    <div class="kpi-change" id="kpiImpressionsChange"></div>
                 </button>
             </div>
             <!-- Inline breakdown, shown when any KPI card is clicked -->
@@ -3496,43 +3487,20 @@ function getFollowerMoMChange(platformKey, currentFollowers) {
 // ============================================================
 // KPI PLATFORM BREAKDOWN — shown when a KPI card is clicked
 // ============================================================
+// Helper: per-platform reaction count (FB has typed reactions; others expose .likes)
+function _platformReactions(pe, k) {
+    if (!pe[k]) return 0;
+    if (k === 'fb') {
+        return (pe.fb.like || 0) + (pe.fb.love || 0) + (pe.fb.wow || 0) +
+               (pe.fb.haha || 0) + (pe.fb.sad || 0) + (pe.fb.angry || 0) + (pe.fb.care || 0);
+    }
+    return (pe[k].likes || 0); // YT: dislikes are not public from the API
+}
+
 var KPI_META = {
-    reactions: {
-        label: 'Total Reactions',
-        description: 'Likes, loves, care, and other reactions by platform',
-        // Returns the reaction total for a given platform key
-        platformValue: function(pe, platformKey) {
-            if (!pe[platformKey]) return 0;
-            if (platformKey === 'fb') {
-                return (pe.fb.like || 0) + (pe.fb.love || 0) + (pe.fb.wow || 0) +
-                       (pe.fb.haha || 0) + (pe.fb.sad || 0) + (pe.fb.angry || 0) + (pe.fb.care || 0);
-            }
-            // IG, LI, YT expose .likes (dislikes folded into reactions for YT)
-            if (platformKey === 'yt') {
-                return (pe.yt.likes || 0); // dislikes are not public from the API
-            }
-            return (pe[platformKey].likes || 0);
-        }
-    },
-    comments: {
-        label: 'Total Comments',
-        description: 'Comments left by your audience on each platform',
-        platformValue: function(pe, k) { return pe[k] ? (pe[k].comments || 0) : 0; }
-    },
-    shares: {
-        label: 'Total Shares',
-        description: 'Shares / reposts / retweets on each platform',
-        platformValue: function(pe, k) { return pe[k] ? (pe[k].shares || 0) : 0; }
-    },
-    views: {
-        label: 'Total Video Views',
-        description: 'Video views on YouTube and Instagram Reels. Facebook and LinkedIn do not publish per-post view counts via their public APIs.',
-        platformValue: function(pe, k) { return pe[k] ? (pe[k].views || 0) : 0; }
-    },
     reach: {
         label: 'Total Reach',
         description: 'Unique people who saw your content in this window. FB: page_impressions_unique. IG: account-level reach. YT: total channel views (proxy — true impressions require YouTube Analytics API + OAuth). LI: requires Community Management API approval (pending).',
-        // Reach lives on data.audience, not platformEngagement. Read from window._lastProcessedData.
         platformValue: function(pe, k) {
             var aud = window._lastProcessedData && window._lastProcessedData.audience;
             return (aud && aud[k]) ? (aud[k].reach || 0) : 0;
@@ -3543,19 +3511,23 @@ var KPI_META = {
             return '';
         }
     },
-    impressions: {
-        label: 'Total Impressions',
-        description: 'Total times your content was displayed. FB: sum of per-post unique reach (Meta deprecated true post impressions in 2024 — this is the closest available proxy and counts cross-post cumulative exposure). IG: media impressions + reel views. YT: video viewCount (proxy). LI: requires Community Management API approval (pending).',
+    interactions: {
+        label: 'Total Interactions',
+        description: 'Reactions and shares combined — quick low-friction actions taken on your content. Comments are tracked separately because they\'re deeper engagement and have AI sentiment scoring.',
         platformValue: function(pe, k) {
-            var aud = window._lastProcessedData && window._lastProcessedData.audience;
-            return (aud && aud[k]) ? (aud[k].impressions || 0) : 0;
-        },
-        platformNote: function(k, value) {
-            if (k === 'li' && value === 0) return 'Community Management API approval pending';
-            if (k === 'fb') return 'Cross-post unique reach (Meta deprecated true impressions)';
-            if (k === 'yt') return 'Video views proxy (no Analytics OAuth yet)';
-            return '';
+            if (!pe[k]) return 0;
+            return _platformReactions(pe, k) + (pe[k].shares || 0);
         }
+    },
+    comments: {
+        label: 'Total Comments',
+        description: 'Comments left by your audience on each platform. Each comment is AI-scored for sentiment with full post + parent-comment context.',
+        platformValue: function(pe, k) { return pe[k] ? (pe[k].comments || 0) : 0; }
+    },
+    views: {
+        label: 'Total Video Views',
+        description: 'Video views on YouTube and Instagram Reels. Facebook and LinkedIn do not publish per-post view counts via their public APIs.',
+        platformValue: function(pe, k) { return pe[k] ? (pe[k].views || 0) : 0; }
     }
 };
 
@@ -3822,18 +3794,18 @@ function renderKPIs(data) {
     if (expandedCard) {
         renderKpiBreakdown(expandedCard.getAttribute('data-kpi'));
     }
-    if (el('kpiReactions')) el('kpiReactions').textContent = fmt(data.kpis.reactions);
-    if (el('kpiComments')) el('kpiComments').textContent = fmt(data.kpis.comments);
-    if (el('kpiShares')) el('kpiShares').textContent = fmt(data.kpis.shares);
-    if (el('kpiViews')) el('kpiViews').textContent = fmt(data.kpis.views);
+    // Interactions = reactions + shares (computed; underlying granular numbers preserved on data.kpis
+    // for AHS / AI Insights which still need them).
+    var totalInteractions = (data.kpis.reactions || 0) + (data.kpis.shares || 0);
+    var prevInteractions = prev ? ((prev.reactions || 0) + (prev.shares || 0)) : null;
     if (el('kpiReach')) el('kpiReach').textContent = fmt(data.kpis.reach || 0);
-    if (el('kpiImpressions')) el('kpiImpressions').textContent = fmt(data.kpis.impressions || 0);
-    if (el('kpiReactionsChange')) el('kpiReactionsChange').innerHTML = prev ? trendBadge(data.kpis.reactions, prev.reactions) : '';
-    if (el('kpiCommentsChange')) el('kpiCommentsChange').innerHTML = prev ? trendBadge(data.kpis.comments, prev.comments) : '';
-    if (el('kpiSharesChange')) el('kpiSharesChange').innerHTML = prev ? trendBadge(data.kpis.shares, prev.shares) : '';
-    if (el('kpiViewsChange')) el('kpiViewsChange').innerHTML = prev ? trendBadge(data.kpis.views, prev.views) : '';
+    if (el('kpiInteractions')) el('kpiInteractions').textContent = fmt(totalInteractions);
+    if (el('kpiComments')) el('kpiComments').textContent = fmt(data.kpis.comments);
+    if (el('kpiViews')) el('kpiViews').textContent = fmt(data.kpis.views);
     if (el('kpiReachChange')) el('kpiReachChange').innerHTML = (prev && prev.reach) ? trendBadge(data.kpis.reach || 0, prev.reach) : '';
-    if (el('kpiImpressionsChange')) el('kpiImpressionsChange').innerHTML = (prev && prev.impressions) ? trendBadge(data.kpis.impressions || 0, prev.impressions) : '';
+    if (el('kpiInteractionsChange')) el('kpiInteractionsChange').innerHTML = (prevInteractions != null) ? trendBadge(totalInteractions, prevInteractions) : '';
+    if (el('kpiCommentsChange')) el('kpiCommentsChange').innerHTML = prev ? trendBadge(data.kpis.comments, prev.comments) : '';
+    if (el('kpiViewsChange')) el('kpiViewsChange').innerHTML = prev ? trendBadge(data.kpis.views, prev.views) : '';
     // Flashy follower badges by platform
     const followersRow = el('kpiFollowersRow');
     if (followersRow && data.audience) {
