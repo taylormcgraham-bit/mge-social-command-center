@@ -214,7 +214,9 @@ app.get('/api/facebook/page', async (req, res) => {
 app.get('/api/facebook/posts', async (req, res) => {
   const { pageAccessToken, pageId } = config.facebook || {};
   if (!pageAccessToken || !pageId) return res.json({ error: true, message: 'Facebook not configured' });
-  let url = `${META_BASE}/${pageId}/posts?fields=id,message,created_time,full_picture,permalink_url,status_type,shares,reactions.summary(true),reactions.type(LIKE).limit(0).summary(total_count).as(reactions_like),reactions.type(LOVE).limit(0).summary(total_count).as(reactions_love),reactions.type(WOW).limit(0).summary(total_count).as(reactions_wow),reactions.type(HAHA).limit(0).summary(total_count).as(reactions_haha),reactions.type(SAD).limit(0).summary(total_count).as(reactions_sad),reactions.type(ANGRY).limit(0).summary(total_count).as(reactions_angry),reactions.type(CARE).limit(0).summary(total_count).as(reactions_care),comments.summary(true)&limit=50&access_token=${pageAccessToken}`;
+  // post_impressions = total times post was shown; post_impressions_unique = unique people reached.
+  // Page-level page_impressions was deprecated by Meta — we now sum per-post impressions instead.
+  let url = `${META_BASE}/${pageId}/posts?fields=id,message,created_time,full_picture,permalink_url,status_type,shares,reactions.summary(true),reactions.type(LIKE).limit(0).summary(total_count).as(reactions_like),reactions.type(LOVE).limit(0).summary(total_count).as(reactions_love),reactions.type(WOW).limit(0).summary(total_count).as(reactions_wow),reactions.type(HAHA).limit(0).summary(total_count).as(reactions_haha),reactions.type(SAD).limit(0).summary(total_count).as(reactions_sad),reactions.type(ANGRY).limit(0).summary(total_count).as(reactions_angry),reactions.type(CARE).limit(0).summary(total_count).as(reactions_care),comments.summary(true),insights.metric(post_impressions,post_impressions_unique)&limit=50&access_token=${pageAccessToken}`;
   url += dateRangeParams(req);
   const data = await apiFetch(url);
   res.json(data);
@@ -279,8 +281,10 @@ app.get('/api/facebook/all-comments', async (req, res) => {
 app.get('/api/facebook/insights', async (req, res) => {
   const { pageAccessToken, pageId } = config.facebook || {};
   if (!pageAccessToken || !pageId) return res.json({ error: true, message: 'Facebook not configured' });
-  // page_impressions = total impressions; page_impressions_unique = reach (unique people)
-  const metrics = 'page_impressions,page_impressions_unique,page_engaged_users,page_post_engagements,page_fan_adds,page_views_total';
+  // Curated to ONLY metrics confirmed working via /api/facebook/insights-diag (2026-05-04).
+  // Meta deprecated: page_impressions, page_engaged_users, page_fan_adds, page_fan_adds_unique, page_followers.
+  // Total impressions now derived per-post from /facebook/posts insights expansion.
+  const metrics = 'page_impressions_unique,page_post_engagements,page_views_total,page_video_views,page_video_views_unique';
   const data = await apiFetch(`${META_BASE}/${pageId}/insights?metric=${metrics}&period=day&date_preset=last_30d&access_token=${pageAccessToken}`);
   res.json(data);
 });
