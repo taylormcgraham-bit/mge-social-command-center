@@ -279,7 +279,8 @@ app.get('/api/facebook/all-comments', async (req, res) => {
 app.get('/api/facebook/insights', async (req, res) => {
   const { pageAccessToken, pageId } = config.facebook || {};
   if (!pageAccessToken || !pageId) return res.json({ error: true, message: 'Facebook not configured' });
-  const metrics = 'page_impressions,page_engaged_users,page_post_engagements,page_fan_adds,page_views_total';
+  // page_impressions = total impressions; page_impressions_unique = reach (unique people)
+  const metrics = 'page_impressions,page_impressions_unique,page_engaged_users,page_post_engagements,page_fan_adds,page_views_total';
   const data = await apiFetch(`${META_BASE}/${pageId}/insights?metric=${metrics}&period=day&date_preset=last_30d&access_token=${pageAccessToken}`);
   res.json(data);
 });
@@ -360,7 +361,10 @@ app.get('/api/instagram/all-comments', async (req, res) => {
 app.get('/api/instagram/reach', async (req, res) => {
   const { accessToken, igUserId } = config.instagram || {};
   if (!accessToken || !igUserId) return res.json({ error: true, message: 'Instagram not configured' });
-  let url = `${META_BASE}/${igUserId}/media?fields=id,timestamp,insights.metric(reach,impressions)&limit=50&access_token=${accessToken}`;
+  // Meta deprecated `impressions` for IG accounts in April 2024 — replaced with `views` for video/reels.
+  // We request all three: API returns whichever applies per media type (reach for everything;
+  // impressions for legacy photo posts; views for video/reels). Frontend sums what's present.
+  let url = `${META_BASE}/${igUserId}/media?fields=id,timestamp,media_type,insights.metric(reach,views,impressions)&limit=50&access_token=${accessToken}`;
   if (req.query.since) { const sinceUnix = Math.floor(new Date(req.query.since).getTime() / 1000); url += '&since=' + sinceUnix; }
   if (req.query.until) { const untilUnix = Math.floor(new Date(req.query.until).getTime() / 1000); url += '&until=' + untilUnix; }
   const data = await apiFetch(url);
