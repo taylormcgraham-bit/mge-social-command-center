@@ -418,7 +418,7 @@ app.get('/api/instagram/profile', async (req, res) => {
 app.get('/api/instagram/media', async (req, res) => {
   const { accessToken, igUserId } = config.instagram || {};
   if (!accessToken || !igUserId) return res.json({ error: true, message: 'Instagram not configured' });
-  let url = `${META_BASE}/${igUserId}/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count&limit=50&access_token=${accessToken}`;
+  let url = `${META_BASE}/${igUserId}/media?fields=id,caption,media_type,media_product_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count&limit=50&access_token=${accessToken}`;
   if (req.query.since) { const sinceUnix = Math.floor(new Date(req.query.since).getTime() / 1000); url += '&since=' + sinceUnix; }
   if (req.query.until) { const untilUnix = Math.floor(new Date(req.query.until).getTime() / 1000); url += '&until=' + untilUnix; }
   const data = await apiFetch(url);
@@ -487,7 +487,8 @@ app.get('/api/instagram/reach', async (req, res) => {
   // Meta deprecated `impressions` for IG accounts in April 2024 — replaced with `views` for video/reels.
   // We request all three: API returns whichever applies per media type (reach for everything;
   // impressions for legacy photo posts; views for video/reels). Frontend sums what's present.
-  let url = `${META_BASE}/${igUserId}/media?fields=id,timestamp,media_type,insights.metric(reach,views,impressions)&limit=50&access_token=${accessToken}`;
+  // media_product_type distinguishes REELS from regular VIDEO posts for the Content Type Mix section.
+  let url = `${META_BASE}/${igUserId}/media?fields=id,timestamp,media_type,media_product_type,insights.metric(reach,views,impressions)&limit=50&access_token=${accessToken}`;
   if (req.query.since) { const sinceUnix = Math.floor(new Date(req.query.since).getTime() / 1000); url += '&since=' + sinceUnix; }
   if (req.query.until) { const untilUnix = Math.floor(new Date(req.query.until).getTime() / 1000); url += '&until=' + untilUnix; }
   const data = await apiFetch(url);
