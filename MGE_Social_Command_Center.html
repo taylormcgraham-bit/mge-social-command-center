@@ -818,9 +818,57 @@
         }
         .comment-sentiment-badge .score-num { font-size: 18px; line-height: 1; }
         .comment-sentiment-badge .score-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; }
-        .comment-sentiment-badge.positive { background: #DCFCE7; color: #16A34A; }
+        .comment-sentiment-badge.positive,
+        .comment-sentiment-badge.strongly-positive { background: #DCFCE7; color: #16A34A; }
         .comment-sentiment-badge.neutral  { background: #FEF9C3; color: #CA8A04; }
-        .comment-sentiment-badge.negative { background: #FEE2E2; color: #DC2626; }
+        .comment-sentiment-badge.negative,
+        .comment-sentiment-badge.strongly-negative { background: #FEE2E2; color: #DC2626; }
+        /* AI-scored badge gets a tiny sparkle icon to distinguish from lexical */
+        .comment-sentiment-badge.ai-scored::before {
+            content: ''; width: 8px; height: 8px; border-radius: 50%;
+            background: currentColor; opacity: 0.45; margin-right: 2px;
+            box-shadow: 0 0 0 2px rgba(255,255,255,0.6);
+        }
+        .comment-sentiment-badge[data-tooltip] { cursor: help; position: relative; }
+        .comment-sentiment-badge[data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute; bottom: calc(100% + 8px); right: 0;
+            background: #0F172A; color: #F8FAFC;
+            padding: 8px 12px; border-radius: 8px;
+            font-size: 12px; font-weight: 500; line-height: 1.4;
+            text-transform: none; letter-spacing: normal;
+            width: max-content; max-width: 280px;
+            white-space: normal; text-align: left;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.18);
+            z-index: 100; pointer-events: none;
+        }
+        /* Reply comments: indented + left rail */
+        .comment-card.is-reply {
+            margin-left: 28px; position: relative;
+            border-left: 3px solid #E2E8F0;
+        }
+        .comment-card.is-reply::before {
+            content: '↳'; position: absolute; left: -22px; top: 18px;
+            font-size: 18px; color: #94A3B8; font-weight: 600;
+        }
+        .reply-context-chip {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 9px; margin-bottom: 6px;
+            background: #F1F5F9; color: #475569;
+            border-radius: 12px; font-size: 11px; font-weight: 500;
+            cursor: help; position: relative;
+        }
+        .reply-context-chip[data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute; top: calc(100% + 6px); left: 0;
+            background: #0F172A; color: #F8FAFC;
+            padding: 8px 12px; border-radius: 8px;
+            font-size: 12px; font-weight: 500; line-height: 1.4;
+            width: max-content; max-width: 320px;
+            white-space: normal; text-align: left;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.18);
+            z-index: 100; pointer-events: none;
+        }
         .comment-stat {
             display: flex; align-items: center; gap: 4px;
             font-size: 11px; color: #94A3B8; font-weight: 500;
@@ -3098,7 +3146,11 @@ function processData(raw, dateRangeOverride) {
                 postImage: c.postImage || '',
                 commentId: c.commentId || c.id || '',
                 postId: c.postId || '',
-                authorIsAnon: isAnon
+                authorIsAnon: isAnon,
+                isReply: !!c.isReply,
+                parentCommentId: c.parentCommentId || '',
+                parentAuthor: c.parentAuthor || '',
+                parentCommentText: c.parentCommentText || ''
             };
             result.comments.push(item);
             result.platformComments.fb.push(item);
@@ -3153,7 +3205,13 @@ function processData(raw, dateRangeOverride) {
                 time: c.timestamp || c.publishedAt || '',
                 likes: c.like_count || c.likeCount || 0,
                 postContext: c.postCaption || '',
-                postImage: c.postImage || c.mediaUrl || ''
+                postImage: c.postImage || c.mediaUrl || '',
+                commentId: c.id || '',
+                postId: c.postId || '',
+                isReply: !!c.isReply,
+                parentCommentId: c.parentCommentId || '',
+                parentAuthor: c.parentAuthor || '',
+                parentCommentText: c.parentCommentText || ''
             };
             result.comments.push(item);
             result.platformComments.ig.push(item);
@@ -3202,13 +3260,19 @@ function processData(raw, dateRangeOverride) {
         liCommentsArr.forEach(c => {
             const item = {
                 platform: 'li',
-                author: c.authorName || c.actor || 'LinkedIn User',
+                author: c.authorName || c.author || c.actor || 'LinkedIn User',
                 authorImage: '',
-                text: c.message || c.comment || '',
+                text: c.message || c.text || c.comment || '',
                 time: c.created || c.publishedAt || '',
                 likes: c.likeCount || 0,
                 postContext: c.postText || '',
-                postImage: ''
+                postImage: '',
+                commentId: c.id || '',
+                postId: c.postId || '',
+                isReply: !!c.isReply,
+                parentCommentId: c.parentCommentId || '',
+                parentAuthor: c.parentAuthor || '',
+                parentCommentText: c.parentCommentText || ''
             };
             result.comments.push(item);
             result.platformComments.li.push(item);
@@ -3266,7 +3330,13 @@ function processData(raw, dateRangeOverride) {
                 likes: s.likeCount || c.likeCount || 0,
                 postContext: c.videoTitle || '',
                 videoId: c.videoId || '',
-                postImage: c.videoId ? 'https://img.youtube.com/vi/' + c.videoId + '/mqdefault.jpg' : ''
+                postImage: c.videoId ? 'https://img.youtube.com/vi/' + c.videoId + '/mqdefault.jpg' : '',
+                commentId: c.id || '',
+                postId: c.videoId || '',
+                isReply: !!c.isReply,
+                parentCommentId: c.parentCommentId || '',
+                parentAuthor: c.parentAuthor || '',
+                parentCommentText: c.parentCommentText || ''
             };
             result.comments.push(item);
             result.platformComments.yt.push(item);
@@ -3784,11 +3854,25 @@ function ahsPillarEngagement(pe) {
 }
 function ahsPillarSentiment(comments) {
     if (!comments || comments.length === 0) return null;
-    const txt = comments.map(c => c.text).join(' ');
-    const s = analyzeSentiment(txt);
+    // Use per-comment AI score when available (context-aware), fall back to lexical when not yet scored.
+    // Average the per-comment scores rather than scoring the joined string — the joined-string approach
+    // hides the EV-defender problem (one positive long story drowns in negativity from short complaints).
+    let total = 0, n = 0;
+    comments.forEach(c => {
+        if (typeof c.aiScore === 'number') {
+            total += c.aiScore;
+            n++;
+        } else if (c.text) {
+            const s = analyzeSentiment(c.text);
+            total += s.score;
+            n++;
+        }
+    });
+    if (n === 0) return null;
+    const avg = total / n;
     // Confidence-weighted: small sample → pull toward neutral (50)
-    const conf = Math.min(1, comments.length / 15);
-    return Math.round(s.score * conf + 50 * (1 - conf));
+    const conf = Math.min(1, n / 15);
+    return Math.round(avg * conf + 50 * (1 - conf));
 }
 function ahsPillarReach(aud) {
     if (!aud || !aud.followers || !aud.reach) return null;
@@ -4183,12 +4267,144 @@ function renderSentiment(data) {
 let _allComments = [];
 let _activeFilter = 'all';
 
+// ------------------------------------------------------------
+// AI Comment Scoring (Haiku 4.5, context-aware)
+// Cache: localStorage key 'ai_comment_scores_v1' → { [commentId]: {score, label, rationale, scoredAt, textHash} }
+// Steady state: only NEW or EDITED comments hit the API. Re-renders are free.
+// ------------------------------------------------------------
+const AI_SCORE_CACHE_KEY = 'ai_comment_scores_v1';
+const AI_SCORE_BATCH = 10;
+const AI_SCORE_TTL_MS = 1000 * 60 * 60 * 24 * 30; // 30 days
+
+function _hashText(s) {
+    let h = 5381;
+    for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+    return ('00000000' + (h >>> 0).toString(16)).slice(-8);
+}
+function _loadAiCache() {
+    try { return JSON.parse(localStorage.getItem(AI_SCORE_CACHE_KEY) || '{}'); }
+    catch (e) { return {}; }
+}
+function _saveAiCache(cache) {
+    try { localStorage.setItem(AI_SCORE_CACHE_KEY, JSON.stringify(cache)); }
+    catch (e) { /* quota exceeded — fail silently */ }
+}
+function _pruneAiCache(cache) {
+    const now = Date.now();
+    for (const k of Object.keys(cache)) {
+        if (!cache[k] || !cache[k].scoredAt || (now - cache[k].scoredAt) > AI_SCORE_TTL_MS) {
+            delete cache[k];
+        }
+    }
+    return cache;
+}
+
+function _applyCachedScores(comments) {
+    const cache = _pruneAiCache(_loadAiCache());
+    const needScoring = [];
+    comments.forEach(c => {
+        const id = c.commentId || '';
+        if (!id || !c.text) return;
+        const hash = _hashText(c.text);
+        const hit = cache[id];
+        if (hit && hit.textHash === hash) {
+            c.aiScore = hit.score;
+            c.aiLabel = hit.label;
+            c.aiRationale = hit.rationale;
+        } else {
+            needScoring.push(c);
+        }
+    });
+    return needScoring;
+}
+
+async function _scoreBatch(batch) {
+    const items = batch.map(c => ({
+        id: c.commentId,
+        post: c.postContext || '',
+        parent: c.isReply ? (c.parentCommentText || '') : '',
+        text: c.text || ''
+    }));
+    const resp = await fetch('/api/score-comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items })
+    });
+    if (!resp.ok) throw new Error('score endpoint returned ' + resp.status);
+    const data = await resp.json();
+    return data.scores || [];
+}
+
+async function scoreCommentsWithAI(comments) {
+    const needScoring = _applyCachedScores(comments);
+
+    // Re-render immediately so cached scores show; lexical fallback shows for the rest while we wait
+    const filtered = _activeFilter === 'all' ? _allComments : _allComments.filter(c => c.platform === _activeFilter);
+    renderCommentFeed(filtered);
+
+    if (needScoring.length === 0) return;
+    console.log('[AI scoring] need to score', needScoring.length, 'of', comments.length, 'comments (rest cached)');
+
+    const cache = _loadAiCache();
+    let scored = 0;
+
+    for (let i = 0; i < needScoring.length; i += AI_SCORE_BATCH) {
+        const batch = needScoring.slice(i, i + AI_SCORE_BATCH);
+        try {
+            const results = await _scoreBatch(batch);
+            const byId = {};
+            results.forEach(r => { byId[r.id] = r; });
+            batch.forEach(c => {
+                const r = byId[c.commentId];
+                if (!r) return;
+                c.aiScore = r.score;
+                c.aiLabel = r.label;
+                c.aiRationale = r.rationale;
+                cache[c.commentId] = {
+                    score: r.score,
+                    label: r.label,
+                    rationale: r.rationale,
+                    textHash: _hashText(c.text || ''),
+                    scoredAt: Date.now()
+                };
+                scored++;
+            });
+        } catch (err) {
+            console.warn('[AI scoring] batch failed, falling back to lexical:', err.message);
+        }
+        _saveAiCache(cache);
+        // Progressive re-render so user sees scores fade in
+        const f2 = _activeFilter === 'all' ? _allComments : _allComments.filter(c => c.platform === _activeFilter);
+        renderCommentFeed(f2);
+    }
+
+    console.log('[AI scoring] done — scored', scored, '/', needScoring.length);
+
+    // Re-render dependent UI now that scores are settled
+    const f3 = _activeFilter === 'all' ? _allComments : _allComments.filter(c => c.platform === _activeFilter);
+    renderSentimentBar(f3);
+    if (typeof renderAhs === 'function') {
+        try { renderAhs(); } catch (e) { /* no-op */ }
+    }
+}
+
+// Returns the score to use for a comment: AI if scored, lexical otherwise.
+function commentScore(c) {
+    if (typeof c.aiScore === 'number') {
+        return { score: c.aiScore, label: c.aiLabel || 'Neutral', source: 'ai', rationale: c.aiRationale || '' };
+    }
+    const lex = analyzeSentiment(c.text || '');
+    return { score: lex.score, label: lex.label, source: 'lexical', rationale: '' };
+}
+
 function renderComments(data) {
     _allComments = data.comments;
     _activeFilter = 'all';
     setupFilters();
     renderCommentFeed(_allComments);
     renderSentimentBar(_allComments);
+    // Kick off AI scoring in the background — non-blocking
+    scoreCommentsWithAI(_allComments).catch(e => console.warn('[AI scoring] orchestration error:', e));
 }
 
 function setupFilters() {
@@ -4237,7 +4453,13 @@ function renderCommentFeed(comments) {
     const svgHeart = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/></svg>';
 
     feed.innerHTML = comments.map(c => {
-        const s = analyzeSentiment(c.text);
+        const s = commentScore(c);
+        // Map full label ("Strongly Positive") to CSS class ("strongly-positive")
+        const labelClass = (s.label || 'neutral').toLowerCase().replace(/\s+/g, '-');
+        const aiBadgeClass = s.source === 'ai' ? ' ai-scored' : '';
+        const tooltip = s.source === 'ai' && s.rationale
+            ? 'AI: ' + s.rationale
+            : (s.source === 'lexical' ? 'Heuristic score (AI scoring pending or failed)' : '');
         const ago = c.time ? timeAgo(new Date(c.time)) : '';
         const fullTime = c.time ? new Date(c.time).toLocaleDateString('en-US', {
             month: 'short', day: 'numeric', year: 'numeric',
@@ -4257,8 +4479,15 @@ function renderCommentFeed(comments) {
                 (c.postContext ? '<div class="comment-post-copy">' + escapeHtml(c.postContext.substring(0, 200)) + (c.postContext.length > 200 ? '...' : '') + '</div>' : '') +
               '</div>'
             : '';
+        // Reply chip for comments-on-comments — shows "↳ Replying to @parentAuthor", parent text on hover
+        const replyChipHtml = c.isReply
+            ? '<div class="reply-context-chip"' +
+                (c.parentCommentText ? ' data-tooltip="' + escapeHtml(c.parentCommentText.substring(0, 280)) + (c.parentCommentText.length > 280 ? '…' : '') + '"' : '') +
+              '>↳ Replying to ' + escapeHtml(c.parentAuthor || 'a comment') + '</div>'
+            : '';
+        const cardClass = 'comment-card' + (c.isReply ? ' is-reply' : '');
 
-        return '<div class="comment-card" data-platform="' + c.platform + '">' +
+        return '<div class="' + cardClass + '" data-platform="' + c.platform + '"' + (c.isReply ? ' data-reply="1"' : '') + '>' +
             '<div class="comment-card-header">' +
                 avatarHtml +
                 '<div class="comment-header-info">' +
@@ -4282,13 +4511,15 @@ function renderCommentFeed(comments) {
                     '<div class="comment-time" title="' + escapeHtml(fullTime) + '">' + ago + (fullTime ? ' &middot; ' + fullTime : '') + '</div>' +
                 '</div>' +
                 '<div class="comment-header-sentiment">' +
-                    '<div class="comment-sentiment-badge ' + s.label.toLowerCase() + '">' +
+                    '<div class="comment-sentiment-badge ' + labelClass + aiBadgeClass + '"' +
+                        (tooltip ? ' data-tooltip="' + escapeHtml(tooltip) + '"' : '') + '>' +
                         '<span class="score-num">' + s.score + '</span>' +
-                        '<span class="score-label">' + s.label + '</span>' +
+                        '<span class="score-label">' + escapeHtml(s.label) + '</span>' +
                     '</div>' +
                 '</div>' +
             '</div>' +
             postPreviewHtml +
+            replyChipHtml +
             '<div class="comment-body">' +
                 '<div class="comment-text">' + escapeHtml(c.text || '(no text)') + '</div>' +
                 (likesHtml ? '<div class="comment-footer">' + likesHtml + '</div>' : '') +
