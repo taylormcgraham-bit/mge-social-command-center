@@ -214,12 +214,60 @@ app.get('/api/facebook/page', async (req, res) => {
 app.get('/api/facebook/posts', async (req, res) => {
   const { pageAccessToken, pageId } = config.facebook || {};
   if (!pageAccessToken || !pageId) return res.json({ error: true, message: 'Facebook not configured' });
-  // post_impressions = total times post was shown; post_impressions_unique = unique people reached.
-  // Page-level page_impressions was deprecated by Meta — we now sum per-post impressions instead.
-  let url = `${META_BASE}/${pageId}/posts?fields=id,message,created_time,full_picture,permalink_url,status_type,shares,reactions.summary(true),reactions.type(LIKE).limit(0).summary(total_count).as(reactions_like),reactions.type(LOVE).limit(0).summary(total_count).as(reactions_love),reactions.type(WOW).limit(0).summary(total_count).as(reactions_wow),reactions.type(HAHA).limit(0).summary(total_count).as(reactions_haha),reactions.type(SAD).limit(0).summary(total_count).as(reactions_sad),reactions.type(ANGRY).limit(0).summary(total_count).as(reactions_angry),reactions.type(CARE).limit(0).summary(total_count).as(reactions_care),comments.summary(true),insights.metric(post_impressions,post_impressions_unique)&limit=50&access_token=${pageAccessToken}`;
+  // NOTE 2026-05-04: insights.metric(post_impressions,post_impressions_unique) field expansion
+  // was added then removed because at least one of those post-level metrics is also deprecated
+  // and was breaking the entire posts response. Use /api/facebook/posts-insights-diag to probe
+  // which post-level metrics still work before re-adding the expansion.
+  let url = `${META_BASE}/${pageId}/posts?fields=id,message,created_time,full_picture,permalink_url,status_type,shares,reactions.summary(true),reactions.type(LIKE).limit(0).summary(total_count).as(reactions_like),reactions.type(LOVE).limit(0).summary(total_count).as(reactions_love),reactions.type(WOW).limit(0).summary(total_count).as(reactions_wow),reactions.type(HAHA).limit(0).summary(total_count).as(reactions_haha),reactions.type(SAD).limit(0).summary(total_count).as(reactions_sad),reactions.type(ANGRY).limit(0).summary(total_count).as(reactions_angry),reactions.type(CARE).limit(0).summary(total_count).as(reactions_care),comments.summary(true)&limit=50&access_token=${pageAccessToken}`;
   url += dateRangeParams(req);
   const data = await apiFetch(url);
   res.json(data);
+});
+
+// DIAGNOSTIC — probes post-level insights metrics on a recent post one at a time
+// to identify which ones Meta still supports. Visit /api/facebook/posts-insights-diag.
+app.get('/api/facebook/posts-insights-diag', async (req, res) => {
+  const { pageAccessToken, pageId } = config.facebook || {};
+  if (!pageAccessToken || !pageId) return res.json({ error: true, message: 'Facebook not configured' });
+  // Grab one recent post to test against
+  const postsResp = await apiFetch(`${META_BASE}/${pageId}/posts?fields=id,created_time&limit=1&access_token=${pageAccessToken}`);
+  const samplePost = (postsResp && postsResp.data && postsResp.data[0]) || null;
+  if (!samplePost) return res.json({ ok: false, error: 'Could not fetch a sample post', postsResp });
+  const candidates = [
+    'post_impressions',
+    'post_impressions_unique',
+    'post_impressions_organic',
+    'post_impressions_organic_unique',
+    'post_impressions_paid',
+    'post_impressions_paid_unique',
+    'post_engaged_users',
+    'post_clicks',
+    'post_clicks_unique',
+    'post_video_views',
+    'post_video_views_unique',
+    'post_reactions_by_type_total'
+  ];
+  const results = await Promise.all(candidates.map(async (m) => {
+    const r = await apiFetch(`${META_BASE}/${samplePost.id}/insights?metric=${m}&access_token=${pageAccessToken}`);
+    if (r && r.error) {
+      let detail = '';
+      try {
+        const inner = JSON.parse(r.message || '{}');
+        detail = (inner.error && (inner.error.message || inner.error.code)) || '';
+      } catch (e) { detail = r.message || ''; }
+      return { metric: m, ok: false, error: detail.toString().slice(0, 160) };
+    }
+    const arr = (r && r.data) || [];
+    const sample = arr[0] || {};
+    return { metric: m, ok: true, value: sample.values && sample.values[0] && sample.values[0].value };
+  }));
+  res.json({
+    ok: true,
+    note: 'Each post-level insights metric tested individually against a single recent post.',
+    samplePostId: samplePost.id,
+    samplePostCreated: samplePost.created_time,
+    results
+  });
 });
 
 app.get('/api/facebook/comments/:postId', async (req, res) => {
