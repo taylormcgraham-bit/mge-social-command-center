@@ -876,7 +876,9 @@
         .no-comments .icon { font-size: 32px; margin-bottom: 8px; }
 
         /* --- KPI cards --- */
-        .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        /* 3-column grid: 6 cards arrange as 3 cols × 2 rows on desktop, collapse to 2 cols on narrower viewports */
+        .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        @media (max-width: 1100px) { .kpi-grid { grid-template-columns: 1fr 1fr; } }
         .kpi-card {
             background: #F8FAFC; border-radius: 12px; padding: 16px; text-align: center;
             border: 1px solid transparent; cursor: pointer;
@@ -2421,6 +2423,16 @@
                     <div class="kpi-label">Total Video Views <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
                     <div class="kpi-change" id="kpiViewsChange"></div>
                 </button>
+                <button type="button" class="kpi-card" data-kpi="reach" onclick="toggleKpiBreakdown(this)" aria-expanded="false">
+                    <div class="kpi-value" id="kpiReach">0</div>
+                    <div class="kpi-label">Total Reach <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
+                    <div class="kpi-change" id="kpiReachChange"></div>
+                </button>
+                <button type="button" class="kpi-card" data-kpi="impressions" onclick="toggleKpiBreakdown(this)" aria-expanded="false">
+                    <div class="kpi-value" id="kpiImpressions">0</div>
+                    <div class="kpi-label">Total Impressions <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
+                    <div class="kpi-change" id="kpiImpressionsChange"></div>
+                </button>
             </div>
             <!-- Inline breakdown, shown when any KPI card is clicked -->
             <div class="kpi-breakdown" id="kpiBreakdown" hidden></div>
@@ -3393,7 +3405,9 @@ function processData(raw, dateRangeOverride) {
             insData.forEach(metric => {
                 const v = (metric.values && metric.values[0] && metric.values[0].value) || 0;
                 if (metric.name === 'reach') result.audience.ig.reach += v;
-                if (metric.name === 'impressions') result.audience.ig.impressions += v;
+                // IG: legacy photo/carousel returns 'impressions'; reels/videos return 'views'.
+                // Both contribute to total impressions for our KPI.
+                if (metric.name === 'impressions' || metric.name === 'views') result.audience.ig.impressions += v;
             });
         });
     }
@@ -3505,6 +3519,33 @@ var KPI_META = {
         label: 'Total Video Views',
         description: 'Video views on YouTube and Instagram Reels. Facebook and LinkedIn do not publish per-post view counts via their public APIs.',
         platformValue: function(pe, k) { return pe[k] ? (pe[k].views || 0) : 0; }
+    },
+    reach: {
+        label: 'Total Reach',
+        description: 'Unique people who saw your content in this window. FB: page_impressions_unique. IG: account-level reach. YT: total channel views (proxy — true impressions require YouTube Analytics API + OAuth). LI: requires Community Management API approval (pending).',
+        // Reach lives on data.audience, not platformEngagement. Read from window._lastProcessedData.
+        platformValue: function(pe, k) {
+            var aud = window._lastProcessedData && window._lastProcessedData.audience;
+            return (aud && aud[k]) ? (aud[k].reach || 0) : 0;
+        },
+        platformNote: function(k, value) {
+            if (k === 'li' && value === 0) return 'Community Management API approval pending';
+            if (k === 'yt') return 'Channel views proxy (no Analytics OAuth yet)';
+            return '';
+        }
+    },
+    impressions: {
+        label: 'Total Impressions',
+        description: 'Total times your content was displayed (includes repeat views). FB: page_impressions. IG: media impressions + reel views. YT: video viewCount (proxy). LI: requires Community Management API approval (pending).',
+        platformValue: function(pe, k) {
+            var aud = window._lastProcessedData && window._lastProcessedData.audience;
+            return (aud && aud[k]) ? (aud[k].impressions || 0) : 0;
+        },
+        platformNote: function(k, value) {
+            if (k === 'li' && value === 0) return 'Community Management API approval pending';
+            if (k === 'yt') return 'Video views proxy (no Analytics OAuth yet)';
+            return '';
+        }
     }
 };
 
@@ -3559,6 +3600,8 @@ function renderKpiBreakdown(kpiKey) {
         var pct = total > 0 ? Math.round((r.value / total) * 100) : 0;
         var barPct = max > 0 ? Math.round((r.value / max) * 100) : 0;
         var valueDisplay = r.value > 0 ? r.value.toLocaleString() : '0';
+        var note = (typeof meta.platformNote === 'function') ? meta.platformNote(r.key, r.value) : '';
+        var noteHtml = note ? '<span style="color:#94A3B8; font-style:italic;">' + escapeHtml(note) + '</span>' : '';
         return '<div class="kpi-breakdown-row ' + r.key + '">' +
                  '<div class="row-top">' +
                    '<span class="row-platform"><span class="platform-dot"></span>' + escapeHtml(r.name) + '</span>' +
@@ -3567,7 +3610,7 @@ function renderKpiBreakdown(kpiKey) {
                  '<div class="row-bar"><div class="row-bar-fill" style="width:' + barPct + '%;"></div></div>' +
                  '<div class="row-meta">' +
                    '<span>' + pct + '% of total</span>' +
-                   '<span>' + r.postCount + (r.postCount === 1 ? ' post' : ' posts') + ' this window</span>' +
+                   '<span>' + (note ? noteHtml : (r.postCount + (r.postCount === 1 ? ' post' : ' posts') + ' this window')) + '</span>' +
                  '</div>' +
                '</div>';
     }).join('');
@@ -3773,10 +3816,14 @@ function renderKPIs(data) {
     if (el('kpiComments')) el('kpiComments').textContent = fmt(data.kpis.comments);
     if (el('kpiShares')) el('kpiShares').textContent = fmt(data.kpis.shares);
     if (el('kpiViews')) el('kpiViews').textContent = fmt(data.kpis.views);
+    if (el('kpiReach')) el('kpiReach').textContent = fmt(data.kpis.reach || 0);
+    if (el('kpiImpressions')) el('kpiImpressions').textContent = fmt(data.kpis.impressions || 0);
     if (el('kpiReactionsChange')) el('kpiReactionsChange').innerHTML = prev ? trendBadge(data.kpis.reactions, prev.reactions) : '';
     if (el('kpiCommentsChange')) el('kpiCommentsChange').innerHTML = prev ? trendBadge(data.kpis.comments, prev.comments) : '';
     if (el('kpiSharesChange')) el('kpiSharesChange').innerHTML = prev ? trendBadge(data.kpis.shares, prev.shares) : '';
     if (el('kpiViewsChange')) el('kpiViewsChange').innerHTML = prev ? trendBadge(data.kpis.views, prev.views) : '';
+    if (el('kpiReachChange')) el('kpiReachChange').innerHTML = (prev && prev.reach) ? trendBadge(data.kpis.reach || 0, prev.reach) : '';
+    if (el('kpiImpressionsChange')) el('kpiImpressionsChange').innerHTML = (prev && prev.impressions) ? trendBadge(data.kpis.impressions || 0, prev.impressions) : '';
     // Flashy follower badges by platform
     const followersRow = el('kpiFollowersRow');
     if (followersRow && data.audience) {
