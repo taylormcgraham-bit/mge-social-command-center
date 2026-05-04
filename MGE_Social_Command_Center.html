@@ -4272,7 +4272,7 @@ let _activeFilter = 'all';
 // Cache: localStorage key 'ai_comment_scores_v1' → { [commentId]: {score, label, rationale, scoredAt, textHash} }
 // Steady state: only NEW or EDITED comments hit the API. Re-renders are free.
 // ------------------------------------------------------------
-const AI_SCORE_CACHE_KEY = 'ai_comment_scores_v1';
+const AI_SCORE_CACHE_KEY = 'ai_comment_scores_v2'; // bumped from v1: granular continuous scoring (0-100, not bucketed)
 const AI_SCORE_BATCH = 10;
 const AI_SCORE_TTL_MS = 1000 * 60 * 60 * 24 * 30; // 30 days
 
@@ -4482,7 +4482,7 @@ function renderCommentFeed(comments) {
         // Reply chip for comments-on-comments — shows "↳ Replying to @parentAuthor", parent text on hover
         const replyChipHtml = c.isReply
             ? '<div class="reply-context-chip"' +
-                (c.parentCommentText ? ' data-tooltip="' + escapeHtml(c.parentCommentText.substring(0, 280)) + (c.parentCommentText.length > 280 ? '…' : '') + '"' : '') +
+                (c.parentCommentText ? ' title="Parent comment: ' + escapeHtml(c.parentCommentText.substring(0, 280)) + (c.parentCommentText.length > 280 ? '…' : '') + '"' : '') +
               '>↳ Replying to ' + escapeHtml(c.parentAuthor || 'a comment') + '</div>'
             : '';
         const cardClass = 'comment-card' + (c.isReply ? ' is-reply' : '');
@@ -4512,7 +4512,7 @@ function renderCommentFeed(comments) {
                 '</div>' +
                 '<div class="comment-header-sentiment">' +
                     '<div class="comment-sentiment-badge ' + labelClass + aiBadgeClass + '"' +
-                        (tooltip ? ' data-tooltip="' + escapeHtml(tooltip) + '"' : '') + '>' +
+                        (tooltip ? ' title="' + escapeHtml(tooltip) + '"' : '') + '>' +
                         '<span class="score-num">' + s.score + '</span>' +
                         '<span class="score-label">' + escapeHtml(s.label) + '</span>' +
                     '</div>' +
