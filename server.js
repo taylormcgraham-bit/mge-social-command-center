@@ -166,6 +166,7 @@ app.get('/api/youtube/all-comments', async (req, res) => {
         const parentCommentId = item.snippet.topLevelComment.id;
         allComments.push({
           platform: 'youtube',
+          id: parentCommentId,
           author: c.authorDisplayName,
           authorImage: c.authorProfileImageUrl,
           text: c.textDisplay,
@@ -180,6 +181,7 @@ app.get('/api/youtube/all-comments', async (req, res) => {
           const rs = reply.snippet || {};
           allComments.push({
             platform: 'youtube',
+            id: reply.id,
             author: rs.authorDisplayName,
             authorImage: rs.authorProfileImageUrl,
             text: rs.textDisplay,
@@ -189,7 +191,8 @@ app.get('/api/youtube/all-comments', async (req, res) => {
             videoTitle: playlist.items[i]?.snippet?.title || '',
             isReply: true,
             parentCommentId: parentCommentId,
-            parentAuthor: c.authorDisplayName || ''
+            parentAuthor: c.authorDisplayName || '',
+            parentCommentText: c.textDisplay || ''
           });
         });
       });
@@ -239,6 +242,7 @@ app.get('/api/facebook/all-comments', async (req, res) => {
     comments.forEach(c => {
       allComments.push({
         platform: 'facebook',
+        id: c.id,
         author: c.from?.name || 'Facebook User',
         text: c.message,
         publishedAt: c.created_time,
@@ -252,6 +256,7 @@ app.get('/api/facebook/all-comments', async (req, res) => {
       replies.forEach(r => {
         allComments.push({
           platform: 'facebook',
+          id: r.id,
           author: r.from?.name || 'Facebook User',
           text: r.message,
           publishedAt: r.created_time,
@@ -261,7 +266,8 @@ app.get('/api/facebook/all-comments', async (req, res) => {
           postImage: post.full_picture || '',
           isReply: true,
           parentCommentId: c.id,
-          parentAuthor: c.from?.name || ''
+          parentAuthor: c.from?.name || '',
+          parentCommentText: c.message || ''
         });
       });
     });
@@ -317,6 +323,7 @@ app.get('/api/instagram/all-comments', async (req, res) => {
     comments.forEach(c => {
       allComments.push({
         platform: 'instagram',
+        id: c.id,
         author: c.username || 'Instagram User',
         text: c.text,
         publishedAt: c.timestamp,
@@ -330,6 +337,7 @@ app.get('/api/instagram/all-comments', async (req, res) => {
       replies.forEach(r => {
         allComments.push({
           platform: 'instagram',
+          id: r.id,
           author: r.username || 'Instagram User',
           text: r.text,
           publishedAt: r.timestamp,
@@ -339,7 +347,8 @@ app.get('/api/instagram/all-comments', async (req, res) => {
           postImage: post.media_url || post.thumbnail_url || '',
           isReply: true,
           parentCommentId: c.id,
-          parentAuthor: c.username || ''
+          parentAuthor: c.username || '',
+          parentCommentText: c.text || ''
         });
       });
     });
@@ -433,8 +442,10 @@ app.get('/api/linkedin/all-comments', async (req, res) => {
   results.forEach((r, i) => {
     if (!r.error && r.elements) {
       r.elements.forEach(c => {
+        const commentUrn = c.$URN || c.object?.$URN || null;
         allComments.push({
           platform: 'linkedin',
+          id: commentUrn || (posts[i].id + ':' + (c.created?.time || '')),
           author: c.actor?.name || 'LinkedIn User',
           text: c.message?.text || c.comment || '',
           publishedAt: c.created?.time ? new Date(c.created.time).toISOString() : new Date().toISOString(),
@@ -443,13 +454,12 @@ app.get('/api/linkedin/all-comments', async (req, res) => {
           postText: posts[i].commentary || posts[i].specificContent?.['com.linkedin.ugc.ShareContent']?.shareCommentary?.text || ''
         });
         // Queue a reply fetch for this comment if we have a URN to target.
-        // LinkedIn surfaces the comment URN as $URN (or sometimes object.$URN); fall back to neither.
-        const commentUrn = c.$URN || c.object?.$URN || null;
         if (commentUrn) {
           replyTargets.push({
             postIndex: i,
             commentUrn,
-            parentAuthor: c.actor?.name || ''
+            parentAuthor: c.actor?.name || '',
+            parentText: c.message?.text || c.comment || ''
           });
         }
       });
@@ -467,8 +477,10 @@ app.get('/api/linkedin/all-comments', async (req, res) => {
     const t = cappedTargets[idx];
     if (!rr || rr.error || !rr.elements) return;
     rr.elements.forEach(rc => {
+      const replyUrn = rc.$URN || rc.object?.$URN || null;
       allComments.push({
         platform: 'linkedin',
+        id: replyUrn || (t.commentUrn + ':' + (rc.created?.time || '')),
         author: rc.actor?.name || 'LinkedIn User',
         text: rc.message?.text || rc.comment || '',
         publishedAt: rc.created?.time ? new Date(rc.created.time).toISOString() : new Date().toISOString(),
@@ -476,8 +488,9 @@ app.get('/api/linkedin/all-comments', async (req, res) => {
         postId: posts[t.postIndex].id,
         postText: posts[t.postIndex].commentary || posts[t.postIndex].specificContent?.['com.linkedin.ugc.ShareContent']?.shareCommentary?.text || '',
         isReply: true,
-        parentCommentUrn: t.commentUrn,
-        parentAuthor: t.parentAuthor
+        parentCommentId: t.commentUrn,
+        parentAuthor: t.parentAuthor,
+        parentCommentText: t.parentText || ''
       });
     });
   });
@@ -2165,6 +2178,140 @@ app.post('/api/insights', express.json({ limit: '1mb' }), async (req, res) => {
   } catch (err) {
     console.warn(' [INSIGHTS] Server error:', err.message);
     return res.status(500).json({ error: err.message || 'Insights generation failed' });
+  }
+});
+
+
+// ============================================================
+// AI COMMENT SCORING — context-aware sentiment via Claude Haiku 4.5
+// POST /api/score-comments with { items: [{id, post, parent?, text}, ...] }
+// Returns: { scores: [{id, score, label, rationale}, ...] }
+// Frontend caches per comment-id in localStorage, so steady-state cost is near zero.
+// ============================================================
+const COMMENT_SCORING_MODEL = process.env.COMMENT_SCORING_MODEL || 'claude-haiku-4-5-20251001';
+const COMMENT_SCORING_MAX_BATCH = 12;
+
+const COMMENT_SCORING_SYSTEM = [
+  'You are a sentiment analyst for Madison Gas and Electric (MGE), a Wisconsin utility company.',
+  'For each social media comment, return a sentiment score 0-100 reflecting the commenter\'s stance toward MGE / the topic of the post.',
+  '  0  = strongly negative (hostile, attacking MGE, spreading disinformation)',
+  ' 25  = negative (complaining, frustrated, critical)',
+  ' 50  = neutral (factual, question, off-topic, mixed)',
+  ' 75  = positive (supportive, appreciative, defending MGE)',
+  '100  = strongly positive (enthusiastic praise, defending MGE against critics, sharing positive personal stories)',
+  '',
+  'Critical scoring rules:',
+  '- Score the STANCE toward MGE/the topic, not literal positivity of words. A long story about loving an EV in defense of an EV post is STRONGLY POSITIVE even if it never says "MGE".',
+  '- Use the post context to understand what the comment is really saying. If the post is pro-EV and the comment shares a positive EV ownership experience, score it positive even if it mentions things like "expensive gas I no longer pay" or "cold winter range".',
+  '- If the comment is a reply to another comment (parent provided), score based on whether it agrees/disagrees with the parent AND the underlying topic.',
+  '- Sarcasm flips literal sentiment — read tone carefully.',
+  '- Brand-defense comments (defending MGE\'s position, even without naming MGE) score HIGH.',
+  '- Disinformation, attacks, or hostility toward MGE/utilities/clean energy score LOW.',
+  '- Off-topic, jokes, or pure questions without stance score 50.',
+  '',
+  'Label must be one of: Strongly Negative, Negative, Neutral, Positive, Strongly Positive',
+  'Rationale must be one short sentence (max ~12 words) explaining the score in plain English.',
+  '',
+  'Output ONLY a JSON array. No preamble, no markdown, no commentary. Format:',
+  '[{"id":"<id>","score":<0-100>,"label":"<label>","rationale":"<one short sentence>"}, ...]'
+].join('\n');
+
+function buildCommentScoringPrompt(items) {
+  const rows = items.map((it, idx) => {
+    const lines = ['ITEM #' + (idx + 1)];
+    lines.push('id: ' + JSON.stringify(it.id));
+    if (it.post) lines.push('post: ' + JSON.stringify(String(it.post).slice(0, 400)));
+    if (it.parent) lines.push('parent_comment (this is a REPLY to): ' + JSON.stringify(String(it.parent).slice(0, 300)));
+    lines.push('comment: ' + JSON.stringify(String(it.text || '').slice(0, 1500)));
+    return lines.join('\n');
+  });
+  return 'Score each comment below. Return one JSON object per item, in the same order, in a single JSON array.\n\n' + rows.join('\n\n');
+}
+
+async function callAnthropicScoring(apiKey, userPrompt) {
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: COMMENT_SCORING_MODEL,
+      max_tokens: 2048,
+      system: COMMENT_SCORING_SYSTEM,
+      messages: [
+        { role: 'user', content: userPrompt },
+        // Pre-fill the assistant turn with `[` to force JSON-array output
+        { role: 'assistant', content: '[' }
+      ]
+    })
+  });
+  if (!resp.ok) {
+    const errText = await resp.text();
+    console.warn(' [SCORE] Anthropic API error:', resp.status, errText.slice(0, 300));
+    throw new Error('Claude API error (' + resp.status + ')');
+  }
+  const payload = await resp.json();
+  const text = (payload.content && payload.content[0] && payload.content[0].text) || '';
+  // We pre-filled `[`, so the model continues from there. Re-add the leading bracket.
+  return '[' + text;
+}
+
+function parseScoringJson(raw) {
+  if (!raw) return null;
+  // Trim to the outermost JSON array
+  const start = raw.indexOf('[');
+  const end = raw.lastIndexOf(']');
+  if (start < 0 || end <= start) return null;
+  try {
+    const arr = JSON.parse(raw.slice(start, end + 1));
+    if (!Array.isArray(arr)) return null;
+    return arr.map(o => ({
+      id: String(o.id),
+      score: Math.max(0, Math.min(100, Math.round(Number(o.score) || 50))),
+      label: String(o.label || 'Neutral').slice(0, 32),
+      rationale: String(o.rationale || '').slice(0, 200)
+    }));
+  } catch (e) {
+    console.warn(' [SCORE] JSON parse failed:', e.message, 'raw:', raw.slice(0, 200));
+    return null;
+  }
+}
+
+app.post('/api/score-comments', express.json({ limit: '512kb' }), async (req, res) => {
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  if (!anthropicKey) {
+    return res.status(503).json({ error: 'ANTHROPIC_API_KEY not configured' });
+  }
+  const items = Array.isArray(req.body && req.body.items) ? req.body.items : [];
+  if (!items.length) return res.json({ scores: [] });
+  if (items.length > COMMENT_SCORING_MAX_BATCH) {
+    return res.status(400).json({ error: 'Batch too large; max ' + COMMENT_SCORING_MAX_BATCH + ' items per request' });
+  }
+  // Defensive normalization
+  const clean = items.map(it => ({
+    id: String(it.id || ''),
+    post: it.post ? String(it.post) : '',
+    parent: it.parent ? String(it.parent) : '',
+    text: String(it.text || '')
+  })).filter(it => it.id && it.text);
+  if (!clean.length) return res.json({ scores: [] });
+
+  try {
+    const userPrompt = buildCommentScoringPrompt(clean);
+    const raw = await callAnthropicScoring(anthropicKey, userPrompt);
+    const parsed = parseScoringJson(raw);
+    if (!parsed) {
+      return res.status(502).json({ error: 'Model returned unparseable output', raw: raw.slice(0, 300) });
+    }
+    // Reconcile: only return scores whose id was in the request
+    const validIds = new Set(clean.map(c => c.id));
+    const scores = parsed.filter(s => validIds.has(s.id));
+    return res.json({ scores: scores, model: COMMENT_SCORING_MODEL });
+  } catch (err) {
+    console.warn(' [SCORE] Server error:', err.message);
+    return res.status(500).json({ error: err.message || 'Scoring failed' });
   }
 });
 
