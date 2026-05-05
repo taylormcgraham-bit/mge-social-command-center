@@ -4243,7 +4243,7 @@ function renderKpiBreakdown(kpiKey) {
 // ISO-week buckets (v4). Old monthly data doesn't decompose cleanly to
 // weeks, so we start fresh; history rebuilds as the dashboard is used.
 // ============================================================
-var AHS_HISTORY_KEY = 'mge_ahs_history_v6'; // bumped from v5 (2026-05-04): switched to baseline-relative scoring (vs MGE running avg)
+var AHS_HISTORY_KEY = 'mge_ahs_history_v7'; // bumped from v6 (2026-05-04): overall AHS now from cumulative MGE data (no follower weighting)
 function getAhsHistory() {
     try {
         var raw = localStorage.getItem(AHS_HISTORY_KEY);
@@ -4830,13 +4830,18 @@ var AHS_MIN_POSTS = 2; // minimum posts in period to include platform
 // reflects current data; a platform with 12+ weeks of history compares the
 // current period against MGE's own running average for that metric.
 // ============================================================
-var BASELINES_KEY = 'mge_baselines_v1';
-// Sensible cold-start baselines for utility-marketing context — used when no history yet.
-// Tuned conservatively so first scores read "Fair" (~50) for typical MGE volume.
+var BASELINES_KEY = 'mge_baselines_v2'; // bumped from v1: per-day rates + 'total' baseline (no follower ratios)
+// Sensible cold-start baselines for utility-marketing context. Followers removed from the math entirely
+// per Taylor's call (2026-05-04). Reach + Attention now per-day rates so the baseline is comparable
+// across any selected window length (7D / 28D / 90D / custom).
+// 'total' rows are MGE-cumulative baselines used for the overall AHS gauge (not a per-platform avg).
 var BASELINE_FALLBACKS = {
-    engPerPost:    { fb: 18, ig: 30, li: 8, yt: 50 },  // weighted engagement units per post
-    reachRatio:    { fb: 4.0, ig: 0.4, li: 0.5, yt: 1.0 }, // window reach / followers
-    attentionRatio:{ fb: 0.8, ig: 0.5, li: 0.1, yt: 1.5 }  // window video views / followers
+    // engagement units per post (post-normalized — period-agnostic by definition)
+    engPerPost: { fb: 18, ig: 30, li: 8, yt: 50, total: 22 },
+    // window reach / period_days  (per-day reach rate; e.g. FB ~12K/day baseline = ~340K/28d)
+    reachPerDay: { fb: 12000, ig: 900, li: 50, yt: 100, total: 13050 },
+    // window video views / period_days
+    attentionPerDay: { fb: 1000, ig: 700, li: 5, yt: 100, total: 1805 }
 };
 function _loadBaselines() {
     try { return JSON.parse(localStorage.getItem(BASELINES_KEY) || '{}'); } catch (e) { return {}; }
@@ -4926,57 +4931,75 @@ function ahsPillarSentiment(comments) {
     const conf = Math.min(1, n / 15);
     return Math.round(avg * conf + 50 * (1 - conf));
 }
-function ahsPillarReach(aud, platformKey) {
-    if (!aud || !aud.followers || !aud.reach) return null;
-    var ratio = aud.reach / aud.followers; // window reach / follower base
-    if (platformKey) {
-        var baseline = getBaseline(platformKey, 'reachRatio');
-        return scoreVsBaseline(ratio, baseline);
-    }
-    return scoreVsBaseline(ratio, 0.4);
+// Helper — current selected window in days, used to normalize reach + attention to per-day rates
+// so baselines are comparable across whatever window the user has selected.
+function _getPeriodDays() {
+    try {
+        var r = getDateRange();
+        var d = Math.round((r.end - r.start) / 86400000);
+        return d > 0 ? d : 28;
+    } catch (e) { return 28; }
 }
-// Attention pillar — depth signal via video views per follower.
-// Now scored relative to platform-specific running average so YT (high view norms)
-// isn't unfairly penalized vs LinkedIn (low view norms).
-function ahsPillarAttention(views, followers, platformKey) {
-    if (!followers || followers === 0) return null;
+// Reach pillar — per-day reach rate vs platform's running average (no follower ratio).
+// Followers removed from AHS math per design decision (2026-05-04).
+function ahsPillarReach(reach, platformKey) {
+    if (reach == null || reach <= 0) return null;
+    var perDay = reach / _getPeriodDays();
+    var key = platformKey || 'total';
+    return scoreVsBaseline(perDay, getBaseline(key, 'reachPerDay'));
+}
+// Attention pillar — per-day video views vs platform's running average.
+function ahsPillarAttention(views, platformKey) {
     if (views == null) return null;
-    var ratio = views / followers;
-    if (platformKey) {
-        var baseline = getBaseline(platformKey, 'attentionRatio');
-        return scoreVsBaseline(ratio, baseline);
-    }
-    return scoreVsBaseline(ratio, 0.5);
+    var perDay = views / _getPeriodDays();
+    var key = platformKey || 'total';
+    return scoreVsBaseline(perDay, getBaseline(key, 'attentionPerDay'));
+}
+// Helper — compute weighted-engagement-per-post for a platform (the engagement pillar's input)
+function _weightedEngagementPerPost(pe) {
+    if (!pe || !pe.postCount) return 0;
+    var comments  = (pe.comments || 0) * 5;
+    var shares    = (pe.shares || 0) * 3;
+    var saves     = (pe.saves || 0) * 3;
+    var reactions = (pe.like || pe.likes || 0) + (pe.love || 0) + (pe.care || 0)
+                  + (pe.haha || 0) + (pe.wow || 0);
+    var negatives = (pe.sad || 0) + (pe.angry || 0) + (pe.dislikes || 0);
+    var views     = (pe.views || 0) * 0.2;
+    return (comments + shares + saves + reactions - negatives + views) / pe.postCount;
 }
 // Called once per main render with current-period data — updates running baselines.
+// Tracks per-platform baselines AND a 'total' baseline (cumulative across MGE) used by the overall AHS.
 // Skipped during prior-period recomputation (would double-count and bias the average).
 function updateBaselinesFromData(data) {
     if (!data || !data.platformEngagement) return;
     var platforms = ['fb', 'ig', 'li', 'yt'];
+    var periodDays = _getPeriodDays();
+    var totalEngWeighted = 0, totalPosts = 0, totalReach = 0, totalViews = 0;
     platforms.forEach(function(k) {
         var pe = data.platformEngagement[k] || {};
         var aud = data.audience ? data.audience[k] : null;
-        // Engagement per post — only count windows with enough posts to be meaningful
+        // Per-platform engagement per post
         if (pe.postCount && pe.postCount >= AHS_MIN_POSTS) {
-            var comments  = (pe.comments || 0) * 5;
-            var shares    = (pe.shares || 0) * 3;
-            var saves     = (pe.saves || 0) * 3;
-            var reactions = (pe.like || pe.likes || 0) + (pe.love || 0) + (pe.care || 0)
-                          + (pe.haha || 0) + (pe.wow || 0);
-            var negatives = (pe.sad || 0) + (pe.angry || 0) + (pe.dislikes || 0);
-            var views     = (pe.views || 0) * 0.2;
-            var perPost   = (comments + shares + saves + reactions - negatives + views) / pe.postCount;
+            var perPost = _weightedEngagementPerPost(pe);
             updateBaseline(k, 'engPerPost', perPost);
+            totalEngWeighted += perPost * pe.postCount;
+            totalPosts += pe.postCount;
         }
-        // Reach ratio
-        if (aud && aud.followers && aud.reach) {
-            updateBaseline(k, 'reachRatio', aud.reach / aud.followers);
+        // Per-platform per-day reach (followers no longer factor in)
+        if (aud && aud.reach) {
+            updateBaseline(k, 'reachPerDay', aud.reach / periodDays);
+            totalReach += aud.reach;
         }
-        // Attention ratio
-        if (aud && aud.followers && pe.views) {
-            updateBaseline(k, 'attentionRatio', pe.views / aud.followers);
+        // Per-platform per-day attention
+        if (pe.views) {
+            updateBaseline(k, 'attentionPerDay', pe.views / periodDays);
+            totalViews += pe.views;
         }
     });
+    // MGE-cumulative baselines — these drive the overall AHS gauge (NOT a follower-weighted avg of per-platform).
+    if (totalPosts >= AHS_MIN_POSTS) updateBaseline('total', 'engPerPost', totalEngWeighted / totalPosts);
+    if (totalReach > 0) updateBaseline('total', 'reachPerDay', totalReach / periodDays);
+    if (totalViews > 0) updateBaseline('total', 'attentionPerDay', totalViews / periodDays);
 }
 function ahsPillarGrowth(platformKey, followers) {
     const mom = getFollowerMoMChange(platformKey, followers);
@@ -5022,12 +5045,10 @@ function showAhsBreakdown() {
     const fmt = n => (n === null || n === undefined) ? '&mdash;' : Number(n).toLocaleString();
     const fmtScore = n => (n === null || n === undefined) ? '<span style="color:#94A3B8;">N/A</span>' : Math.round(n);
 
-    // Build per-platform table rows — now showing all 4 pillars
+    // Build per-platform table rows — REFERENCE ONLY now (per-platform composites don't roll up to overall)
     const tableRows = b.rows.map(r => {
         if (!r.included) {
-            const reason = (r.postCount < 2)
-                ? 'Excluded: &lt; 2 posts'
-                : 'Excluded: no data';
+            const reason = (r.postCount < 2) ? 'Excluded: &lt; 2 posts' : 'Excluded: no data';
             return `<tr>
                 <td class="platform-name">${platName[r.key]}</td>
                 <td>${fmt(r.postCount)}</td>
@@ -5036,12 +5057,9 @@ function showAhsBreakdown() {
                 <td class="excluded">&mdash;</td>
                 <td class="excluded">&mdash;</td>
                 <td class="excluded">&mdash;</td>
-                <td class="excluded">&mdash;</td>
                 <td class="excluded">${reason}</td>
-                <td class="excluded">&mdash;</td>
             </tr>`;
         }
-        const pctOfWeight = b.totalWeight ? ((r.weight / b.totalWeight) * 100).toFixed(1) + '%' : '0%';
         return `<tr>
             <td class="platform-name">${platName[r.key]}</td>
             <td>${fmt(r.postCount)}</td>
@@ -5051,18 +5069,30 @@ function showAhsBreakdown() {
             <td>${fmtScore(r.reachScore)}</td>
             <td>${fmtScore(r.attentionScore)}</td>
             <td><strong>${fmtScore(r.compositeScore)}</strong></td>
-            <td>${fmt(r.followers)}</td>
-            <td>${pctOfWeight}</td>
         </tr>`;
     }).join('');
 
-    // Build the math expression for the final calc
-    const mathParts = b.rows.filter(r => r.included).map(r =>
-        `(${r.compositeScore} &times; ${fmt(r.weight)})`
-    ).join(' + ');
-    const mathStr = mathParts
-        ? `${mathParts} &divide; ${fmt(b.totalWeight)} = <strong>${fmt(Math.round(b.weightedSum))} &divide; ${fmt(b.totalWeight)} = ${b.overallScore}</strong>`
-        : 'No qualifying platforms.';
+    // Overall AHS calc — show the 4 cumulative pillar contributions
+    const op = b.overallPillars || {};
+    const cum = b.cumulative || {};
+    function pillarMathRow(name, weight, val) {
+        const sval = (val == null) ? '<span style="color:#94A3B8;">N/A</span>' : Math.round(val);
+        return `<div style="display:flex; justify-content:space-between; padding:2px 0;">
+            <span><strong>${name}</strong> &times; ${weight}%</span>
+            <span>${sval}</span>
+        </div>`;
+    }
+    const mathStr = `<div style="font-family:monospace; font-size:11.5px; line-height:1.6;">
+        ${pillarMathRow('Engagement', 40, op.engagement)}
+        ${pillarMathRow('Sentiment',  40, op.sentiment)}
+        ${pillarMathRow('Reach',       5, op.reach)}
+        ${pillarMathRow('Attention',  15, op.attention)}
+        <hr style="border:0; border-top:1px solid #E2E8F0; margin:6px 0;">
+        <div style="display:flex; justify-content:space-between;">
+            <span><strong>Overall MGE AHS (weighted composite)</strong></span>
+            <span><strong>${b.overallScore == null ? '--' : b.overallScore}</strong></span>
+        </div>
+    </div>`;
 
     const stamp = b.computedAt ? b.computedAt.toLocaleString() : '';
     sub.innerHTML = 'Showing the exact numbers behind today&rsquo;s score &middot; computed ' + stamp;
@@ -5071,11 +5101,12 @@ function showAhsBreakdown() {
         <div class="ahs-modal-section">
             <h4>How the Score Works</h4>
             <div class="ahs-formula-box">
-                Platform Composite = (Engagement &times; 0.40) + (Sentiment &times; 0.40) + (Reach &times; 0.05) + (Attention &times; 0.15)<br>
-                Overall Score = &Sigma; (Platform Composite &times; Followers) &divide; &Sigma; Followers
+                Overall MGE AHS = (Engagement &times; 0.40) + (Sentiment &times; 0.40) + (Reach &times; 0.05) + (Attention &times; 0.15)
             </div>
-            <p style="color:#475569; margin:8px 0 0;">A 0&ndash;100 composite blending <strong>four weighted pillars</strong>, custom-tuned for utility-marketing context. Engagement and Sentiment carry the most weight (40% each) because audience action and perception matter most for MGE; Reach is intentionally light (5%) since utility reach matters less than engagement quality; Attention (video views per follower) gets a moderate 15% to capture content depth. Platforms with fewer than 2 posts are excluded. The headline gauge is a follower-weighted average of qualifying platforms.</p>
-            <p style="color:#475569; margin:8px 0 0;"><strong>Baseline-relative scoring (new):</strong> Engagement, Reach, and Attention pillars are now scored against MGE's own running average for each platform &mdash; not generic thresholds. So a high score means MGE actually outperformed its typical week, not that it met some B2C benchmark. The baselines are stored locally and refine with each dashboard view (capped at ~26 weeks of memory).</p>
+            <p style="color:#475569; margin:8px 0 0;">A 0&ndash;100 composite of <strong>four weighted pillars</strong>, computed from <strong>MGE's cumulative data across all platforms</strong>. Engagement and Sentiment carry the most weight (40% each); Reach is intentionally light (5%) since utility reach matters less than engagement quality; Attention (video views) gets 15% to capture content depth.</p>
+            <p style="color:#475569; margin:8px 0 0;"><strong>No follower weighting:</strong> follower counts are not factored into AHS scoring. The overall score reflects the raw cumulative metrics of each pillar, not a per-platform composite that's been follower-weighted.</p>
+            <p style="color:#475569; margin:8px 0 0;"><strong>Per-platform AHS (the cards in Platform Performance) is reference only.</strong> Each platform card's score is computed the same way but using only that platform's data &mdash; useful for spotting which platform is driving overall trend, but does NOT roll up into the gauge.</p>
+            <p style="color:#475569; margin:8px 0 0;"><strong>Baseline-relative scoring:</strong> Engagement, Reach, and Attention pillars compare current-period rates to MGE's own running average. Reach + Attention are normalized to <strong>per-day rates</strong> so baselines are comparable across any selected window length (7D / 28D / 90D / custom). Sentiment uses absolute per-comment AI scores (already calibrated against real text). Baselines accumulate locally with each dashboard view (~26 weeks of memory).</p>
         </div>
 
         <div class="ahs-modal-section">
@@ -5107,27 +5138,29 @@ function showAhsBreakdown() {
                 </div>
                 <div class="ahs-pillar-box">
                     <div class="ahs-pillar-title">Reach &mdash; 5%</div>
-                    <p>Window reach divided by current follower count. Scored relative to MGE's running average reach ratio for the platform.</p>
+                    <p>Window reach normalized to a per-day rate, scored relative to MGE's running average reach-per-day. No follower ratio &mdash; raw reach divided by days in window.</p>
                     <div class="ahs-formula-box" style="font-size:10.5px; margin:6px 0;">
-                        ratio = (windowReach &divide; followers) &divide; baseline<br>
+                        perDay = totalReach &divide; periodDays<br>
+                        ratio = perDay &divide; baseline<br>
                         score = 50 + 50 &times; tanh((ratio &minus; 1) &divide; 0.6)
                     </div>
                     <p style="color:#64748B; margin:0;">Weighted lightly because utility reach matters less than engagement quality.</p>
                 </div>
                 <div class="ahs-pillar-box">
                     <div class="ahs-pillar-title">Attention &mdash; 15%</div>
-                    <p>Video views in the window divided by follower count. Captures depth of consumption. Scored relative to MGE's running average attention ratio for the platform.</p>
+                    <p>Video views per day, scored relative to MGE's running average. Captures depth of consumption. Period-normalized so 7D and 28D windows are comparable.</p>
                     <div class="ahs-formula-box" style="font-size:10.5px; margin:6px 0;">
-                        ratio = (videoViews &divide; followers) &divide; baseline<br>
+                        perDay = videoViews &divide; periodDays<br>
+                        ratio = perDay &divide; baseline<br>
                         score = 50 + 50 &times; tanh((ratio &minus; 1) &divide; 0.6)
                     </div>
-                    <p style="color:#64748B; margin:0;">If a pillar or platform has no data, it&rsquo;s dropped and the remaining weights rescale automatically.</p>
+                    <p style="color:#64748B; margin:0;">If a pillar has no data, it's dropped and the remaining weights rescale automatically.</p>
                 </div>
             </div>
         </div>
 
         <div class="ahs-modal-section">
-            <h4>Per-Platform Scores (Current Date Range)</h4>
+            <h4>Per-Platform Scores <span style="font-weight:400; color:#94A3B8; font-size:11px;">&mdash; reference only, NOT used in overall AHS</span></h4>
             <table class="ahs-calc-table">
                 <thead>
                     <tr>
@@ -5139,23 +5172,20 @@ function showAhsBreakdown() {
                         <th>Reach</th>
                         <th>Attention</th>
                         <th>Composite</th>
-                        <th>Followers (Weight)</th>
-                        <th>% of Weight</th>
                     </tr>
                 </thead>
                 <tbody>${tableRows}</tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="8">Total weight (followers across qualifying platforms)</td>
-                        <td>${fmt(b.totalWeight)}</td>
-                        <td>100%</td>
-                    </tr>
-                </tfoot>
             </table>
+            <p style="color:#64748B; margin:8px 0 0; font-size:11px;">Each platform's composite is shown for spotting which platform is driving overall trend. The overall MGE AHS gauge uses cumulative data (below), not an average of these.</p>
         </div>
 
         <div class="ahs-modal-section">
-            <h4>Final Calculation</h4>
+            <h4>Overall MGE AHS Calculation (Cumulative)</h4>
+            <p style="color:#475569; margin:0 0 8px 0; font-size:12px;">Built from cumulative MGE data across all platforms in the current window:</p>
+            <div style="font-family:monospace; font-size:11px; color:#475569; background:#F8FAFC; border:1px solid #E2E8F0; padding:8px 12px; border-radius:6px; margin-bottom:10px;">
+                <div>Total posts: <strong>${cum.posts || 0}</strong> &middot; Comments analyzed: <strong>${cum.comments || 0}</strong></div>
+                <div>Cumulative reach: <strong>${fmt(cum.reach)}</strong> &middot; Cumulative video views: <strong>${fmt(cum.views)}</strong></div>
+            </div>
             <div class="ahs-formula-box">${mathStr}</div>
             <div class="ahs-final-score-row">
                 <div>
@@ -5164,7 +5194,7 @@ function showAhsBreakdown() {
                 </div>
                 <div class="ahs-final-score-value">${b.overallScore === null ? '--' : b.overallScore}</div>
             </div>
-            <div class="ahs-note"><strong>Why it moves slowly:</strong> tanh normalization caps how much a single great (or terrible) week can shift each pillar; sentiment damps toward 50 on low comment volume; baseline-relative scoring means an exceptional week needs to actually outperform MGE's running average; and the largest-follower platform dominates the weighted average. Net effect: meaningful score moves require sustained shifts across multiple weeks. Switch the date range above to see it recompute against a different window.</div>
+            <div class="ahs-note"><strong>Why it moves slowly:</strong> tanh normalization caps how much a single great (or terrible) week can shift each pillar; sentiment damps toward 50 on low comment volume; baseline-relative scoring means an exceptional week needs to actually outperform MGE's running average. Net effect: meaningful score moves require sustained shifts across multiple weeks. Switch the date range above to recompute against a different window.</div>
         </div>
     `;
     overlay.classList.add('active');
@@ -5268,25 +5298,47 @@ function renderSentiment(data) {
         const pillars = {
             engagement: ahsPillarEngagement(pe, k),
             sentiment:  ahsPillarSentiment(data.platformComments[k]),
-            reach:      ahsPillarReach(aud, k),
-            attention:  ahsPillarAttention(pe.views || 0, aud ? aud.followers : 0, k)
+            reach:      ahsPillarReach(aud ? aud.reach : null, k),
+            attention:  ahsPillarAttention(pe.views || 0, k)
         };
         perPlatform[k] = { pillars, score: ahsComposite(pillars), postCount: pe.postCount };
     });
-    // Update platform baselines with current-period values so future scoring becomes
-    // increasingly anchored on MGE's actual running averages (vs generic seed defaults).
+    // Update platform baselines (per-platform AND cumulative 'total') with current-period values.
     updateBaselinesFromData(data);
 
-    // Overall = reach-weighted composite of per-platform scores.
-    // Weight by followers (reach proxy when no reach data); fall back to equal.
-    let totalWeight = 0, weightedSum = 0;
-    const calcRows = [];
+    // ===== OVERALL MGE AHS — computed from CUMULATIVE data, not from per-platform composites =====
+    // Per Taylor (2026-05-04): per-platform AHS is reference-only; the gauge reflects MGE's overall
+    // social outlook calculated from total engagement / total reach / total views / all comments.
+    // Followers are no longer factored anywhere in AHS scoring.
+    let cumEng = 0, cumPosts = 0, cumReach = 0, cumViews = 0;
+    const allComments = [];
     platformKeys.forEach(k => {
+        const pe = data.platformEngagement[k] || {};
+        const aud = data.audience ? data.audience[k] : null;
+        if (pe.postCount && pe.postCount >= AHS_MIN_POSTS) {
+            cumEng += _weightedEngagementPerPost(pe) * pe.postCount;
+            cumPosts += pe.postCount;
+        }
+        if (aud && aud.reach) cumReach += aud.reach;
+        if (pe.views) cumViews += pe.views;
+        const platComments = (data.platformComments && data.platformComments[k]) || [];
+        platComments.forEach(c => allComments.push(c));
+    });
+    const overallPillars = {
+        engagement: cumPosts > 0 ? scoreVsBaseline(cumEng / cumPosts, getBaseline('total', 'engPerPost')) : null,
+        sentiment:  ahsPillarSentiment(allComments),
+        reach:      cumReach > 0 ? ahsPillarReach(cumReach, 'total') : null,
+        attention:  cumViews > 0 ? ahsPillarAttention(cumViews, 'total') : null
+    };
+    const overallScore = ahsComposite(overallPillars);
+    const overall = { score: overallScore === null ? 0 : overallScore, label: ahsLabel(overallScore) };
+
+    // Build calc rows for the info modal (per-platform reference detail, not used in overall calc)
+    const calcRows = platformKeys.map(k => {
         const s = perPlatform[k].score;
-        const followers = data.audience[k] ? (data.audience[k].followers || 0) : 0;
         const pe = data.platformEngagement[k] || {};
         const commentCount = (data.platformComments && data.platformComments[k]) ? data.platformComments[k].length : 0;
-        const row = {
+        return {
             key: k,
             postCount: pe.postCount || 0,
             commentCount: commentCount,
@@ -5295,29 +5347,15 @@ function renderSentiment(data) {
             reachScore: perPlatform[k].pillars.reach,
             attentionScore: perPlatform[k].pillars.attention,
             compositeScore: s,
-            followers: followers,
             included: s !== null
         };
-        if (s !== null) {
-            const w = followers || 1;
-            row.weight = w;
-            row.contribution = s * w;
-            weightedSum += s * w;
-            totalWeight += w;
-        } else {
-            row.weight = 0;
-            row.contribution = 0;
-        }
-        calcRows.push(row);
     });
-    const overallScore = totalWeight ? Math.round(weightedSum / totalWeight) : null;
-    const overall = { score: overallScore === null ? 0 : overallScore, label: ahsLabel(overallScore) };
 
     // Stash full breakdown for the info-icon modal
     window.__ahsBreakdown = {
         rows: calcRows,
-        weightedSum: weightedSum,
-        totalWeight: totalWeight,
+        overallPillars: overallPillars,
+        cumulative: { engPerPost: cumPosts > 0 ? cumEng / cumPosts : null, posts: cumPosts, reach: cumReach, views: cumViews, comments: allComments.length },
         overallScore: overallScore,
         label: overall.label,
         computedAt: new Date()
@@ -5337,21 +5375,14 @@ function renderSentiment(data) {
     const fillLen = (overall.score / 100) * arcTotal;
     arcFill.setAttribute('stroke-dasharray', fillLen + ' ' + arcTotal);
 
-    // Render pillar chips below gauge (weighted average across all active platforms).
-    // Now 4 pillars: Engagement (40%) + Sentiment (40%) + Reach (5%) + Attention (15%).
-    const sums = { engagement: 0, sentiment: 0, reach: 0, attention: 0 };
-    const counts = { engagement: 0, sentiment: 0, reach: 0, attention: 0 };
-    platformKeys.forEach(k => {
-        const p = perPlatform[k].pillars;
-        ['engagement', 'sentiment', 'reach', 'attention'].forEach(pn => {
-            if (p[pn] !== null && p[pn] !== undefined) { sums[pn] += p[pn]; counts[pn]++; }
-        });
-    });
+    // Render pillar chips below gauge — now showing the OVERALL MGE pillar scores
+    // (computed from cumulative data), NOT per-platform averages. Per Taylor (2026-05-04):
+    // the gauge reflects the unified MGE outlook; per-platform AHS is reference-only.
     const pillarAvgs = {
-        engagement: counts.engagement ? Math.round(sums.engagement / counts.engagement) : null,
-        sentiment:  counts.sentiment ? Math.round(sums.sentiment / counts.sentiment) : null,
-        reach:      counts.reach ? Math.round(sums.reach / counts.reach) : null,
-        attention:  counts.attention ? Math.round(sums.attention / counts.attention) : null
+        engagement: overallPillars.engagement,
+        sentiment:  overallPillars.sentiment,
+        reach:      overallPillars.reach,
+        attention:  overallPillars.attention
     };
     // Stash on window for the KPI pillar score row to read
     window.__pillarAvgs = pillarAvgs;
@@ -5391,31 +5422,29 @@ function renderSentiment(data) {
             } catch (e) { return 'vs prior period'; }
         })();
         if (previousPeriodData && overallScore !== null) {
-            // Compute previous-period overall AHS using prior platformEngagement + (best-effort) other prior data
+            // Compute previous-period overall AHS using the SAME cumulative methodology as the current period
             try {
-                const prevPlatformAhs = {};
+                let pCumEng = 0, pCumPosts = 0, pCumReach = 0, pCumViews = 0;
+                const pAllComments = [];
                 ['fb','ig','li','yt'].forEach(function(k) {
-                    const ppe = previousPeriodData.platformEngagement[k];
+                    const ppe = previousPeriodData.platformEngagement[k] || {};
                     const paud = previousPeriodData.audience ? previousPeriodData.audience[k] : null;
-                    if (!ppe || !ppe.postCount || ppe.postCount < AHS_MIN_POSTS) {
-                        prevPlatformAhs[k] = null;
-                        return;
+                    if (ppe.postCount && ppe.postCount >= AHS_MIN_POSTS) {
+                        pCumEng += _weightedEngagementPerPost(ppe) * ppe.postCount;
+                        pCumPosts += ppe.postCount;
                     }
-                    const pillars = {
-                        engagement: ahsPillarEngagement(ppe, k),
-                        sentiment:  ahsPillarSentiment(previousPeriodData.platformComments[k]),
-                        reach:      ahsPillarReach(paud, k),
-                        attention:  ahsPillarAttention(ppe.views || 0, paud ? paud.followers : 0, k)
-                    };
-                    prevPlatformAhs[k] = ahsComposite(pillars);
+                    if (paud && paud.reach) pCumReach += paud.reach;
+                    if (ppe.views) pCumViews += ppe.views;
+                    const pc = (previousPeriodData.platformComments && previousPeriodData.platformComments[k]) || [];
+                    pc.forEach(c => pAllComments.push(c));
                 });
-                let pSum = 0, pWeight = 0;
-                ['fb','ig','li','yt'].forEach(function(k) {
-                    const s = prevPlatformAhs[k];
-                    const f = previousPeriodData.audience && previousPeriodData.audience[k] ? (previousPeriodData.audience[k].followers || 0) : 0;
-                    if (s !== null) { const w = f || 1; pSum += s * w; pWeight += w; }
-                });
-                const prevOverall = pWeight ? Math.round(pSum / pWeight) : null;
+                const prevOverallPillars = {
+                    engagement: pCumPosts > 0 ? scoreVsBaseline(pCumEng / pCumPosts, getBaseline('total', 'engPerPost')) : null,
+                    sentiment:  ahsPillarSentiment(pAllComments),
+                    reach:      pCumReach > 0 ? ahsPillarReach(pCumReach, 'total') : null,
+                    attention:  pCumViews > 0 ? ahsPillarAttention(pCumViews, 'total') : null
+                };
+                const prevOverall = ahsComposite(prevOverallPillars);
                 if (prevOverall !== null) {
                     const diff = overallScore - prevOverall;
                     if (diff === 0) {
