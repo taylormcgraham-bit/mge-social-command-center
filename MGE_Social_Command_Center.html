@@ -697,6 +697,65 @@
             display: flex; justify-content: center; gap: 24px;
             margin-top: 16px; padding-top: 14px; border-top: 1px solid #F1F5F9;
         }
+        /* Sentiment hero — appears in the Sentiment KPI breakdown drawer */
+        .sentiment-hero {
+            display: grid; grid-template-columns: 1fr 2fr; gap: 14px;
+            padding: 14px;
+            background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
+            border-radius: 12px;
+            margin-bottom: 14px;
+        }
+        .sh-summary {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center;
+            padding: 10px;
+            background: white; border-radius: 10px;
+            border: 1px solid #E2E8F0;
+        }
+        .sh-summary-label {
+            font-size: 10px; font-weight: 600; color: #94A3B8;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .sh-summary-score { font-size: 36px; font-weight: 800; line-height: 1; color: #1B2559; }
+        .sh-summary-score.tier-strong { color: #15803D; }
+        .sh-summary-score.tier-fair   { color: #A16207; }
+        .sh-summary-score.tier-poor   { color: #B91C1C; }
+        .sh-summary-score.tier-none   { color: #94A3B8; }
+        .sh-summary-tier {
+            font-size: 11px; font-weight: 700; margin-top: 6px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .sh-summary-tier.tier-strong { color: #15803D; }
+        .sh-summary-tier.tier-fair   { color: #A16207; }
+        .sh-summary-tier.tier-poor   { color: #B91C1C; }
+        .sh-summary-tier.tier-none   { color: #94A3B8; }
+        .sh-blocks {
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+        }
+        .sh-block {
+            padding: 10px 6px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid transparent;
+        }
+        .sh-block.pos { background: linear-gradient(180deg, #DCFCE7 0%, #F0FDF4 100%); border-color: #BBF7D0; }
+        .sh-block.neu { background: linear-gradient(180deg, #FEF9C3 0%, #FEFCE8 100%); border-color: #FDE68A; }
+        .sh-block.neg { background: linear-gradient(180deg, #FEE2E2 0%, #FEF2F2 100%); border-color: #FECACA; }
+        .sh-block-pct { font-size: 22px; font-weight: 800; line-height: 1; }
+        .sh-block.pos .sh-block-pct { color: #15803D; }
+        .sh-block.neu .sh-block-pct { color: #A16207; }
+        .sh-block.neg .sh-block-pct { color: #B91C1C; }
+        .sh-block-label {
+            font-size: 10px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.6px;
+            margin-top: 4px;
+        }
+        .sh-block.pos .sh-block-label { color: #15803D; }
+        .sh-block.neu .sh-block-label { color: #A16207; }
+        .sh-block.neg .sh-block-label { color: #B91C1C; }
+        .sh-block-count { font-size: 10px; color: #64748B; margin-top: 2px; }
+
         /* Sentiment distribution — 3 colored blocks, big percentages, count beneath */
         .sentiment-dist-row {
             display: grid; grid-template-columns: 1fr 1fr 1fr;
@@ -1290,6 +1349,50 @@
         .pp-stat-icon { font-size: 12px; opacity: 0.85; }
         .pp-stat-val { font-weight: 700; color: #1B2559; font-size: 12px; }
         .pp-stat.neg .pp-stat-val { color: #DC2626; }
+        /* Average sentiment grade chip — appears next to the comment count */
+        .pp-stat-grade {
+            display: inline-block;
+            padding: 1px 6px; margin-left: 5px;
+            border-radius: 8px;
+            font-size: 10px; font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+        .pp-stat-grade.positive { background: #DCFCE7; color: #15803D; }
+        .pp-stat-grade.neutral  { background: #FEF9C3; color: #A16207; }
+        .pp-stat-grade.negative { background: #FEE2E2; color: #B91C1C; }
+        /* AHS Breakdown sub-section per platform card */
+        .pp-ahs-pillars { display: flex; flex-direction: column; gap: 5px; }
+        .pp-ahs-row {
+            display: grid;
+            grid-template-columns: 110px 1fr 28px;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px; color: #64748B;
+        }
+        .pp-ahs-name { display: flex; align-items: baseline; gap: 4px; font-weight: 600; }
+        .pp-ahs-weight { font-size: 9px; color: #94A3B8; font-weight: 700; }
+        .pp-ahs-bar { height: 6px; background: #E2E8F0; border-radius: 3px; overflow: hidden; }
+        .pp-ahs-bar-fill {
+            display: block; height: 100%; border-radius: 3px;
+            transition: width 0.6s ease;
+        }
+        .pp-ahs-bar-fill.strong  { background: linear-gradient(90deg, #16A34A, #15803D); }
+        .pp-ahs-bar-fill.good    { background: linear-gradient(90deg, #84CC16, #65A30D); }
+        .pp-ahs-bar-fill.fair    { background: linear-gradient(90deg, #EAB308, #CA8A04); }
+        .pp-ahs-bar-fill.weak    { background: linear-gradient(90deg, #F97316, #EA580C); }
+        .pp-ahs-bar-fill.poor    { background: linear-gradient(90deg, #DC2626, #B91C1C); }
+        .pp-ahs-bar-fill.unknown { background: #CBD5E1; }
+        .pp-ahs-val { font-weight: 800; font-size: 12px; color: #1B2559; text-align: right; }
+        .pp-ahs-empty {
+            font-size: 11px; color: #94A3B8; font-style: italic;
+            padding: 8px 0;
+        }
+        /* Composite tier color */
+        .tier-strong { color: #15803D !important; }
+        .tier-good   { color: #4D7C0F !important; }
+        .tier-fair   { color: #A16207 !important; }
+        .tier-weak   { color: #C2410C !important; }
+        .tier-poor   { color: #B91C1C !important; }
         .pp-content-types {
             display: flex; flex-direction: column; gap: 5px;
         }
@@ -2655,24 +2758,13 @@
                 <div class="gauge-bar-wrap">
                     <div class="gauge-bar" id="gaugeSentBar"></div>
                 </div>
-                <div class="sentiment-dist-row" id="sentDistRow">
-                    <div class="sent-dist-item pos">
-                        <div class="sent-dist-pct" id="sentDistPctPos">--</div>
-                        <div class="sent-dist-label">Positive</div>
-                        <div class="sent-dist-count" id="sentDistPos">0</div>
-                    </div>
-                    <div class="sent-dist-item neu">
-                        <div class="sent-dist-pct" id="sentDistPctNeu">--</div>
-                        <div class="sent-dist-label">Neutral</div>
-                        <div class="sent-dist-count" id="sentDistNeu">0</div>
-                    </div>
-                    <div class="sent-dist-item neg">
-                        <div class="sent-dist-pct" id="sentDistPctNeg">--</div>
-                        <div class="sent-dist-label">Negative</div>
-                        <div class="sent-dist-count" id="sentDistNeg">0</div>
-                    </div>
+                <!-- Pos/Neu/Neg distribution moved into the Sentiment pillar's KPI breakdown drawer
+                     (click the Sentiment card in the Audience Health Pillars section to see it).
+                     We keep hidden mirror nodes so the existing populator code still has targets to write to. -->
+                <div style="display:none;" id="sentDistRow">
+                    <span id="sentDistPctPos"></span><span id="sentDistPctNeu"></span><span id="sentDistPctNeg"></span>
+                    <span id="sentDistPos"></span><span id="sentDistNeu"></span><span id="sentDistNeg"></span>
                 </div>
-                <div style="margin-top:8px; font-size:10px; color:#94A3B8; text-align:center; line-height:1.4;">comment sentiment mix · feeds the Sentiment pillar above</div>
             </div>
             <div style="font-size:10px; font-weight:700; color:#64748B; text-transform:uppercase; letter-spacing:0.7px; margin:0 0 6px 0; padding-left:2px;">AHS by Platform <span style="font-weight:400; text-transform:none; letter-spacing:0; color:#94A3B8;">— composite score 0–100 weighted across pillars</span></div>
             <div class="platform-sentiments" id="platformSentiments">
@@ -3981,7 +4073,54 @@ var KPI_META = {
     comments: {
         label: 'Total Comments',
         description: 'Comments left by your audience on each platform. Each comment is AI-scored for sentiment with full post + parent-comment context.',
-        platformValue: function(pe, k) { return pe[k] ? (pe[k].comments || 0) : 0; }
+        platformValue: function(pe, k) { return pe[k] ? (pe[k].comments || 0) : 0; },
+        // Render Pos/Neu/Neg distribution + avg sentiment score above the per-platform list
+        customHero: function(data) {
+            if (!data || !data.comments || !data.comments.length) return '';
+            var pos = 0, neu = 0, neg = 0, scoreSum = 0, scoreCount = 0;
+            data.comments.forEach(function(c) {
+                var sc = commentScore(c);
+                if (sc.score >= 60) pos++;
+                else if (sc.score < 40) neg++;
+                else neu++;
+                scoreSum += sc.score; scoreCount++;
+            });
+            var total = pos + neu + neg || 1;
+            var avgScore = scoreCount ? Math.round(scoreSum / scoreCount) : null;
+            var avgLabel = avgScore == null ? 'No data'
+                : avgScore >= 75 ? 'Strongly Positive'
+                : avgScore >= 60 ? 'Positive'
+                : avgScore >= 45 ? 'Neutral'
+                : avgScore >= 30 ? 'Negative' : 'Strongly Negative';
+            var avgClass = avgScore == null ? 'tier-none'
+                : avgScore >= 60 ? 'tier-strong'
+                : avgScore >= 45 ? 'tier-fair'
+                : 'tier-poor';
+            return '<div class="sentiment-hero">' +
+                     '<div class="sh-summary">' +
+                       '<div class="sh-summary-label">Average comment sentiment</div>' +
+                       '<div class="sh-summary-score ' + avgClass + '">' + (avgScore == null ? '--' : avgScore) + '</div>' +
+                       '<div class="sh-summary-tier ' + avgClass + '">' + avgLabel + '</div>' +
+                     '</div>' +
+                     '<div class="sh-blocks">' +
+                       '<div class="sh-block pos">' +
+                         '<div class="sh-block-pct">' + Math.round(pos/total*100) + '%</div>' +
+                         '<div class="sh-block-label">Positive</div>' +
+                         '<div class="sh-block-count">' + pos + (pos === 1 ? ' comment' : ' comments') + '</div>' +
+                       '</div>' +
+                       '<div class="sh-block neu">' +
+                         '<div class="sh-block-pct">' + Math.round(neu/total*100) + '%</div>' +
+                         '<div class="sh-block-label">Neutral</div>' +
+                         '<div class="sh-block-count">' + neu + (neu === 1 ? ' comment' : ' comments') + '</div>' +
+                       '</div>' +
+                       '<div class="sh-block neg">' +
+                         '<div class="sh-block-pct">' + Math.round(neg/total*100) + '%</div>' +
+                         '<div class="sh-block-label">Negative</div>' +
+                         '<div class="sh-block-count">' + neg + (neg === 1 ? ' comment' : ' comments') + '</div>' +
+                       '</div>' +
+                     '</div>' +
+                   '</div>';
+        }
     },
     views: {
         label: 'Total Video Views',
@@ -4062,6 +4201,9 @@ function renderKpiBreakdown(kpiKey) {
                '</div>';
     }).join('');
 
+    // Custom hero block — for Sentiment KPI we show the Pos/Neu/Neg distribution + avg score above the per-platform breakdown
+    var customHero = (typeof meta.customHero === 'function') ? meta.customHero(data) : '';
+
     panel.hidden = false;
     panel.innerHTML =
         '<div class="kpi-breakdown-head">' +
@@ -4069,6 +4211,7 @@ function renderKpiBreakdown(kpiKey) {
             '<div class="kpi-breakdown-total">Total: <strong>' + total.toLocaleString() + '</strong></div>' +
         '</div>' +
         (meta.description ? '<div class="kpi-breakdown-empty" style="text-align:left;margin:-4px 0 10px;font-style:normal;color:#64748B;">' + escapeHtml(meta.description) + '</div>' : '') +
+        customHero +
         '<div class="kpi-breakdown-rows">' + rowsHtml + '</div>';
 }
 
@@ -4370,19 +4513,84 @@ function renderPlatformPerformance(data) {
     let topKey = null, topVal = 0;
     Object.keys(totals).forEach(function(k) { if (totals[k] > topVal) { topVal = totals[k]; topKey = k; } });
 
+    // Read per-platform AHS pillar scores stashed by renderAhs (computed before this runs).
+    const ahsPP = window.__ahsPerPlatform || {};
+    // Pre-compute average comment sentiment per platform — used in the engagement grid (replaces raw count for comments)
+    const platformCommentAvg = {};
+    Object.keys(PLATFORM_INFO).forEach(function(k) {
+        const platComments = (data.platformComments && data.platformComments[k]) || [];
+        if (!platComments.length) { platformCommentAvg[k] = null; return; }
+        let sum = 0, n = 0;
+        platComments.forEach(function(c) {
+            const sc = commentScore(c);
+            sum += sc.score; n++;
+        });
+        platformCommentAvg[k] = n ? Math.round(sum / n) : null;
+    });
+
     container.innerHTML = platforms.map(function(p) {
         const peData = pe[p.key] || {};
         const stats = p.engagement(peData);
         const totalEngagement = totals[p.key];
         const postCount = peData.postCount || 0;
         const isTop = (p.key === topKey && topVal > 0);
+        const commentAvg = platformCommentAvg[p.key];
 
         const statsHtml = stats.map(function(s) {
+            // For the Comments stat, append the avg sentiment grade in parens
+            let extraHtml = '';
+            if (s.label === 'Comments' && commentAvg != null) {
+                const tier = commentAvg >= 60 ? 'positive' : commentAvg < 40 ? 'negative' : 'neutral';
+                extraHtml = ' <span class="pp-stat-grade ' + tier + '">avg ' + commentAvg + '</span>';
+            }
             return '<div class="pp-stat' + (s.neg ? ' neg' : '') + '">' +
                      '<span class="pp-stat-label"><span class="pp-stat-icon">' + s.ic + '</span>' + s.label + '</span>' +
-                     '<span class="pp-stat-val">' + fmt(s.val || 0) + '</span>' +
+                     '<span class="pp-stat-val">' + fmt(s.val || 0) + extraHtml + '</span>' +
                    '</div>';
         }).join('');
+
+        // AHS breakdown sub-section — shows the four pillar scores that compose this platform's AHS composite.
+        const ppAhs = ahsPP[p.key];
+        let ahsBreakdownHtml = '';
+        if (ppAhs && ppAhs.score !== null) {
+            const pillarsList = [
+                { name: 'Engagement', weight: 40, val: ppAhs.pillars.engagement },
+                { name: 'Sentiment',  weight: 40, val: ppAhs.pillars.sentiment },
+                { name: 'Reach',      weight: 5,  val: ppAhs.pillars.reach },
+                { name: 'Attention',  weight: 15, val: ppAhs.pillars.attention }
+            ];
+            const tier = ppAhs.score >= 80 ? 'tier-strong'
+                       : ppAhs.score >= 65 ? 'tier-good'
+                       : ppAhs.score >= 50 ? 'tier-fair'
+                       : ppAhs.score >= 35 ? 'tier-weak' : 'tier-poor';
+            ahsBreakdownHtml =
+                '<div>' +
+                  '<div class="pp-section-title" style="display:flex; justify-content:space-between; align-items:baseline;">' +
+                    '<span>AHS Breakdown</span>' +
+                    '<span style="font-weight:800; font-size:13px;" class="' + tier + '">Composite ' + ppAhs.score + '</span>' +
+                  '</div>' +
+                  '<div class="pp-ahs-pillars">' +
+                    pillarsList.map(function(pp) {
+                      const v = pp.val;
+                      const fillW = v == null ? 0 : v;
+                      const cls = v == null ? 'unknown'
+                               : v >= 80 ? 'strong'
+                               : v >= 65 ? 'good'
+                               : v >= 50 ? 'fair'
+                               : v >= 35 ? 'weak' : 'poor';
+                      return '<div class="pp-ahs-row">' +
+                               '<span class="pp-ahs-name">' + pp.name + ' <span class="pp-ahs-weight">' + pp.weight + '%</span></span>' +
+                               '<span class="pp-ahs-bar"><span class="pp-ahs-bar-fill ' + cls + '" style="width:' + fillW + '%"></span></span>' +
+                               '<span class="pp-ahs-val">' + (v == null ? '--' : v) + '</span>' +
+                             '</div>';
+                    }).join('') +
+                  '</div>' +
+                '</div>';
+        } else if (postCount > 0 && postCount < AHS_MIN_POSTS) {
+            ahsBreakdownHtml = '<div class="pp-ahs-empty">Need ≥' + AHS_MIN_POSTS + ' posts to compute AHS · ' + postCount + ' so far</div>';
+        } else if (postCount === 0) {
+            ahsBreakdownHtml = '<div class="pp-ahs-empty">No posts in this window — AHS not computed</div>';
+        }
 
         const ctHtml = p.mixKeys.map(function(mk) {
             const item = mix[mk];
@@ -4435,6 +4643,7 @@ function renderPlatformPerformance(data) {
                    '<div class="pp-section-title">Content Types</div>' +
                    '<div class="pp-content-types">' + ctHtml + '</div>' +
                  '</div>' +
+                 ahsBreakdownHtml +
                '</div>';
     }).join('');
 }
@@ -4957,6 +5166,8 @@ function renderSentiment(data) {
         label: overall.label,
         computedAt: new Date()
     };
+    // Stash per-platform AHS pillars + composite for Platform Performance cards to read
+    window.__ahsPerPlatform = perPlatform;
 
     // Stamp this month's AHS score into history for the timeline chart
     saveAhsScore(overallScore, perPlatform);
@@ -5139,6 +5350,12 @@ function renderSentiment(data) {
         // Meta line (post count)
         document.getElementById(p.meta).textContent = pc > 0 ? (pc + ' post' + (pc !== 1 ? 's' : '')) : '';
     });
+
+    // Re-render Platform Performance now that __ahsPerPlatform is populated — gives the cards
+    // their AHS Breakdown sub-section which depends on this data being available.
+    if (typeof renderPlatformPerformance === 'function' && window._lastProcessedData) {
+        try { renderPlatformPerformance(window._lastProcessedData); } catch (e) { /* no-op */ }
+    }
 }
 
 // ============================================================
