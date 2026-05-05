@@ -656,12 +656,34 @@
         .gauge-pillar-row {
             display: flex; justify-content: center; gap: 8px; margin-top: 18px;
         }
+        .gauge-trend {
+            margin-top: 6px;
+            font-size: 12px; font-weight: 600;
+            display: flex; justify-content: center; align-items: center; gap: 4px;
+            min-height: 18px;
+        }
+        .gauge-trend .trend-up { color: #16A34A; }
+        .gauge-trend .trend-down { color: #DC2626; }
+        .gauge-trend .trend-flat { color: #94A3B8; }
+        .gauge-trend .trend-context { color: #94A3B8; font-weight: 500; font-size: 11px; }
         .gauge-pillar-chip {
             font-size: 10px; font-weight: 700; padding: 4px 12px; border-radius: 20px;
             background: linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 100%);
             color: #475569; letter-spacing: 0.3px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
         }
         .gauge-pillar-chip .chip-val { color: #0F172A; margin-left: 3px; font-weight: 900; }
+        /* Color-code pillar chip background based on score range — quick-glance health */
+        .gauge-pillar-chip.score-strong  { background: linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 100%); color: #166534; }
+        .gauge-pillar-chip.score-strong  .chip-val { color: #14532D; }
+        .gauge-pillar-chip.score-good    { background: linear-gradient(135deg, #ECFCCB 0%, #D9F99D 100%); color: #4D7C0F; }
+        .gauge-pillar-chip.score-good    .chip-val { color: #365314; }
+        .gauge-pillar-chip.score-fair    { background: linear-gradient(135deg, #FEF9C3 0%, #FEF08A 100%); color: #854D0E; }
+        .gauge-pillar-chip.score-fair    .chip-val { color: #713F12; }
+        .gauge-pillar-chip.score-weak    { background: linear-gradient(135deg, #FFEDD5 0%, #FED7AA 100%); color: #9A3412; }
+        .gauge-pillar-chip.score-weak    .chip-val { color: #7C2D12; }
+        .gauge-pillar-chip.score-poor    { background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%); color: #991B1B; }
+        .gauge-pillar-chip.score-poor    .chip-val { color: #7F1D1D; }
+        .gauge-pillar-chip.score-unknown { /* use default */ }
         @keyframes gaugeArcPulse {
             0%, 100% { filter: drop-shadow(0 0 8px rgba(34,197,94,0.3)); }
             50% { filter: drop-shadow(0 0 20px rgba(34,197,94,0.5)); }
@@ -894,6 +916,20 @@
             font-size: 9px; font-weight: 700; color: #94A3B8;
             background: #F1F5F9; padding: 2px 6px; border-radius: 10px;
             letter-spacing: 0.4px;
+        }
+        /* Promote the period-over-period change badge — bigger, bolder, more prominent */
+        .pillar-card .kpi-change {
+            min-height: 22px;
+            display: flex; justify-content: center; align-items: center;
+            margin-top: 2px;
+        }
+        .pillar-card .kpi-change .trend-badge {
+            font-size: 12px; font-weight: 700;
+            padding: 3px 10px; border-radius: 14px;
+        }
+        .pillar-card .kpi-change:empty::before {
+            content: 'no prior period data';
+            font-size: 10px; color: #CBD5E1; font-style: italic;
         }
         .pillar-score-row {
             display: flex; align-items: center; gap: 6px;
@@ -2554,6 +2590,7 @@
                     <div class="gauge-center animate-in">
                         <div class="gauge-score" id="overallScore">--</div>
                         <div class="gauge-label" id="overallLabel">Analyzing...</div>
+                        <div class="gauge-trend" id="overallTrend"></div>
                     </div>
                 </div>
                 <div class="gauge-pillar-row" id="gaugePillarRow"></div>
@@ -2566,7 +2603,9 @@
                     <div class="sent-dist-item"><span class="sent-dist-dot neu"></span> Neutral <span class="sent-dist-val" id="sentDistNeu">0</span></div>
                     <div class="sent-dist-item"><span class="sent-dist-dot neg"></span> Negative <span class="sent-dist-val" id="sentDistNeg">0</span></div>
                 </div>
+                <div style="margin-top:6px; font-size:10px; color:#94A3B8; text-align:center; line-height:1.4;">comment sentiment mix · feeds the Sentiment pillar above</div>
             </div>
+            <div style="font-size:10px; font-weight:700; color:#64748B; text-transform:uppercase; letter-spacing:0.7px; margin:0 0 6px 0; padding-left:2px;">AHS by Platform <span style="font-weight:400; text-transform:none; letter-spacing:0; color:#94A3B8;">— composite score 0–100 weighted across pillars</span></div>
             <div class="platform-sentiments" id="platformSentiments">
                 <div class="plat-sent" id="sentBlockFB"><div class="plat-sent-name">Facebook</div><div class="plat-sent-score neutral" id="sentFB">--</div><div class="plat-sent-pct" id="sentPctFB"></div><div class="plat-sent-bar"><div class="plat-sent-bar-fill" id="sentBarFB"></div></div></div>
                 <div class="plat-sent" id="sentBlockIG"><div class="plat-sent-name">Instagram</div><div class="plat-sent-score neutral" id="sentIG">--</div><div class="plat-sent-pct" id="sentPctIG"></div><div class="plat-sent-bar"><div class="plat-sent-bar-fill" id="sentBarIG"></div></div></div>
@@ -4853,13 +4892,84 @@ function renderSentiment(data) {
     // Stash on window for the KPI pillar score row to read
     window.__pillarAvgs = pillarAvgs;
     const fmtAvg = v => (v === null ? '--' : v);
+    // Helper: score → CSS class for color-coded background. Mirrors AHS label thresholds.
+    function pillarScoreClass(s) {
+        if (s === null || s === undefined) return 'score-unknown';
+        if (s >= 80) return 'score-strong';
+        if (s >= 65) return 'score-good';
+        if (s >= 50) return 'score-fair';
+        if (s >= 35) return 'score-weak';
+        return 'score-poor';
+    }
     const pillarRow = document.getElementById('gaugePillarRow');
     if (pillarRow) {
-        pillarRow.innerHTML =
-            '<span class="gauge-pillar-chip">Engagement (40%) <span class="chip-val">' + fmtAvg(pillarAvgs.engagement) + '</span></span>' +
-            '<span class="gauge-pillar-chip">Sentiment (40%) <span class="chip-val">' + fmtAvg(pillarAvgs.sentiment) + '</span></span>' +
-            '<span class="gauge-pillar-chip">Reach (5%) <span class="chip-val">' + fmtAvg(pillarAvgs.reach) + '</span></span>' +
-            '<span class="gauge-pillar-chip">Attention (15%) <span class="chip-val">' + fmtAvg(pillarAvgs.attention) + '</span></span>';
+        const chips = [
+            { name: 'Engagement', weight: '40%', val: pillarAvgs.engagement },
+            { name: 'Sentiment',  weight: '40%', val: pillarAvgs.sentiment },
+            { name: 'Reach',      weight: '5%',  val: pillarAvgs.reach },
+            { name: 'Attention',  weight: '15%', val: pillarAvgs.attention }
+        ];
+        pillarRow.innerHTML = chips.map(c =>
+            '<span class="gauge-pillar-chip ' + pillarScoreClass(c.val) + '">' +
+              c.name + ' (' + c.weight + ') ' +
+              '<span class="chip-val">' + fmtAvg(c.val) + '</span>' +
+            '</span>'
+        ).join('');
+    }
+    // Render overall AHS period-over-period trend under the gauge score
+    const trendEl = document.getElementById('overallTrend');
+    if (trendEl) {
+        const periodLabel = (function() {
+            try {
+                const r = getDateRange();
+                const days = Math.round((r.end - r.start) / 86400000);
+                return 'vs prior ' + days + 'D';
+            } catch (e) { return 'vs prior period'; }
+        })();
+        if (previousPeriodData && overallScore !== null) {
+            // Compute previous-period overall AHS using prior platformEngagement + (best-effort) other prior data
+            try {
+                const prevPlatformAhs = {};
+                ['fb','ig','li','yt'].forEach(function(k) {
+                    const ppe = previousPeriodData.platformEngagement[k];
+                    const paud = previousPeriodData.audience ? previousPeriodData.audience[k] : null;
+                    if (!ppe || !ppe.postCount || ppe.postCount < AHS_MIN_POSTS) {
+                        prevPlatformAhs[k] = null;
+                        return;
+                    }
+                    const pillars = {
+                        engagement: ahsPillarEngagement(ppe),
+                        sentiment:  ahsPillarSentiment(previousPeriodData.platformComments[k]),
+                        reach:      ahsPillarReach(paud),
+                        attention:  ahsPillarAttention(ppe.views || 0, paud ? paud.followers : 0)
+                    };
+                    prevPlatformAhs[k] = ahsComposite(pillars);
+                });
+                let pSum = 0, pWeight = 0;
+                ['fb','ig','li','yt'].forEach(function(k) {
+                    const s = prevPlatformAhs[k];
+                    const f = previousPeriodData.audience && previousPeriodData.audience[k] ? (previousPeriodData.audience[k].followers || 0) : 0;
+                    if (s !== null) { const w = f || 1; pSum += s * w; pWeight += w; }
+                });
+                const prevOverall = pWeight ? Math.round(pSum / pWeight) : null;
+                if (prevOverall !== null) {
+                    const diff = overallScore - prevOverall;
+                    if (diff === 0) {
+                        trendEl.innerHTML = '<span class="trend-flat">no change</span> <span class="trend-context">' + periodLabel + '</span>';
+                    } else {
+                        const arrow = diff > 0 ? '▲' : '▼';
+                        const cls = diff > 0 ? 'trend-up' : 'trend-down';
+                        trendEl.innerHTML = '<span class="' + cls + '">' + arrow + ' ' + Math.abs(diff) + ' pts</span> <span class="trend-context">' + periodLabel + '</span>';
+                    }
+                } else {
+                    trendEl.innerHTML = '<span class="trend-context">no prior data ' + periodLabel + '</span>';
+                }
+            } catch (e) {
+                trendEl.innerHTML = '<span class="trend-context">trend unavailable</span>';
+            }
+        } else {
+            trendEl.innerHTML = '<span class="trend-context">' + periodLabel + ' unavailable</span>';
+        }
     }
     // Update pillar-score bars on the four KPI cards (Reach / Engagement / Sentiment / Attention)
     ['Reach', 'Engagement', 'Sentiment', 'Attention'].forEach(name => {
