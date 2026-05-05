@@ -1286,19 +1286,20 @@
         .pp-card.yt::before { background: linear-gradient(90deg, #FF0000, #CC0000); }
         /* Hover lift */
         .pp-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(15,23,42,0.10); }
-        /* Top-performer crown badge — added by JS to the card with highest total engagement */
+        /* Top-performer crown badge — small pill on the card edge so it doesn't overshadow the metric */
         .pp-top-badge {
-            position: absolute; top: 12px; right: 14px;
-            display: flex; align-items: center; gap: 4px;
-            padding: 4px 9px;
+            position: absolute; top: 8px; right: 10px;
+            display: flex; align-items: center; gap: 3px;
+            padding: 2px 7px;
             background: linear-gradient(90deg, #FBBF24, #F59E0B);
-            color: white; font-size: 9px; font-weight: 800;
-            text-transform: uppercase; letter-spacing: 0.6px;
-            border-radius: 12px;
-            box-shadow: 0 2px 6px rgba(245,158,11,0.4);
+            color: white; font-size: 8px; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(245,158,11,0.35);
             z-index: 2;
+            line-height: 1;
         }
-        .pp-top-badge::before { content: '★'; font-size: 11px; }
+        .pp-top-badge::before { content: '★'; font-size: 9px; }
         .pp-card-header {
             display: flex; align-items: center; justify-content: space-between;
             padding-bottom: 12px;
@@ -1323,13 +1324,30 @@
         }
         .pp-total {
             text-align: right;
+            min-width: 60px;
         }
         .pp-total-num {
-            font-size: 22px; font-weight: 800; color: #1B2559; line-height: 1;
+            font-size: 28px; font-weight: 900; color: #1B2559; line-height: 1;
         }
+        .pp-total-num.tier-strong { color: #15803D; }
+        .pp-total-num.tier-good   { color: #4D7C0F; }
+        .pp-total-num.tier-fair   { color: #A16207; }
+        .pp-total-num.tier-weak   { color: #C2410C; }
+        .pp-total-num.tier-poor   { color: #B91C1C; }
+        .pp-total-num.tier-none   { color: #94A3B8; font-size: 22px; }
         .pp-total-label {
             font-size: 9px; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;
         }
+        .pp-total-tier {
+            font-size: 9px; font-weight: 700; margin-top: 1px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .pp-total-tier.tier-strong { color: #15803D; }
+        .pp-total-tier.tier-good   { color: #4D7C0F; }
+        .pp-total-tier.tier-fair   { color: #A16207; }
+        .pp-total-tier.tier-weak   { color: #C2410C; }
+        .pp-total-tier.tier-poor   { color: #B91C1C; }
+        .pp-total-tier.tier-none   { color: #94A3B8; }
         .pp-section-title {
             font-size: 10px; font-weight: 700; color: #64748B;
             text-transform: uppercase; letter-spacing: 0.7px;
@@ -4225,7 +4243,7 @@ function renderKpiBreakdown(kpiKey) {
 // ISO-week buckets (v4). Old monthly data doesn't decompose cleanly to
 // weeks, so we start fresh; history rebuilds as the dashboard is used.
 // ============================================================
-var AHS_HISTORY_KEY = 'mge_ahs_history_v5'; // bumped from v4 (2026-05-04): switched 2-pillar 50/50 → 4-pillar 40/40/5/15
+var AHS_HISTORY_KEY = 'mge_ahs_history_v6'; // bumped from v5 (2026-05-04): switched to baseline-relative scoring (vs MGE running avg)
 function getAhsHistory() {
     try {
         var raw = localStorage.getItem(AHS_HISTORY_KEY);
@@ -4537,15 +4555,9 @@ function renderPlatformPerformance(data) {
         const commentAvg = platformCommentAvg[p.key];
 
         const statsHtml = stats.map(function(s) {
-            // For the Comments stat, append the avg sentiment grade in parens
-            let extraHtml = '';
-            if (s.label === 'Comments' && commentAvg != null) {
-                const tier = commentAvg >= 60 ? 'positive' : commentAvg < 40 ? 'negative' : 'neutral';
-                extraHtml = ' <span class="pp-stat-grade ' + tier + '">avg ' + commentAvg + '</span>';
-            }
             return '<div class="pp-stat' + (s.neg ? ' neg' : '') + '">' +
                      '<span class="pp-stat-label"><span class="pp-stat-icon">' + s.ic + '</span>' + s.label + '</span>' +
-                     '<span class="pp-stat-val">' + fmt(s.val || 0) + extraHtml + '</span>' +
+                     '<span class="pp-stat-val">' + fmt(s.val || 0) + '</span>' +
                    '</div>';
         }).join('');
 
@@ -4620,8 +4632,18 @@ function renderPlatformPerformance(data) {
                    '</div>';
         }).join('');
 
+        // AHS composite score for the top-right of the header
+        const ppAhsHeader = ahsPP[p.key];
+        const ahsScoreHeader = ppAhsHeader ? ppAhsHeader.score : null;
+        const ahsTierClass = ahsScoreHeader == null ? 'tier-none'
+            : ahsScoreHeader >= 80 ? 'tier-strong'
+            : ahsScoreHeader >= 65 ? 'tier-good'
+            : ahsScoreHeader >= 50 ? 'tier-fair'
+            : ahsScoreHeader >= 35 ? 'tier-weak' : 'tier-poor';
+        const ahsTierLabel = ahsScoreHeader == null ? '' : ahsLabel(ahsScoreHeader);
+
         return '<div class="pp-card ' + p.cls + '" data-platform="' + p.key + '">' +
-                 (isTop ? '<div class="pp-top-badge">Top Performer</div>' : '') +
+                 (isTop ? '<div class="pp-top-badge">Top</div>' : '') +
                  '<div class="pp-card-header">' +
                    '<div class="pp-platform">' +
                      '<div class="pp-platform-icon">' + p.icon + '</div>' +
@@ -4631,8 +4653,9 @@ function renderPlatformPerformance(data) {
                      '</div>' +
                    '</div>' +
                    '<div class="pp-total">' +
-                     '<div class="pp-total-num">' + fmt(totalEngagement) + '</div>' +
-                     '<div class="pp-total-label">total engagement</div>' +
+                     '<div class="pp-total-num ' + ahsTierClass + '">' + (ahsScoreHeader == null ? '--' : ahsScoreHeader) + '</div>' +
+                     '<div class="pp-total-label">AHS Score</div>' +
+                     (ahsTierLabel ? '<div class="pp-total-tier ' + ahsTierClass + '">' + ahsTierLabel + '</div>' : '') +
                    '</div>' +
                  '</div>' +
                  '<div>' +
@@ -4799,7 +4822,69 @@ function renderPlatformEngagement(data) {
 // ============================================================
 var AHS_MIN_POSTS = 2; // minimum posts in period to include platform
 
-function ahsPillarEngagement(pe) {
+// ============================================================
+// BASELINE STORAGE — per-platform running averages of raw metrics
+// Drives baseline-relative scoring for Engagement / Reach / Attention pillars.
+// (Sentiment uses real per-comment AI scores so doesn't need a baseline.)
+// EWMA weighting tightens with sample count: a brand-new platform's score
+// reflects current data; a platform with 12+ weeks of history compares the
+// current period against MGE's own running average for that metric.
+// ============================================================
+var BASELINES_KEY = 'mge_baselines_v1';
+// Sensible cold-start baselines for utility-marketing context — used when no history yet.
+// Tuned conservatively so first scores read "Fair" (~50) for typical MGE volume.
+var BASELINE_FALLBACKS = {
+    engPerPost:    { fb: 18, ig: 30, li: 8, yt: 50 },  // weighted engagement units per post
+    reachRatio:    { fb: 4.0, ig: 0.4, li: 0.5, yt: 1.0 }, // window reach / followers
+    attentionRatio:{ fb: 0.8, ig: 0.5, li: 0.1, yt: 1.5 }  // window video views / followers
+};
+function _loadBaselines() {
+    try { return JSON.parse(localStorage.getItem(BASELINES_KEY) || '{}'); } catch (e) { return {}; }
+}
+function _saveBaselines(b) {
+    try { localStorage.setItem(BASELINES_KEY, JSON.stringify(b)); } catch (e) {}
+}
+// Read the running average for a platform/metric, falling back to the seed default if no history yet.
+function getBaseline(platform, metric) {
+    var b = _loadBaselines();
+    var m = b[platform] && b[platform][metric];
+    if (m && typeof m.avg === 'number' && m.count > 0) return m.avg;
+    var fb = (BASELINE_FALLBACKS[metric] || {})[platform];
+    return (typeof fb === 'number' ? fb : null);
+}
+function getBaselineSampleCount(platform, metric) {
+    var b = _loadBaselines();
+    var m = b[platform] && b[platform][metric];
+    return m ? (m.count || 0) : 0;
+}
+// Update a baseline with a new observation. EWMA — earlier samples weight more as count grows.
+// Cap count at 26 so the average remains responsive to recent shifts (~6 months of weekly data).
+function updateBaseline(platform, metric, currentVal) {
+    if (currentVal == null || isNaN(currentVal) || currentVal <= 0) return; // skip empty / suspicious data
+    var b = _loadBaselines();
+    if (!b[platform]) b[platform] = {};
+    var m = b[platform][metric];
+    if (!m) {
+        b[platform][metric] = { avg: currentVal, count: 1, updatedAt: Date.now() };
+    } else {
+        // EWMA: new = old * w + current * (1-w), where w grows toward 0.93 as samples accumulate
+        var w = Math.min(0.93, m.count / (m.count + 1));
+        m.avg = m.avg * w + currentVal * (1 - w);
+        m.count = Math.min((m.count || 0) + 1, 26);
+        m.updatedAt = Date.now();
+    }
+    _saveBaselines(b);
+}
+// Score a current value against its baseline. Uses tanh normalization centered on 1.0x ratio = 50.
+// 1.5x baseline → ~75, 2.0x → ~88, 0.5x → ~25, 0.25x → ~12. Bounded 0..100.
+function scoreVsBaseline(currentVal, baseline) {
+    if (baseline == null || baseline <= 0) return null;
+    var ratio = currentVal / baseline;
+    var score = 50 + 50 * Math.tanh((ratio - 1) / 0.6);
+    return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+function ahsPillarEngagement(pe, platformKey) {
     if (!pe || !pe.postCount || pe.postCount < AHS_MIN_POSTS) return null;
     // Tiered weighting: deeper interactions count more
     var comments  = (pe.comments || 0) * 5;   // Tier 1: highest value
@@ -4811,9 +4896,13 @@ function ahsPillarEngagement(pe) {
     var views     = (pe.views || 0) * 0.2;     // Tier 4: baseline
     var weighted  = comments + shares + saves + reactions - negatives + views;
     var perPost   = weighted / pe.postCount;
-    // tanh-normalized: baseline ~30 weighted engagements/post = score 50
-    var score = 50 + 50 * Math.tanh((perPost - 30) / 30);
-    return Math.max(0, Math.min(100, Math.round(score)));
+    // Score relative to MGE's own running average for this platform
+    if (platformKey) {
+        var baseline = getBaseline(platformKey, 'engPerPost');
+        return scoreVsBaseline(perPost, baseline);
+    }
+    // Legacy fallback if no platform key (shouldn't happen post-refactor)
+    return scoreVsBaseline(perPost, 25);
 }
 function ahsPillarSentiment(comments) {
     if (!comments || comments.length === 0) return null;
@@ -4837,23 +4926,57 @@ function ahsPillarSentiment(comments) {
     const conf = Math.min(1, n / 15);
     return Math.round(avg * conf + 50 * (1 - conf));
 }
-function ahsPillarReach(aud) {
+function ahsPillarReach(aud, platformKey) {
     if (!aud || !aud.followers || !aud.reach) return null;
-    const ratio = aud.reach / aud.followers; // window reach / follower base
-    // Target: 30% reach = 75 score; 100% = 100
-    const score = 50 + 50 * Math.tanh((ratio - 0.3) / 0.3);
-    return Math.max(0, Math.min(100, Math.round(score)));
+    var ratio = aud.reach / aud.followers; // window reach / follower base
+    if (platformKey) {
+        var baseline = getBaseline(platformKey, 'reachRatio');
+        return scoreVsBaseline(ratio, baseline);
+    }
+    return scoreVsBaseline(ratio, 0.4);
 }
-// NEW: Attention pillar — measures depth of engagement via video views per follower.
-// A high score means audience is actually watching/lingering, not just scrolling past.
-// Tuned so 0.5 video views per follower (roughly 1 in 2 followers watches) = score 75,
-// 1.0 = ~90, 0 = 50 (neutral baseline when no video content posted).
-function ahsPillarAttention(views, followers) {
+// Attention pillar — depth signal via video views per follower.
+// Now scored relative to platform-specific running average so YT (high view norms)
+// isn't unfairly penalized vs LinkedIn (low view norms).
+function ahsPillarAttention(views, followers, platformKey) {
     if (!followers || followers === 0) return null;
     if (views == null) return null;
-    const ratio = views / followers;
-    const score = 50 + 50 * Math.tanh((ratio - 0.5) / 0.5);
-    return Math.max(0, Math.min(100, Math.round(score)));
+    var ratio = views / followers;
+    if (platformKey) {
+        var baseline = getBaseline(platformKey, 'attentionRatio');
+        return scoreVsBaseline(ratio, baseline);
+    }
+    return scoreVsBaseline(ratio, 0.5);
+}
+// Called once per main render with current-period data — updates running baselines.
+// Skipped during prior-period recomputation (would double-count and bias the average).
+function updateBaselinesFromData(data) {
+    if (!data || !data.platformEngagement) return;
+    var platforms = ['fb', 'ig', 'li', 'yt'];
+    platforms.forEach(function(k) {
+        var pe = data.platformEngagement[k] || {};
+        var aud = data.audience ? data.audience[k] : null;
+        // Engagement per post — only count windows with enough posts to be meaningful
+        if (pe.postCount && pe.postCount >= AHS_MIN_POSTS) {
+            var comments  = (pe.comments || 0) * 5;
+            var shares    = (pe.shares || 0) * 3;
+            var saves     = (pe.saves || 0) * 3;
+            var reactions = (pe.like || pe.likes || 0) + (pe.love || 0) + (pe.care || 0)
+                          + (pe.haha || 0) + (pe.wow || 0);
+            var negatives = (pe.sad || 0) + (pe.angry || 0) + (pe.dislikes || 0);
+            var views     = (pe.views || 0) * 0.2;
+            var perPost   = (comments + shares + saves + reactions - negatives + views) / pe.postCount;
+            updateBaseline(k, 'engPerPost', perPost);
+        }
+        // Reach ratio
+        if (aud && aud.followers && aud.reach) {
+            updateBaseline(k, 'reachRatio', aud.reach / aud.followers);
+        }
+        // Attention ratio
+        if (aud && aud.followers && pe.views) {
+            updateBaseline(k, 'attentionRatio', pe.views / aud.followers);
+        }
+    });
 }
 function ahsPillarGrowth(platformKey, followers) {
     const mom = getFollowerMoMChange(platformKey, followers);
@@ -5113,13 +5236,16 @@ function renderSentiment(data) {
             return;
         }
         const pillars = {
-            engagement: ahsPillarEngagement(pe),
+            engagement: ahsPillarEngagement(pe, k),
             sentiment:  ahsPillarSentiment(data.platformComments[k]),
-            reach:      ahsPillarReach(aud),
-            attention:  ahsPillarAttention(pe.views || 0, aud ? aud.followers : 0)
+            reach:      ahsPillarReach(aud, k),
+            attention:  ahsPillarAttention(pe.views || 0, aud ? aud.followers : 0, k)
         };
         perPlatform[k] = { pillars, score: ahsComposite(pillars), postCount: pe.postCount };
     });
+    // Update platform baselines with current-period values so future scoring becomes
+    // increasingly anchored on MGE's actual running averages (vs generic seed defaults).
+    updateBaselinesFromData(data);
 
     // Overall = reach-weighted composite of per-platform scores.
     // Weight by followers (reach proxy when no reach data); fall back to equal.
@@ -5246,10 +5372,10 @@ function renderSentiment(data) {
                         return;
                     }
                     const pillars = {
-                        engagement: ahsPillarEngagement(ppe),
+                        engagement: ahsPillarEngagement(ppe, k),
                         sentiment:  ahsPillarSentiment(previousPeriodData.platformComments[k]),
-                        reach:      ahsPillarReach(paud),
-                        attention:  ahsPillarAttention(ppe.views || 0, paud ? paud.followers : 0)
+                        reach:      ahsPillarReach(paud, k),
+                        attention:  ahsPillarAttention(ppe.views || 0, paud ? paud.followers : 0, k)
                     };
                     prevPlatformAhs[k] = ahsComposite(pillars);
                 });
