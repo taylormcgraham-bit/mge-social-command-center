@@ -1075,29 +1075,140 @@
         .plat-eng-row.neg-row .plat-eng-row-val { color: #DC2626; }
         .plat-eng-row.bold-row { font-weight: 600; color: #1B2559; border-bottom: 1px solid #F1F5F9; padding-bottom: 3px; margin-bottom: 1px; }
 
-        /* --- Content Type Mix --- */
-        .content-mix-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-        .cm-row {
+        /* --- Platform Performance (unified engagement + content mix per platform) --- */
+        .platform-performance {
             display: grid;
-            grid-template-columns: 28px 1fr auto;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 14px;
+        }
+        @media (max-width: 1100px) { .platform-performance { grid-template-columns: 1fr; } }
+        .pp-card {
+            border-radius: 16px;
+            padding: 18px;
+            border: 1px solid #E2E8F0;
+            display: flex; flex-direction: column; gap: 14px;
+            position: relative;
+            transition: box-shadow 0.2s ease;
+        }
+        .pp-card.fb { background: linear-gradient(180deg, #EBF5FF 0%, #F8FAFC 100%); border-color: #BFDBFE; }
+        .pp-card.ig { background: linear-gradient(180deg, #FDF2F8 0%, #F8FAFC 100%); border-color: #FBCFE8; }
+        .pp-card.li { background: linear-gradient(180deg, #EFF6FF 0%, #F8FAFC 100%); border-color: #BFDBFE; }
+        .pp-card.yt { background: linear-gradient(180deg, #FEF2F2 0%, #F8FAFC 100%); border-color: #FECACA; }
+        .pp-card-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+        }
+        .pp-platform { display: flex; align-items: center; gap: 10px; }
+        .pp-platform-icon {
+            width: 32px; height: 32px;
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; color: white; font-size: 14px;
+        }
+        .pp-card.fb .pp-platform-icon { background: linear-gradient(135deg, #1877F2, #4267B2); }
+        .pp-card.ig .pp-platform-icon { background: linear-gradient(135deg, #E1306C, #C13584, #833AB4); }
+        .pp-card.li .pp-platform-icon { background: linear-gradient(135deg, #0A66C2, #004182); }
+        .pp-card.yt .pp-platform-icon { background: linear-gradient(135deg, #FF0000, #CC0000); }
+        .pp-platform-name {
+            font-size: 16px; font-weight: 800; color: #1B2559; line-height: 1.1;
+        }
+        .pp-post-count {
+            font-size: 11px; color: #64748B; line-height: 1.3;
+        }
+        .pp-total {
+            text-align: right;
+        }
+        .pp-total-num {
+            font-size: 22px; font-weight: 800; color: #1B2559; line-height: 1;
+        }
+        .pp-total-label {
+            font-size: 9px; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;
+        }
+        .pp-section-title {
+            font-size: 10px; font-weight: 700; color: #64748B;
+            text-transform: uppercase; letter-spacing: 0.7px;
+            margin-bottom: 6px;
+        }
+        .pp-engagement-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 14px;
+        }
+        .pp-stat {
+            display: flex; align-items: center; justify-content: space-between;
+            font-size: 12px; color: #64748B;
+            padding: 3px 0;
+        }
+        .pp-stat-label { display: flex; align-items: center; gap: 5px; }
+        .pp-stat-icon { font-size: 12px; opacity: 0.85; }
+        .pp-stat-val { font-weight: 700; color: #1B2559; font-size: 12px; }
+        .pp-stat.neg .pp-stat-val { color: #DC2626; }
+        .pp-content-types {
+            display: flex; flex-direction: column; gap: 5px;
+        }
+        .pp-ct-row {
+            display: grid;
+            grid-template-columns: 22px 1fr auto;
             align-items: center;
             gap: 10px;
-            padding: 10px 12px;
-            background: #F8FAFC;
-            border-radius: 10px;
-            border: 1px solid #E2E8F0;
+            padding: 8px 11px;
+            background: white;
+            border-radius: 9px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-size: 12px;
+            user-select: none;
         }
-        .cm-row.zero { opacity: 0.55; }
-        .cm-row.has-note { border-left: 3px solid #F59E0B; padding-left: 9px; }
-        .cm-icon { font-size: 18px; line-height: 1; text-align: center; }
-        .cm-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-        .cm-label { font-size: 12px; font-weight: 700; color: #1B2559; line-height: 1.2; }
-        .cm-sub { font-size: 10px; color: #94A3B8; line-height: 1.3; font-style: italic; }
-        .cm-stats { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; flex-shrink: 0; }
-        .cm-count { font-size: 14px; font-weight: 800; color: #1B2559; line-height: 1.1; }
-        .cm-count-label { font-size: 9px; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; }
-        .cm-views { font-size: 11px; color: #6366F1; font-weight: 600; }
-        .cm-empty { color: #94A3B8; font-size: 12px; padding: 12px; text-align: center; grid-column: 1 / -1; }
+        .pp-ct-row:hover:not(.zero):not(.disabled) {
+            background: #FFF;
+            border-color: #6366F1;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(99,102,241,0.12);
+        }
+        .pp-ct-row.active {
+            background: #6366F1; color: white;
+            border-color: #4F46E5;
+            box-shadow: 0 4px 12px rgba(99,102,241,0.32);
+        }
+        .pp-ct-row.active .pp-ct-label,
+        .pp-ct-row.active .pp-ct-count,
+        .pp-ct-row.active .pp-ct-views { color: white; }
+        .pp-ct-row.zero { opacity: 0.5; cursor: default; background: rgba(0,0,0,0.02); }
+        .pp-ct-row.disabled { cursor: not-allowed; opacity: 0.55; }
+        .pp-ct-row.has-note { border-left: 3px solid #F59E0B; padding-left: 8px; }
+        .pp-ct-icon { font-size: 16px; line-height: 1; text-align: center; }
+        .pp-ct-label { font-weight: 600; color: #1B2559; line-height: 1.2; min-width: 0; }
+        .pp-ct-note { font-size: 10px; color: #94A3B8; font-style: italic; margin-top: 1px; line-height: 1.3; }
+        .pp-ct-stats { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        .pp-ct-count { font-weight: 800; font-size: 13px; color: #1B2559; }
+        .pp-ct-views { font-size: 10px; color: #6366F1; font-weight: 600; }
+
+        /* --- Posts filter banner (when content type filter active) --- */
+        .posts-filter-banner {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 14px;
+            margin-top: 12px; margin-bottom: 8px;
+            background: linear-gradient(90deg, #EEF2FF, #F8FAFC);
+            border-left: 3px solid #6366F1;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #1B2559;
+        }
+        .posts-filter-banner .pfb-label { font-weight: 700; }
+        .posts-filter-banner .pfb-clear {
+            margin-left: auto;
+            background: white; border: 1px solid #E2E8F0;
+            padding: 4px 10px; border-radius: 6px;
+            font-size: 11px; font-weight: 600; color: #6366F1;
+            cursor: pointer; font-family: inherit;
+            transition: all 0.15s;
+        }
+        .posts-filter-banner .pfb-clear:hover {
+            background: #6366F1; color: white; border-color: #6366F1;
+        }
 
         /* --- Our Posts horizontal feed --- */
         .posts-category-tabs {
@@ -2456,22 +2567,22 @@
             </div>
         </div>
 
-        <!-- Engagement by Platform -->
+        <!-- Platform Performance — engagement metrics + content type mix per platform.
+             Click any content type row to filter the Our Posts feed below. -->
         <div class="card" style="margin-bottom:24px;">
-            <div class="card-title">Engagement by Platform</div>
-            <div class="platform-engagement" id="platformEngagement"></div>
-        </div>
-
-        <!-- Content Type Mix — what kind of content is driving engagement -->
-        <div class="card" style="margin-bottom:24px;">
-            <div class="card-title">Content Type Mix <span style="font-weight:400; color:#94A3B8; font-size:11px; text-transform:none; letter-spacing:0;">in selected window</span></div>
-            <div class="content-mix-list" id="contentMixList"></div>
+            <div class="card-title">
+                Platform Performance
+                <span style="font-weight:400; color:#94A3B8; font-size:11px; text-transform:none; letter-spacing:0; margin-left:8px;">click any content type to filter posts below</span>
+            </div>
+            <div class="platform-performance" id="platformPerformance"></div>
         </div>
 
 
         <!-- Our Posts feed -->
         <div class="card" style="margin-bottom:24px;">
             <div class="card-title">Our Posts <span class="posts-count" id="postsCount"></span></div>
+            <!-- Active content-type filter banner (hidden when no filter active) -->
+            <div class="posts-filter-banner" id="postsFilterBanner" style="display:none;"></div>
             <div class="posts-category-tabs" id="postsCategoryTabs"></div>
             <div class="posts-feed-wrap">
                 <div class="posts-feed-section">
@@ -3143,18 +3254,25 @@ function processData(raw, dateRangeOverride) {
             // added_video / added_photos / shared_story / mobile_status_update / created_note / created_event ...
             const postVideoViews = (postIns.find(m => m.name === 'post_video_views')?.values?.[0]?.value) || 0;
             const statusType = (p.status_type || '').toLowerCase();
+            let fbContentType;
             if (statusType === 'added_video') {
                 result.contentMix.fb_video.count++;
                 result.contentMix.fb_video.views += postVideoViews;
+                fbContentType = 'fb_video';
             } else if (statusType === 'added_photos') {
                 result.contentMix.fb_photo.count++;
+                fbContentType = 'fb_photo';
             } else if (statusType === 'shared_story') {
                 // shared_story includes link shares, page mentions, etc. — closest to "Links" bucket
                 result.contentMix.fb_link.count++;
+                fbContentType = 'fb_link';
             } else {
                 // mobile_status_update, created_note, etc. — text/status updates
                 result.contentMix.fb_status.count++;
+                fbContentType = 'fb_status';
             }
+            // Stash on the post object — used by content-type filter on Posts feed
+            p._contentType = fbContentType;
             // Extract typed reactions from aliased Graph API fields
             const rLike  = p.reactions_like?.summary?.total_count  || 0;
             const rLove  = p.reactions_love?.summary?.total_count  || 0;
@@ -3184,6 +3302,7 @@ function processData(raw, dateRangeOverride) {
             result.postEngagement.push({ platform: 'Facebook', label: (p.message || 'Post').substring(0, 30), value: reactions + comments + shares });
             result.allPosts.push({
                 platform: 'fb',
+                contentType: fbContentType,
                 text: p.message || '',
                 image: p.full_picture || '',
                 date: p.created_time || '',
@@ -3191,7 +3310,7 @@ function processData(raw, dateRangeOverride) {
                 reactions: reactions,
                 comments: comments,
                 shares: shares,
-                views: 0,
+                views: postVideoViews,
                 totalEngagement: reactions + comments + shares
             });
         });
@@ -3259,8 +3378,16 @@ function processData(raw, dateRangeOverride) {
             result.reactionSentiment.ig += likes * 1;
             result.reactionSentiment.count += likes;
             result.postEngagement.push({ platform: 'Instagram', label: (m.caption || 'Post').substring(0, 30), value: likes + comments });
+            // Categorize content type for the post (used by content-type filter on Posts feed)
+            const igMt  = (m.media_type || '').toUpperCase();
+            const igMpt = (m.media_product_type || '').toUpperCase();
+            let igContentType = 'ig_image';
+            if (igMpt === 'REELS' || igMt === 'REELS') igContentType = 'ig_reel';
+            else if (igMt === 'VIDEO') igContentType = 'ig_video';
+            else if (igMt === 'CAROUSEL_ALBUM') igContentType = 'ig_carousel';
             result.allPosts.push({
                 platform: 'ig',
+                contentType: igContentType,
                 text: m.caption || '',
                 image: m.media_url || m.thumbnail_url || '',
                 date: m.timestamp || '',
@@ -3325,6 +3452,7 @@ function processData(raw, dateRangeOverride) {
             result.postEngagement.push({ platform: 'LinkedIn', label: txt.substring(0, 30), value: likes + comments + shares });
             result.allPosts.push({
                 platform: 'li',
+                contentType: 'li_post',
                 text: txt,
                 image: '',
                 date: p.created?.time ? new Date(p.created.time).toISOString() : (p.publishedAt || ''),
@@ -3391,6 +3519,7 @@ function processData(raw, dateRangeOverride) {
             result.postEngagement.push({ platform: 'YouTube', label: title.substring(0, 30), value: likes + comments });
             result.allPosts.push({
                 platform: 'yt',
+                contentType: 'yt_video',
                 text: title,
                 image: v.snippet?.thumbnails?.high?.url || v.snippet?.thumbnails?.medium?.url || '',
                 date: v.snippet?.publishedAt || '',
@@ -3934,43 +4063,196 @@ function renderKPIs(data) {
                 + '</div>';
         }).join('');
     }
-    renderPlatformEngagement(data);
-    renderContentMix(data);
+    renderPlatformPerformance(data);
 }
 
-// Renders the Content Type Mix section — counts of posts per content type, with views where applicable.
-// Order is curated: Reels first (most strategic for reach right now), then video formats, then static, then Stories/LI placeholders.
-function renderContentMix(data) {
-    const container = document.getElementById('contentMixList');
+// Active content-type filter state — null = no filter, otherwise key like 'ig_reel'
+var _activeContentTypeFilter = null;
+
+// Renders the unified Platform Performance section — engagement + content type per platform.
+// Each content-type row is a button; clicking filters the Our Posts feed below.
+function renderPlatformPerformance(data) {
+    const container = document.getElementById('platformPerformance');
     if (!container) return;
+    const pe = data.platformEngagement;
     const mix = data.contentMix || {};
-    // Display order — most strategic content types first, placeholders last
-    const order = ['ig_reel', 'fb_video', 'yt_video', 'ig_video', 'ig_carousel', 'ig_image', 'fb_photo', 'fb_link', 'fb_status', 'li_post', 'ig_story'];
-    const rows = order.map(key => {
-        const item = mix[key];
-        if (!item) return '';
-        const isZero = !item.count;
-        const hasNote = !!item.note;
-        const cls = 'cm-row' + (isZero ? ' zero' : '') + (hasNote ? ' has-note' : '');
-        const viewsHtml = (item.views !== null && item.views !== undefined && item.views > 0)
-            ? '<div class="cm-views">' + fmt(item.views) + ' views</div>'
-            : '';
-        const noteHtml = hasNote ? '<div class="cm-sub">' + escapeHtml(item.note) + '</div>' : '';
-        return '<div class="' + cls + '">' +
-                 '<div class="cm-icon">' + (item.icon || '•') + '</div>' +
-                 '<div class="cm-meta">' +
-                   '<div class="cm-label">' + escapeHtml(item.label) + '</div>' +
-                   noteHtml +
+
+    const platforms = [
+        {
+            key: 'fb', name: 'Facebook', icon: 'f', cls: 'fb',
+            mixKeys: ['fb_video', 'fb_photo', 'fb_link', 'fb_status'],
+            engagement: function(d) {
+                const reactions = d.like + d.love + d.wow + d.haha + d.sad + d.angry + d.care;
+                return [
+                    { label: 'Reactions', val: reactions, ic: '❤️' },
+                    { label: 'Comments', val: d.comments, ic: '💬' },
+                    { label: 'Shares', val: d.shares, ic: '↻' },
+                    { label: 'Video Views', val: d.views, ic: '▶️' }
+                ];
+            }
+        },
+        {
+            key: 'ig', name: 'Instagram', icon: 'IG', cls: 'ig',
+            mixKeys: ['ig_reel', 'ig_video', 'ig_carousel', 'ig_image', 'ig_story'],
+            engagement: function(d) {
+                return [
+                    { label: 'Likes', val: d.likes, ic: '❤️' },
+                    { label: 'Comments', val: d.comments, ic: '💬' },
+                    { label: 'Saves', val: d.saves, ic: '🔖' },
+                    { label: 'Reel Views', val: d.views, ic: '▶️' }
+                ];
+            }
+        },
+        {
+            key: 'li', name: 'LinkedIn', icon: 'in', cls: 'li',
+            mixKeys: ['li_post'],
+            engagement: function(d) {
+                return [
+                    { label: 'Likes', val: d.likes, ic: '👍' },
+                    { label: 'Comments', val: d.comments, ic: '💬' },
+                    { label: 'Shares', val: d.shares, ic: '↻' }
+                ];
+            }
+        },
+        {
+            key: 'yt', name: 'YouTube', icon: '▶', cls: 'yt',
+            mixKeys: ['yt_video'],
+            engagement: function(d) {
+                const rows = [
+                    { label: 'Likes', val: d.likes, ic: '👍' },
+                    { label: 'Comments', val: d.comments, ic: '💬' },
+                    { label: 'Views', val: d.views, ic: '▶️' }
+                ];
+                if (d.dislikes > 0) rows.push({ label: 'Dislikes', val: d.dislikes, ic: '👎', neg: true });
+                return rows;
+            }
+        }
+    ];
+
+    container.innerHTML = platforms.map(function(p) {
+        const peData = pe[p.key] || {};
+        const stats = p.engagement(peData);
+        const totalEngagement = stats.reduce(function(sum, s) {
+            return s.label === 'Video Views' || s.label === 'Reel Views' || s.label === 'Views' ? sum : sum + (s.val || 0);
+        }, 0);
+        const postCount = peData.postCount || 0;
+
+        const statsHtml = stats.map(function(s) {
+            return '<div class="pp-stat' + (s.neg ? ' neg' : '') + '">' +
+                     '<span class="pp-stat-label"><span class="pp-stat-icon">' + s.ic + '</span>' + s.label + '</span>' +
+                     '<span class="pp-stat-val">' + fmt(s.val || 0) + '</span>' +
+                   '</div>';
+        }).join('');
+
+        const ctHtml = p.mixKeys.map(function(mk) {
+            const item = mix[mk];
+            if (!item) return '';
+            const isZero = !item.count;
+            const hasNote = !!item.note;
+            const isActive = _activeContentTypeFilter === mk;
+            const cls = 'pp-ct-row' + (isZero ? ' zero' : '') + (hasNote ? ' has-note' : '') + (isActive ? ' active' : '');
+            const viewsHtml = (item.views && item.views > 0)
+                ? '<span class="pp-ct-views">' + fmt(item.views) + ' views</span>'
+                : '';
+            const noteHtml = hasNote ? '<div class="pp-ct-note">' + escapeHtml(item.note) + '</div>' : '';
+            // Disable click for zero-count rows (can't filter to nothing)
+            const clickAttr = isZero
+                ? ''
+                : ' onclick="setContentTypeFilter(\'' + mk + '\')" role="button" tabindex="0"';
+            return '<div class="' + cls + '" data-content-type="' + mk + '"' + clickAttr + '>' +
+                     '<div class="pp-ct-icon">' + (item.icon || '•') + '</div>' +
+                     '<div>' +
+                       '<div class="pp-ct-label">' + escapeHtml(item.label.replace(/^(Instagram|Facebook|YouTube|LinkedIn) /, '')) + '</div>' +
+                       noteHtml +
+                     '</div>' +
+                     '<div class="pp-ct-stats">' +
+                       viewsHtml +
+                       '<span class="pp-ct-count">' + (item.count || 0) + '</span>' +
+                     '</div>' +
+                   '</div>';
+        }).join('');
+
+        return '<div class="pp-card ' + p.cls + '" data-platform="' + p.key + '">' +
+                 '<div class="pp-card-header">' +
+                   '<div class="pp-platform">' +
+                     '<div class="pp-platform-icon">' + p.icon + '</div>' +
+                     '<div>' +
+                       '<div class="pp-platform-name">' + p.name + '</div>' +
+                       '<div class="pp-post-count">' + postCount + (postCount === 1 ? ' post' : ' posts') + ' this window</div>' +
+                     '</div>' +
+                   '</div>' +
+                   '<div class="pp-total">' +
+                     '<div class="pp-total-num">' + fmt(totalEngagement) + '</div>' +
+                     '<div class="pp-total-label">total engagement</div>' +
+                   '</div>' +
                  '</div>' +
-                 '<div class="cm-stats">' +
-                   '<div class="cm-count">' + (item.count || 0) + '</div>' +
-                   '<div class="cm-count-label">' + ((item.count === 1) ? 'post' : 'posts') + '</div>' +
-                   viewsHtml +
+                 '<div>' +
+                   '<div class="pp-section-title">Engagement</div>' +
+                   '<div class="pp-engagement-grid">' + statsHtml + '</div>' +
+                 '</div>' +
+                 '<div>' +
+                   '<div class="pp-section-title">Content Types</div>' +
+                   '<div class="pp-content-types">' + ctHtml + '</div>' +
                  '</div>' +
                '</div>';
     }).join('');
-    container.innerHTML = rows || '<div class="cm-empty">No posts in this window.</div>';
 }
+
+// Toggle the content-type filter and re-render Platform Performance + Posts feed.
+function setContentTypeFilter(typeKey) {
+    if (_activeContentTypeFilter === typeKey) {
+        _activeContentTypeFilter = null; // toggle off
+    } else {
+        _activeContentTypeFilter = typeKey;
+    }
+    // Re-render Platform Performance to update active state on chips
+    if (window._lastProcessedData) renderPlatformPerformance(window._lastProcessedData);
+    // Re-render posts feed with new filter
+    applyPostsFilters();
+    updateFilterBanner();
+}
+window.setContentTypeFilter = setContentTypeFilter;
+
+function clearContentTypeFilter() {
+    _activeContentTypeFilter = null;
+    if (window._lastProcessedData) renderPlatformPerformance(window._lastProcessedData);
+    applyPostsFilters();
+    updateFilterBanner();
+}
+window.clearContentTypeFilter = clearContentTypeFilter;
+
+function updateFilterBanner() {
+    const banner = document.getElementById('postsFilterBanner');
+    if (!banner) return;
+    if (!_activeContentTypeFilter) {
+        banner.style.display = 'none';
+        return;
+    }
+    const mix = (window._lastProcessedData && window._lastProcessedData.contentMix) || {};
+    const item = mix[_activeContentTypeFilter] || {};
+    banner.style.display = 'flex';
+    banner.innerHTML = '<span style="font-size:14px;">' + (item.icon || '🎯') + '</span>' +
+                       '<span>Filtering by <span class="pfb-label">' + escapeHtml(item.label || _activeContentTypeFilter) + '</span></span>' +
+                       '<button class="pfb-clear" onclick="clearContentTypeFilter()">✕ Clear filter</button>';
+}
+
+// Applies BOTH theme filter (existing posts category tabs) AND content-type filter (new) to the posts feed.
+function applyPostsFilters() {
+    if (!_allPostsCached || !_allPostsCached.length) return;
+    let filtered = _allPostsCached;
+    if (_activePostCategory && _activePostCategory !== 'all') {
+        filtered = filtered.filter(function(p) {
+            return (p._theme || classifyPostTheme(p.text)) === _activePostCategory;
+        });
+    }
+    if (_activeContentTypeFilter) {
+        filtered = filtered.filter(function(p) { return p.contentType === _activeContentTypeFilter; });
+    }
+    renderPostCards(filtered, _allPostsCached.length);
+    const wrap = document.getElementById('postsWrap');
+    if (wrap) wrap.scrollLeft = 0;
+}
+window.applyPostsFilters = applyPostsFilters;
 
 function renderPlatformEngagement(data) {
     const pe = data.platformEngagement;
@@ -4882,12 +5164,8 @@ function renderPostsCategoryTabs(allPosts) {
             tabsEl.querySelectorAll('.posts-cat-btn').forEach(function(b) { b.classList.remove('active'); });
             btn.classList.add('active');
             _activePostCategory = btn.getAttribute('data-cat');
-            var filtered = _activePostCategory === 'all'
-                ? _allPostsCached
-                : _allPostsCached.filter(function(p) { return (p._theme || classifyPostTheme(p.text)) === _activePostCategory; });
-            renderPostCards(filtered, _allPostsCached.length);
-            var wrap = document.getElementById('postsWrap');
-            if (wrap) wrap.scrollLeft = 0;
+            // Use unified filter so theme + content-type filters compose
+            applyPostsFilters();
         };
     });
 }
