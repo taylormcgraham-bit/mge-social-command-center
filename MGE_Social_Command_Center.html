@@ -879,6 +879,47 @@
         /* 2x2 grid: Reach / Interactions on top row, Comments / Video Views below.
            Bigger cards, more breathing room than the 4-across layout. */
         .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        /* Pillar variant — adds a tag at top, weight badge, and pillar-score row at bottom */
+        .pillar-card { display: flex; flex-direction: column; gap: 6px; padding-top: 12px; }
+        .pillar-tag {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 10px; font-weight: 700; color: #6366F1;
+            text-transform: uppercase; letter-spacing: 0.6px;
+            padding-bottom: 4px;
+        }
+        .pillar-icon { font-size: 13px; }
+        .pillar-weight {
+            margin-left: auto;
+            font-size: 9px; font-weight: 700; color: #94A3B8;
+            background: #F1F5F9; padding: 2px 6px; border-radius: 10px;
+            letter-spacing: 0.4px;
+        }
+        .pillar-score-row {
+            display: flex; align-items: center; gap: 6px;
+            margin-top: 4px; padding-top: 6px;
+            border-top: 1px dashed #E2E8F0;
+        }
+        .pillar-score-label {
+            font-size: 9px; color: #94A3B8;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        .pillar-score-bar {
+            flex: 1; height: 6px;
+            background: #E2E8F0; border-radius: 3px;
+            overflow: hidden;
+        }
+        .pillar-score-fill {
+            display: block; height: 100%;
+            background: linear-gradient(90deg, #DC2626 0%, #F59E0B 45%, #84CC16 65%, #16A34A 100%);
+            border-radius: 3px;
+            transition: width 0.6s ease-out;
+        }
+        .pillar-score-num {
+            font-size: 13px; font-weight: 800; color: #1B2559;
+            min-width: 26px; text-align: right;
+        }
         .kpi-card {
             background: #F8FAFC; border-radius: 12px; padding: 16px; text-align: center;
             border: 1px solid transparent; cursor: pointer;
@@ -1079,22 +1120,47 @@
         .platform-performance {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 16px;
+            gap: 18px;
             margin-top: 14px;
         }
         @media (max-width: 1100px) { .platform-performance { grid-template-columns: 1fr; } }
         .pp-card {
-            border-radius: 16px;
-            padding: 18px;
+            border-radius: 18px;
+            padding: 20px;
             border: 1px solid #E2E8F0;
-            display: flex; flex-direction: column; gap: 14px;
+            display: flex; flex-direction: column; gap: 16px;
             position: relative;
-            transition: box-shadow 0.2s ease;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            overflow: hidden;
         }
-        .pp-card.fb { background: linear-gradient(180deg, #EBF5FF 0%, #F8FAFC 100%); border-color: #BFDBFE; }
-        .pp-card.ig { background: linear-gradient(180deg, #FDF2F8 0%, #F8FAFC 100%); border-color: #FBCFE8; }
-        .pp-card.li { background: linear-gradient(180deg, #EFF6FF 0%, #F8FAFC 100%); border-color: #BFDBFE; }
-        .pp-card.yt { background: linear-gradient(180deg, #FEF2F2 0%, #F8FAFC 100%); border-color: #FECACA; }
+        /* Decorative top-edge accent stripe per platform */
+        .pp-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+            border-radius: 18px 18px 0 0;
+        }
+        .pp-card.fb { background: linear-gradient(180deg, #DBEAFE 0%, #F8FAFC 60%); border-color: #93C5FD; box-shadow: 0 4px 12px rgba(24,119,242,0.06); }
+        .pp-card.fb::before { background: linear-gradient(90deg, #1877F2, #4267B2); }
+        .pp-card.ig { background: linear-gradient(180deg, #FCE7F3 0%, #F8FAFC 60%); border-color: #F9A8D4; box-shadow: 0 4px 12px rgba(225,48,108,0.06); }
+        .pp-card.ig::before { background: linear-gradient(90deg, #FFDC80, #FCAF45, #F77737, #F56040, #FD1D1D, #E1306C, #C13584, #833AB4, #5851DB, #405DE6); }
+        .pp-card.li { background: linear-gradient(180deg, #DBEAFE 0%, #F8FAFC 60%); border-color: #60A5FA; box-shadow: 0 4px 12px rgba(10,102,194,0.06); }
+        .pp-card.li::before { background: linear-gradient(90deg, #0A66C2, #004182); }
+        .pp-card.yt { background: linear-gradient(180deg, #FEE2E2 0%, #F8FAFC 60%); border-color: #FCA5A5; box-shadow: 0 4px 12px rgba(255,0,0,0.06); }
+        .pp-card.yt::before { background: linear-gradient(90deg, #FF0000, #CC0000); }
+        /* Hover lift */
+        .pp-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(15,23,42,0.10); }
+        /* Top-performer crown badge — added by JS to the card with highest total engagement */
+        .pp-top-badge {
+            position: absolute; top: 12px; right: 14px;
+            display: flex; align-items: center; gap: 4px;
+            padding: 4px 9px;
+            background: linear-gradient(90deg, #FBBF24, #F59E0B);
+            color: white; font-size: 9px; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 0.6px;
+            border-radius: 12px;
+            box-shadow: 0 2px 6px rgba(245,158,11,0.4);
+            z-index: 2;
+        }
+        .pp-top-badge::before { content: '★'; font-size: 11px; }
         .pp-card-header {
             display: flex; align-items: center; justify-content: space-between;
             padding-bottom: 12px;
@@ -2534,29 +2600,56 @@
     <!-- RIGHT COLUMN: KPIs + Charts -->
     <div class="right-col">
 
-        <!-- Engagement KPIs -->
+        <!-- Audience Health Pillars — the four metrics that compose the Audience Health Score -->
         <div class="card" style="margin-bottom:24px;">
-            <div class="card-title">Engagement Overview</div>
+            <div class="card-title">
+                Audience Health Pillars
+                <span style="font-weight:400; color:#94A3B8; font-size:11px; text-transform:none; letter-spacing:0; margin-left:8px;">the four metrics powering your AHS</span>
+            </div>
             <div class="kpi-grid">
-                <button type="button" class="kpi-card" data-kpi="reach" onclick="toggleKpiBreakdown(this)" aria-expanded="false">
+                <button type="button" class="kpi-card pillar-card" data-kpi="reach" data-pillar="reach" onclick="toggleKpiBreakdown(this)" aria-expanded="false">
+                    <div class="pillar-tag"><span class="pillar-icon">📡</span>Reach <span class="pillar-weight">5%</span></div>
                     <div class="kpi-value" id="kpiReach">0</div>
-                    <div class="kpi-label">Total Reach <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
+                    <div class="kpi-label">Audience reached <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
                     <div class="kpi-change" id="kpiReachChange"></div>
+                    <div class="pillar-score-row">
+                        <span class="pillar-score-label">Pillar score</span>
+                        <span class="pillar-score-bar"><span class="pillar-score-fill" id="pillarFillReach" style="width:0%"></span></span>
+                        <span class="pillar-score-num" id="pillarScoreReach">--</span>
+                    </div>
                 </button>
-                <button type="button" class="kpi-card" data-kpi="interactions" onclick="toggleKpiBreakdown(this)" aria-expanded="false">
+                <button type="button" class="kpi-card pillar-card" data-kpi="interactions" data-pillar="engagement" onclick="toggleKpiBreakdown(this)" aria-expanded="false">
+                    <div class="pillar-tag"><span class="pillar-icon">💪</span>Engagement <span class="pillar-weight">40%</span></div>
                     <div class="kpi-value" id="kpiInteractions">0</div>
-                    <div class="kpi-label">Total Interactions <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
+                    <div class="kpi-label">Total interactions <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
                     <div class="kpi-change" id="kpiInteractionsChange"></div>
+                    <div class="pillar-score-row">
+                        <span class="pillar-score-label">Pillar score</span>
+                        <span class="pillar-score-bar"><span class="pillar-score-fill" id="pillarFillEngagement" style="width:0%"></span></span>
+                        <span class="pillar-score-num" id="pillarScoreEngagement">--</span>
+                    </div>
                 </button>
-                <button type="button" class="kpi-card" data-kpi="comments" onclick="toggleKpiBreakdown(this)" aria-expanded="false">
+                <button type="button" class="kpi-card pillar-card" data-kpi="comments" data-pillar="sentiment" onclick="toggleKpiBreakdown(this)" aria-expanded="false">
+                    <div class="pillar-tag"><span class="pillar-icon">🧠</span>Sentiment <span class="pillar-weight">40%</span></div>
                     <div class="kpi-value" id="kpiComments">0</div>
-                    <div class="kpi-label">Total Comments <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
+                    <div class="kpi-label">Comments analyzed <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
                     <div class="kpi-change" id="kpiCommentsChange"></div>
+                    <div class="pillar-score-row">
+                        <span class="pillar-score-label">Pillar score</span>
+                        <span class="pillar-score-bar"><span class="pillar-score-fill" id="pillarFillSentiment" style="width:0%"></span></span>
+                        <span class="pillar-score-num" id="pillarScoreSentiment">--</span>
+                    </div>
                 </button>
-                <button type="button" class="kpi-card" data-kpi="views" onclick="toggleKpiBreakdown(this)" aria-expanded="false">
+                <button type="button" class="kpi-card pillar-card" data-kpi="views" data-pillar="attention" onclick="toggleKpiBreakdown(this)" aria-expanded="false">
+                    <div class="pillar-tag"><span class="pillar-icon">👁️</span>Attention <span class="pillar-weight">15%</span></div>
                     <div class="kpi-value" id="kpiViews">0</div>
-                    <div class="kpi-label">Total Video Views <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
+                    <div class="kpi-label">Video views <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
                     <div class="kpi-change" id="kpiViewsChange"></div>
+                    <div class="pillar-score-row">
+                        <span class="pillar-score-label">Pillar score</span>
+                        <span class="pillar-score-bar"><span class="pillar-score-fill" id="pillarFillAttention" style="width:0%"></span></span>
+                        <span class="pillar-score-num" id="pillarScoreAttention">--</span>
+                    </div>
                 </button>
             </div>
             <!-- Inline breakdown, shown when any KPI card is clicked -->
@@ -3853,7 +3946,7 @@ function renderKpiBreakdown(kpiKey) {
 // ISO-week buckets (v4). Old monthly data doesn't decompose cleanly to
 // weeks, so we start fresh; history rebuilds as the dashboard is used.
 // ============================================================
-var AHS_HISTORY_KEY = 'mge_ahs_history_v4';
+var AHS_HISTORY_KEY = 'mge_ahs_history_v5'; // bumped from v4 (2026-05-04): switched 2-pillar 50/50 → 4-pillar 40/40/5/15
 function getAhsHistory() {
     try {
         var raw = localStorage.getItem(AHS_HISTORY_KEY);
@@ -4129,13 +4222,24 @@ function renderPlatformPerformance(data) {
         }
     ];
 
+    // Pre-compute totals so we know which platform wins the Top Performer crown
+    const totals = {};
+    platforms.forEach(function(p) {
+        const peData = pe[p.key] || {};
+        const stats = p.engagement(peData);
+        totals[p.key] = stats.reduce(function(sum, s) {
+            return s.label === 'Video Views' || s.label === 'Reel Views' || s.label === 'Views' ? sum : sum + (s.val || 0);
+        }, 0);
+    });
+    let topKey = null, topVal = 0;
+    Object.keys(totals).forEach(function(k) { if (totals[k] > topVal) { topVal = totals[k]; topKey = k; } });
+
     container.innerHTML = platforms.map(function(p) {
         const peData = pe[p.key] || {};
         const stats = p.engagement(peData);
-        const totalEngagement = stats.reduce(function(sum, s) {
-            return s.label === 'Video Views' || s.label === 'Reel Views' || s.label === 'Views' ? sum : sum + (s.val || 0);
-        }, 0);
+        const totalEngagement = totals[p.key];
         const postCount = peData.postCount || 0;
+        const isTop = (p.key === topKey && topVal > 0);
 
         const statsHtml = stats.map(function(s) {
             return '<div class="pp-stat' + (s.neg ? ' neg' : '') + '">' +
@@ -4173,6 +4277,7 @@ function renderPlatformPerformance(data) {
         }).join('');
 
         return '<div class="pp-card ' + p.cls + '" data-platform="' + p.key + '">' +
+                 (isTop ? '<div class="pp-top-badge">Top Performer</div>' : '') +
                  '<div class="pp-card-header">' +
                    '<div class="pp-platform">' +
                      '<div class="pp-platform-icon">' + p.icon + '</div>' +
@@ -4389,26 +4494,44 @@ function ahsPillarSentiment(comments) {
 }
 function ahsPillarReach(aud) {
     if (!aud || !aud.followers || !aud.reach) return null;
-    const ratio = aud.reach / aud.followers; // monthly reach / follower base
+    const ratio = aud.reach / aud.followers; // window reach / follower base
     // Target: 30% reach = 75 score; 100% = 100
     const score = 50 + 50 * Math.tanh((ratio - 0.3) / 0.3);
-    return Math.max(0, Math.min(100, score));
+    return Math.max(0, Math.min(100, Math.round(score)));
+}
+// NEW: Attention pillar — measures depth of engagement via video views per follower.
+// A high score means audience is actually watching/lingering, not just scrolling past.
+// Tuned so 0.5 video views per follower (roughly 1 in 2 followers watches) = score 75,
+// 1.0 = ~90, 0 = 50 (neutral baseline when no video content posted).
+function ahsPillarAttention(views, followers) {
+    if (!followers || followers === 0) return null;
+    if (views == null) return null;
+    const ratio = views / followers;
+    const score = 50 + 50 * Math.tanh((ratio - 0.5) / 0.5);
+    return Math.max(0, Math.min(100, Math.round(score)));
 }
 function ahsPillarGrowth(platformKey, followers) {
     const mom = getFollowerMoMChange(platformKey, followers);
     if (mom.pct === null) return null;
     // 0% = 50, +3% = ~85, -3% = ~15
     const score = 50 + 50 * Math.tanh(mom.pct / 3);
-    return Math.max(0, Math.min(100, score));
+    return Math.max(0, Math.min(100, Math.round(score)));
 }
+// AHS composite — 4-pillar weighted score (totals 100% by construction).
+// Weights set 2026-05-04 for MGE utility-marketing context:
+//   Engagement 40%   — audience action volume drives the dashboard's primary purpose
+//   Sentiment  40%   — perception/trust matters disproportionately for utilities
+//   Reach       5%   — utility reach less strategic than engagement quality
+//   Attention  15%   — video depth signal weighted moderately (skewed by platform mix)
+// If a pillar is null (e.g., no posts in window for engagement), we redistribute its weight
+// across the remaining pillars proportionally so the score stays comparable.
+const AHS_WEIGHTS = { engagement: 40, sentiment: 40, reach: 5, attention: 15 };
 function ahsComposite(pillars) {
-    // 50/50 Engagement Quality + Comment Sentiment
-    const W = { engagement: 50, sentiment: 50 };
     let num = 0, den = 0;
-    Object.keys(W).forEach(k => {
+    Object.keys(AHS_WEIGHTS).forEach(k => {
         if (pillars[k] !== null && pillars[k] !== undefined) {
-            num += pillars[k] * W[k];
-            den += W[k];
+            num += pillars[k] * AHS_WEIGHTS[k];
+            den += AHS_WEIGHTS[k];
         }
     });
     if (!den) return null;
@@ -4638,14 +4761,17 @@ function renderSentiment(data) {
     const perPlatform = {};
     platformKeys.forEach(k => {
         const pe = data.platformEngagement[k];
+        const aud = data.audience ? data.audience[k] : null;
         // If platform has fewer than minimum posts, exclude entirely
         if (!pe || !pe.postCount || pe.postCount < AHS_MIN_POSTS) {
-            perPlatform[k] = { pillars: { engagement: null, sentiment: null }, score: null, postCount: pe ? pe.postCount : 0 };
+            perPlatform[k] = { pillars: { engagement: null, sentiment: null, reach: null, attention: null }, score: null, postCount: pe ? pe.postCount : 0 };
             return;
         }
         const pillars = {
             engagement: ahsPillarEngagement(pe),
-            sentiment:  ahsPillarSentiment(data.platformComments[k])
+            sentiment:  ahsPillarSentiment(data.platformComments[k]),
+            reach:      ahsPillarReach(aud),
+            attention:  ahsPillarAttention(pe.views || 0, aud ? aud.followers : 0)
         };
         perPlatform[k] = { pillars, score: ahsComposite(pillars), postCount: pe.postCount };
     });
@@ -4665,6 +4791,8 @@ function renderSentiment(data) {
             commentCount: commentCount,
             engagementScore: perPlatform[k].pillars.engagement,
             sentimentScore: perPlatform[k].pillars.sentiment,
+            reachScore: perPlatform[k].pillars.reach,
+            attentionScore: perPlatform[k].pillars.attention,
             compositeScore: s,
             followers: followers,
             included: s !== null
@@ -4706,21 +4834,42 @@ function renderSentiment(data) {
     const fillLen = (overall.score / 100) * arcTotal;
     arcFill.setAttribute('stroke-dasharray', fillLen + ' ' + arcTotal);
 
-    // Render pillar chips below gauge (weighted average across all active platforms)
+    // Render pillar chips below gauge (weighted average across all active platforms).
+    // Now 4 pillars: Engagement (40%) + Sentiment (40%) + Reach (5%) + Attention (15%).
+    const sums = { engagement: 0, sentiment: 0, reach: 0, attention: 0 };
+    const counts = { engagement: 0, sentiment: 0, reach: 0, attention: 0 };
+    platformKeys.forEach(k => {
+        const p = perPlatform[k].pillars;
+        ['engagement', 'sentiment', 'reach', 'attention'].forEach(pn => {
+            if (p[pn] !== null && p[pn] !== undefined) { sums[pn] += p[pn]; counts[pn]++; }
+        });
+    });
+    const pillarAvgs = {
+        engagement: counts.engagement ? Math.round(sums.engagement / counts.engagement) : null,
+        sentiment:  counts.sentiment ? Math.round(sums.sentiment / counts.sentiment) : null,
+        reach:      counts.reach ? Math.round(sums.reach / counts.reach) : null,
+        attention:  counts.attention ? Math.round(sums.attention / counts.attention) : null
+    };
+    // Stash on window for the KPI pillar score row to read
+    window.__pillarAvgs = pillarAvgs;
+    const fmtAvg = v => (v === null ? '--' : v);
     const pillarRow = document.getElementById('gaugePillarRow');
     if (pillarRow) {
-        let engSum = 0, engCount = 0, sentSum = 0, sentCount = 0;
-        platformKeys.forEach(k => {
-            const p = perPlatform[k].pillars;
-            if (p.engagement !== null && p.engagement !== undefined) { engSum += p.engagement; engCount++; }
-            if (p.sentiment !== null && p.sentiment !== undefined) { sentSum += p.sentiment; sentCount++; }
-        });
-        const avgEng = engCount ? Math.round(engSum / engCount) : '--';
-        const avgSent = sentCount ? Math.round(sentSum / sentCount) : '--';
         pillarRow.innerHTML =
-            '<span class="gauge-pillar-chip">Engagement (50%) <span class="chip-val">' + avgEng + '</span></span>' +
-            '<span class="gauge-pillar-chip">Sentiment (50%) <span class="chip-val">' + avgSent + '</span></span>';
+            '<span class="gauge-pillar-chip">Engagement (40%) <span class="chip-val">' + fmtAvg(pillarAvgs.engagement) + '</span></span>' +
+            '<span class="gauge-pillar-chip">Sentiment (40%) <span class="chip-val">' + fmtAvg(pillarAvgs.sentiment) + '</span></span>' +
+            '<span class="gauge-pillar-chip">Reach (5%) <span class="chip-val">' + fmtAvg(pillarAvgs.reach) + '</span></span>' +
+            '<span class="gauge-pillar-chip">Attention (15%) <span class="chip-val">' + fmtAvg(pillarAvgs.attention) + '</span></span>';
     }
+    // Update pillar-score bars on the four KPI cards (Reach / Engagement / Sentiment / Attention)
+    ['Reach', 'Engagement', 'Sentiment', 'Attention'].forEach(name => {
+        const key = name.toLowerCase();
+        const score = pillarAvgs[key];
+        const numEl = document.getElementById('pillarScore' + name);
+        const fillEl = document.getElementById('pillarFill' + name);
+        if (numEl) numEl.textContent = (score === null ? '--' : score);
+        if (fillEl) fillEl.style.width = (score === null ? 0 : score) + '%';
+    });
 
     // Render distribution bar & counts in gauge section
     let pos = 0, neu = 0, neg = 0;
