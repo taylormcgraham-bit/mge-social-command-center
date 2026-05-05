@@ -697,43 +697,86 @@
             display: flex; justify-content: center; gap: 24px;
             margin-top: 16px; padding-top: 14px; border-top: 1px solid #F1F5F9;
         }
-        .sent-dist-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748B; }
-        .sent-dist-dot { width: 10px; height: 10px; border-radius: 50%; }
-        .sent-dist-dot.pos { background: #22C55E; }
-        .sent-dist-dot.neu { background: #EAB308; }
-        .sent-dist-dot.neg { background: #EF4444; }
-        .sent-dist-val { font-weight: 700; color: #1B2559; }
-
-        /* Sentiment bar in gauge section */
-        .gauge-bar-wrap { margin-top: 14px; }
-        .gauge-bar {
-            display: flex; height: 8px; border-radius: 4px; overflow: hidden;
-            width: 100%; background: #F1F5F9;
+        /* Sentiment distribution — 3 colored blocks, big percentages, count beneath */
+        .sentiment-dist-row {
+            display: grid; grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px; margin-top: 12px;
         }
-        .gauge-bar .seg-pos { background: #22C55E; transition: width 0.5s; }
-        .gauge-bar .seg-neu { background: #EAB308; transition: width 0.5s; }
-        .gauge-bar .seg-neg { background: #EF4444; transition: width 0.5s; }
+        .sent-dist-item {
+            display: flex; flex-direction: column; align-items: center;
+            padding: 10px 6px; border-radius: 10px;
+            text-align: center;
+            border: 1px solid transparent;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .sent-dist-item:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(15,23,42,0.06); }
+        .sent-dist-item.pos { background: linear-gradient(180deg, #DCFCE7 0%, #F0FDF4 100%); border-color: #BBF7D0; }
+        .sent-dist-item.neu { background: linear-gradient(180deg, #FEF9C3 0%, #FEFCE8 100%); border-color: #FDE68A; }
+        .sent-dist-item.neg { background: linear-gradient(180deg, #FEE2E2 0%, #FEF2F2 100%); border-color: #FECACA; }
+        .sent-dist-pct { font-size: 22px; font-weight: 800; line-height: 1; }
+        .sent-dist-item.pos .sent-dist-pct { color: #15803D; }
+        .sent-dist-item.neu .sent-dist-pct { color: #A16207; }
+        .sent-dist-item.neg .sent-dist-pct { color: #B91C1C; }
+        .sent-dist-label {
+            font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px;
+            margin-top: 4px;
+        }
+        .sent-dist-item.pos .sent-dist-label { color: #15803D; }
+        .sent-dist-item.neu .sent-dist-label { color: #A16207; }
+        .sent-dist-item.neg .sent-dist-label { color: #B91C1C; }
+        .sent-dist-count { font-size: 10px; color: #64748B; margin-top: 2px; }
+        /* Hide the legacy skinny bar (we keep the markup for backward-compat but visually retire it) */
+        .gauge-bar-wrap { display: none !important; }
 
-        /* Per-channel sentiment */
+        /* Per-platform AHS — mini circular score gauges */
         .platform-sentiments {
             display: grid; grid-template-columns: repeat(4, 1fr);
-            gap: 10px; margin-top: 18px;
+            gap: 10px; margin-top: 14px;
         }
         .plat-sent {
-            text-align: center; padding: 12px 8px;
-            border-radius: 10px; background: #F8FAFC;
+            display: flex; flex-direction: column; align-items: center;
+            padding: 12px 6px;
+            border-radius: 12px;
+            background: linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%);
+            border: 1px solid #E2E8F0;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            position: relative;
         }
-        .plat-sent-name { font-size: 11px; font-weight: 600; color: #64748B; margin-bottom: 6px; }
-        .plat-sent-score { font-size: 22px; font-weight: 700; }
-        .plat-sent-score.positive { color: #16A34A; }
-        .plat-sent-score.neutral  { color: #CA8A04; }
-        .plat-sent-score.negative { color: #DC2626; }
-        .plat-sent-pct { font-size: 10px; color: #94A3B8; margin-top: 1px; }
-        .plat-sent-bar {
-            height: 4px; border-radius: 2px; background: #E2E8F0;
-            margin-top: 6px; overflow: hidden;
+        .plat-sent:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(15,23,42,0.08); }
+        .plat-sent.fb { border-top: 3px solid #1877F2; }
+        .plat-sent.ig { border-top: 3px solid #E1306C; }
+        .plat-sent.li { border-top: 3px solid #0A66C2; }
+        .plat-sent.yt { border-top: 3px solid #FF0000; }
+        .plat-sent-name { font-size: 11px; font-weight: 700; color: #1B2559; margin-bottom: 8px; }
+        .plat-sent-gauge { position: relative; width: 64px; height: 64px; }
+        .plat-sent-gauge svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .plat-sent-gauge .gauge-track { fill: none; stroke: #E2E8F0; stroke-width: 6; }
+        .plat-sent-gauge .gauge-fill {
+            fill: none; stroke-width: 6; stroke-linecap: round;
+            transition: stroke-dasharray 0.8s ease, stroke 0.3s;
         }
-        .plat-sent-bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
+        .plat-sent-gauge.score-strong .gauge-fill  { stroke: #16A34A; }
+        .plat-sent-gauge.score-good    .gauge-fill { stroke: #84CC16; }
+        .plat-sent-gauge.score-fair    .gauge-fill { stroke: #EAB308; }
+        .plat-sent-gauge.score-weak    .gauge-fill { stroke: #F97316; }
+        .plat-sent-gauge.score-poor    .gauge-fill { stroke: #DC2626; }
+        .plat-sent-gauge.score-unknown .gauge-fill { stroke: #CBD5E1; }
+        .plat-sent-gauge-num {
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; font-weight: 800; color: #1B2559;
+        }
+        .plat-sent-tier {
+            font-size: 10px; font-weight: 700; margin-top: 6px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .plat-sent-tier.tier-strong  { color: #15803D; }
+        .plat-sent-tier.tier-good    { color: #4D7C0F; }
+        .plat-sent-tier.tier-fair    { color: #A16207; }
+        .plat-sent-tier.tier-weak    { color: #C2410C; }
+        .plat-sent-tier.tier-poor    { color: #B91C1C; }
+        .plat-sent-tier.tier-none    { color: #94A3B8; font-weight: 500; font-style: italic; text-transform: none; letter-spacing: 0; }
+        .plat-sent-meta { font-size: 9px; color: #94A3B8; margin-top: 1px; }
 
         /* --- Comment Controls --- */
         .comment-controls {
@@ -1361,12 +1404,26 @@
             flex: 0 0 240px;
             scroll-snap-align: start;
             background: white;
-            border-radius: 12px;
+            border-radius: 14px;
             border: 1px solid #E2E8F0;
             overflow: hidden;
-            transition: box-shadow 0.15s;
+            position: relative;
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
         }
-        .post-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        /* Decorative top-edge accent stripe per platform — mirrors the Platform Performance card style */
+        .post-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            border-radius: 14px 14px 0 0; z-index: 1;
+        }
+        .post-card.fb { background: linear-gradient(180deg, #DBEAFE 0%, #FFFFFF 35%); border-color: #BFDBFE; box-shadow: 0 2px 8px rgba(24,119,242,0.06); }
+        .post-card.fb::before { background: linear-gradient(90deg, #1877F2, #4267B2); }
+        .post-card.ig { background: linear-gradient(180deg, #FCE7F3 0%, #FFFFFF 35%); border-color: #F9A8D4; box-shadow: 0 2px 8px rgba(225,48,108,0.06); }
+        .post-card.ig::before { background: linear-gradient(90deg, #FFDC80, #F77737, #FD1D1D, #E1306C, #C13584, #833AB4, #405DE6); }
+        .post-card.li { background: linear-gradient(180deg, #DBEAFE 0%, #FFFFFF 35%); border-color: #93C5FD; box-shadow: 0 2px 8px rgba(10,102,194,0.06); }
+        .post-card.li::before { background: linear-gradient(90deg, #0A66C2, #004182); }
+        .post-card.yt { background: linear-gradient(180deg, #FEE2E2 0%, #FFFFFF 35%); border-color: #FCA5A5; box-shadow: 0 2px 8px rgba(255,0,0,0.06); }
+        .post-card.yt::before { background: linear-gradient(90deg, #FF0000, #CC0000); }
+        .post-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(15,23,42,0.12); }
         .post-card-header {
             display: flex; align-items: center; gap: 10px;
             padding: 12px 14px 8px;
@@ -2599,18 +2656,62 @@
                     <div class="gauge-bar" id="gaugeSentBar"></div>
                 </div>
                 <div class="sentiment-dist-row" id="sentDistRow">
-                    <div class="sent-dist-item"><span class="sent-dist-dot pos"></span> Positive <span class="sent-dist-val" id="sentDistPos">0</span></div>
-                    <div class="sent-dist-item"><span class="sent-dist-dot neu"></span> Neutral <span class="sent-dist-val" id="sentDistNeu">0</span></div>
-                    <div class="sent-dist-item"><span class="sent-dist-dot neg"></span> Negative <span class="sent-dist-val" id="sentDistNeg">0</span></div>
+                    <div class="sent-dist-item pos">
+                        <div class="sent-dist-pct" id="sentDistPctPos">--</div>
+                        <div class="sent-dist-label">Positive</div>
+                        <div class="sent-dist-count" id="sentDistPos">0</div>
+                    </div>
+                    <div class="sent-dist-item neu">
+                        <div class="sent-dist-pct" id="sentDistPctNeu">--</div>
+                        <div class="sent-dist-label">Neutral</div>
+                        <div class="sent-dist-count" id="sentDistNeu">0</div>
+                    </div>
+                    <div class="sent-dist-item neg">
+                        <div class="sent-dist-pct" id="sentDistPctNeg">--</div>
+                        <div class="sent-dist-label">Negative</div>
+                        <div class="sent-dist-count" id="sentDistNeg">0</div>
+                    </div>
                 </div>
-                <div style="margin-top:6px; font-size:10px; color:#94A3B8; text-align:center; line-height:1.4;">comment sentiment mix · feeds the Sentiment pillar above</div>
+                <div style="margin-top:8px; font-size:10px; color:#94A3B8; text-align:center; line-height:1.4;">comment sentiment mix · feeds the Sentiment pillar above</div>
             </div>
             <div style="font-size:10px; font-weight:700; color:#64748B; text-transform:uppercase; letter-spacing:0.7px; margin:0 0 6px 0; padding-left:2px;">AHS by Platform <span style="font-weight:400; text-transform:none; letter-spacing:0; color:#94A3B8;">— composite score 0–100 weighted across pillars</span></div>
             <div class="platform-sentiments" id="platformSentiments">
-                <div class="plat-sent" id="sentBlockFB"><div class="plat-sent-name">Facebook</div><div class="plat-sent-score neutral" id="sentFB">--</div><div class="plat-sent-pct" id="sentPctFB"></div><div class="plat-sent-bar"><div class="plat-sent-bar-fill" id="sentBarFB"></div></div></div>
-                <div class="plat-sent" id="sentBlockIG"><div class="plat-sent-name">Instagram</div><div class="plat-sent-score neutral" id="sentIG">--</div><div class="plat-sent-pct" id="sentPctIG"></div><div class="plat-sent-bar"><div class="plat-sent-bar-fill" id="sentBarIG"></div></div></div>
-                <div class="plat-sent" id="sentBlockLI"><div class="plat-sent-name">LinkedIn</div><div class="plat-sent-score neutral" id="sentLI">--</div><div class="plat-sent-pct" id="sentPctLI"></div><div class="plat-sent-bar"><div class="plat-sent-bar-fill" id="sentBarLI"></div></div></div>
-                <div class="plat-sent" id="sentBlockYT"><div class="plat-sent-name">YouTube</div><div class="plat-sent-score neutral" id="sentYT">--</div><div class="plat-sent-pct" id="sentPctYT"></div><div class="plat-sent-bar"><div class="plat-sent-bar-fill" id="sentBarYT"></div></div></div>
+                <div class="plat-sent fb" id="sentBlockFB">
+                    <div class="plat-sent-name">Facebook</div>
+                    <div class="plat-sent-gauge score-unknown" id="sentGaugeFB">
+                        <svg viewBox="0 0 64 64"><circle class="gauge-track" cx="32" cy="32" r="28"/><circle class="gauge-fill" cx="32" cy="32" r="28" stroke-dasharray="0 176" id="sentArcFB"/></svg>
+                        <div class="plat-sent-gauge-num" id="sentFB">--</div>
+                    </div>
+                    <div class="plat-sent-tier tier-none" id="sentTierFB">--</div>
+                    <div class="plat-sent-meta" id="sentMetaFB"></div>
+                </div>
+                <div class="plat-sent ig" id="sentBlockIG">
+                    <div class="plat-sent-name">Instagram</div>
+                    <div class="plat-sent-gauge score-unknown" id="sentGaugeIG">
+                        <svg viewBox="0 0 64 64"><circle class="gauge-track" cx="32" cy="32" r="28"/><circle class="gauge-fill" cx="32" cy="32" r="28" stroke-dasharray="0 176" id="sentArcIG"/></svg>
+                        <div class="plat-sent-gauge-num" id="sentIG">--</div>
+                    </div>
+                    <div class="plat-sent-tier tier-none" id="sentTierIG">--</div>
+                    <div class="plat-sent-meta" id="sentMetaIG"></div>
+                </div>
+                <div class="plat-sent li" id="sentBlockLI">
+                    <div class="plat-sent-name">LinkedIn</div>
+                    <div class="plat-sent-gauge score-unknown" id="sentGaugeLI">
+                        <svg viewBox="0 0 64 64"><circle class="gauge-track" cx="32" cy="32" r="28"/><circle class="gauge-fill" cx="32" cy="32" r="28" stroke-dasharray="0 176" id="sentArcLI"/></svg>
+                        <div class="plat-sent-gauge-num" id="sentLI">--</div>
+                    </div>
+                    <div class="plat-sent-tier tier-none" id="sentTierLI">--</div>
+                    <div class="plat-sent-meta" id="sentMetaLI"></div>
+                </div>
+                <div class="plat-sent yt" id="sentBlockYT">
+                    <div class="plat-sent-name">YouTube</div>
+                    <div class="plat-sent-gauge score-unknown" id="sentGaugeYT">
+                        <svg viewBox="0 0 64 64"><circle class="gauge-track" cx="32" cy="32" r="28"/><circle class="gauge-fill" cx="32" cy="32" r="28" stroke-dasharray="0 176" id="sentArcYT"/></svg>
+                        <div class="plat-sent-gauge-num" id="sentYT">--</div>
+                    </div>
+                    <div class="plat-sent-tier tier-none" id="sentTierYT">--</div>
+                    <div class="plat-sent-meta" id="sentMetaYT"></div>
+                </div>
             </div>
         </div>
 
@@ -2739,13 +2840,9 @@
         <div class="timeline-header">
             <div class="card-title" style="margin-bottom:0;">Audience Health Over Time <span class="timeline-sub">last 52 weeks &middot; weekly snapshots</span></div>
             <div class="timeline-legend" style="flex-wrap:wrap;">
-                <span class="tl-legend-item"><span class="tl-swatch" style="background:linear-gradient(135deg,#003B71,#0066CC);width:14px;height:3px;border-radius:2px;"></span>AHS Score</span>
-                <span class="tl-legend-item"><span class="tl-swatch" style="background:linear-gradient(135deg,#22C55E,#16A34A);width:14px;height:3px;border-radius:2px;"></span>Sentiment</span>
-                <span class="tl-legend-item"><span class="tl-swatch" style="background:rgba(0,102,204,0.5);width:10px;height:10px;border-radius:2px;"></span>Engagement</span>
-                <span class="tl-legend-item"><span class="tl-swatch tl-swatch-bar"></span>Comments</span>
-                <span class="tl-legend-item"><span class="tl-band tl-band-pos"></span>Positive zone</span>
-                <span class="tl-legend-item"><span class="tl-band tl-band-neu"></span>Neutral zone</span>
-                <span class="tl-legend-item"><span class="tl-band tl-band-neg"></span>Negative zone</span>
+                <span class="tl-legend-item"><span class="tl-band tl-band-pos"></span>Healthy 60+</span>
+                <span class="tl-legend-item"><span class="tl-band tl-band-neu"></span>Fair 45-59</span>
+                <span class="tl-legend-item"><span class="tl-band tl-band-neg"></span>Weak &lt;45</span>
             </div>
         </div>
         <div class="timeline-stats" id="timelineStats"></div>
@@ -4981,55 +5078,66 @@ function renderSentiment(data) {
         if (fillEl) fillEl.style.width = (score === null ? 0 : score) + '%';
     });
 
-    // Render distribution bar & counts in gauge section
+    // Render comment-sentiment distribution — 3-block visual (counts + percent each)
     let pos = 0, neu = 0, neg = 0;
     data.comments.forEach(c => {
-        const s = analyzeSentiment(c.text);
-        if (s.label === 'Positive') pos++;
-        else if (s.label === 'Negative') neg++;
+        const sc = commentScore(c);
+        if (sc.score >= 60) pos++;
+        else if (sc.score < 40) neg++;
         else neu++;
     });
     const total = pos + neu + neg || 1;
-    document.getElementById('gaugeSentBar').innerHTML =
-        '<div class="seg-pos" style="width:' + (pos/total*100).toFixed(1) + '%"></div>' +
-        '<div class="seg-neu" style="width:' + (neu/total*100).toFixed(1) + '%"></div>' +
-        '<div class="seg-neg" style="width:' + (neg/total*100).toFixed(1) + '%"></div>';
-    document.getElementById('sentDistPos').textContent = pos + ' (' + Math.round(pos/total*100) + '%)';
-    document.getElementById('sentDistNeu').textContent = neu + ' (' + Math.round(neu/total*100) + '%)';
-    document.getElementById('sentDistNeg').textContent = neg + ' (' + Math.round(neg/total*100) + '%)';
+    document.getElementById('sentDistPctPos').textContent = Math.round(pos/total*100) + '%';
+    document.getElementById('sentDistPctNeu').textContent = Math.round(neu/total*100) + '%';
+    document.getElementById('sentDistPctNeg').textContent = Math.round(neg/total*100) + '%';
+    document.getElementById('sentDistPos').textContent = pos + (pos === 1 ? ' comment' : ' comments');
+    document.getElementById('sentDistNeu').textContent = neu + (neu === 1 ? ' comment' : ' comments');
+    document.getElementById('sentDistNeg').textContent = neg + (neg === 1 ? ' comment' : ' comments');
 
-    // Per-channel sentiment with visuals
+    // Per-platform AHS — circular score gauges with brand-color tier
+    // Helper: score → bucket class
+    function plScoreClass(s) {
+        if (s === null || s === undefined) return 'score-unknown';
+        if (s >= 80) return 'score-strong';
+        if (s >= 65) return 'score-good';
+        if (s >= 50) return 'score-fair';
+        if (s >= 35) return 'score-weak';
+        return 'score-poor';
+    }
+    function plTierClass(s) {
+        if (s === null || s === undefined) return 'tier-none';
+        if (s >= 80) return 'tier-strong';
+        if (s >= 65) return 'tier-good';
+        if (s >= 50) return 'tier-fair';
+        if (s >= 35) return 'tier-weak';
+        return 'tier-poor';
+    }
+    const ARC_CIRCUMFERENCE = 176; // 2π × 28 ≈ 176
     const platforms = [
-        { key: 'fb', el: 'sentFB', bar: 'sentBarFB', pct: 'sentPctFB' },
-        { key: 'ig', el: 'sentIG', bar: 'sentBarIG', pct: 'sentPctIG' },
-        { key: 'li', el: 'sentLI', bar: 'sentBarLI', pct: 'sentPctLI' },
-        { key: 'yt', el: 'sentYT', bar: 'sentBarYT', pct: 'sentPctYT' }
+        { key: 'fb', el: 'sentFB', gauge: 'sentGaugeFB', arc: 'sentArcFB', tier: 'sentTierFB', meta: 'sentMetaFB' },
+        { key: 'ig', el: 'sentIG', gauge: 'sentGaugeIG', arc: 'sentArcIG', tier: 'sentTierIG', meta: 'sentMetaIG' },
+        { key: 'li', el: 'sentLI', gauge: 'sentGaugeLI', arc: 'sentArcLI', tier: 'sentTierLI', meta: 'sentMetaLI' },
+        { key: 'yt', el: 'sentYT', gauge: 'sentGaugeYT', arc: 'sentArcYT', tier: 'sentTierYT', meta: 'sentMetaYT' }
     ];
     platforms.forEach(p => {
         const pp = perPlatform[p.key];
         const pScore = pp.score;
         const hasData = pScore !== null;
         const pc = pp.postCount || 0;
-        const el = document.getElementById(p.el);
-        el.textContent = hasData ? pScore : '--';
-        const lbl = ahsLabel(pScore);
-        const cls = pScore === null ? 'neutral'
-                  : pScore >= 60 ? 'positive'
-                  : pScore >= 45 ? 'neutral' : 'negative';
-        el.className = 'plat-sent-score ' + cls;
-        // Show post count context + label or low-activity notice
-        var pctText = '';
-        if (hasData) {
-            pctText = lbl + '  (' + pc + ' post' + (pc !== 1 ? 's' : '') + ')';
-        } else if (pc > 0 && pc < AHS_MIN_POSTS) {
-            pctText = 'Low activity (' + pc + ' post)';
-        } else {
-            pctText = 'No posts in period';
-        }
-        document.getElementById(p.pct).textContent = pctText;
-        const bar = document.getElementById(p.bar);
-        bar.style.width = hasData ? pScore + '%' : '0%';
-        bar.style.background = ahsColor(pScore);
+        // Score number in center of gauge
+        document.getElementById(p.el).textContent = hasData ? pScore : '--';
+        // Color-class on gauge wrapper
+        const gauge = document.getElementById(p.gauge);
+        gauge.className = 'plat-sent-gauge ' + plScoreClass(pScore);
+        // Arc dasharray — 0..176 length proportional to score
+        const fillLen = hasData ? (pScore / 100) * ARC_CIRCUMFERENCE : 0;
+        document.getElementById(p.arc).setAttribute('stroke-dasharray', fillLen + ' ' + ARC_CIRCUMFERENCE);
+        // Tier label
+        const tierEl = document.getElementById(p.tier);
+        tierEl.className = 'plat-sent-tier ' + plTierClass(pScore);
+        tierEl.textContent = hasData ? ahsLabel(pScore) : (pc > 0 && pc < AHS_MIN_POSTS ? 'Low activity' : 'No posts');
+        // Meta line (post count)
+        document.getElementById(p.meta).textContent = pc > 0 ? (pc + ' post' + (pc !== 1 ? 's' : '')) : '';
     });
 }
 
@@ -5462,7 +5570,7 @@ function renderPostCards(posts, totalCount) {
             ? '<img class="post-card-image" src="' + escapeHtml(p.image) + '" alt="" onerror="this.style.display=\'none\'">'
             : '<div class="post-card-image no-img">&#128221;</div>';
         var rankClass = p.rank <= 3 ? ' top3' : '';
-        return '<div class="post-card">' +
+        return '<div class="post-card ' + (p.platform || '') + '">' +
             '<div class="post-card-header">' +
                 '<div class="post-card-plat-icon ' + p.platform + '">' + platLetters[p.platform] + '</div>' +
                 '<div class="post-card-meta">' +
@@ -5718,38 +5826,10 @@ function renderSentimentTimeline(rawOrData, processedData) {
     var sentPointColors = sentimentScores.map(function(s) { return s == null ? '#CBD5E1' : s >= 60 ? '#22C55E' : s <= 40 ? '#EF4444' : '#EAB308'; });
 
     sentimentTimelineInstance = new Chart(ctx, {
-        type: 'bar',
+        type: 'line',
         data: {
             labels: labels,
             datasets: [
-                {
-                    type: 'bar',
-                    label: 'Engagement',
-                    data: engVolumes,
-                    backgroundColor: 'rgba(0,102,204,0.5)',
-                    hoverBackgroundColor: 'rgba(0,102,204,0.7)',
-                    borderRadius: 6,
-                    borderSkipped: false,
-                    yAxisID: 'yVolume',
-                    order: 4,
-                    barPercentage: 0.4,
-                    categoryPercentage: 0.8,
-                    stack: 'bars'
-                },
-                {
-                    type: 'bar',
-                    label: 'Comments',
-                    data: commentVolumes,
-                    backgroundColor: 'rgba(203,213,225,0.75)',
-                    hoverBackgroundColor: 'rgba(148,163,184,0.9)',
-                    borderRadius: 6,
-                    borderSkipped: false,
-                    yAxisID: 'yVolume',
-                    order: 3,
-                    barPercentage: 0.4,
-                    categoryPercentage: 0.8,
-                    stack: 'bars'
-                },
                 {
                     type: 'line',
                     label: 'AHS Score',
@@ -5759,8 +5839,11 @@ function renderSentimentTimeline(rawOrData, processedData) {
                     fill: true,
                     tension: 0.4,
                     borderWidth: 3,
-                    pointRadius: 6,
-                    pointHoverRadius: 9,
+                    pointRadius: function(ctx) {
+                        // Only show points where data exists; smaller default to reduce noise
+                        return ctx.parsed && ctx.parsed.y != null ? 4 : 0;
+                    },
+                    pointHoverRadius: 8,
                     spanGaps: true,
                     pointBackgroundColor: ahsPointColors,
                     pointBorderColor: '#fff',
@@ -5768,24 +5851,6 @@ function renderSentimentTimeline(rawOrData, processedData) {
                     pointHoverBorderWidth: 3,
                     yAxisID: 'y',
                     order: 1
-                },
-                {
-                    type: 'line',
-                    label: 'Sentiment',
-                    data: sentimentScores,
-                    borderColor: '#22C55E',
-                    borderDash: [6, 3],
-                    fill: false,
-                    tension: 0.4,
-                    borderWidth: 2,
-                    pointRadius: 4,
-                    pointHoverRadius: 7,
-                    spanGaps: true,
-                    pointBackgroundColor: sentPointColors,
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 1.5,
-                    yAxisID: 'y',
-                    order: 2
                 }
             ]
         },
@@ -5801,24 +5866,13 @@ function renderSentimentTimeline(rawOrData, processedData) {
                     titleFont: { size: 12, weight: '700' },
                     bodyFont: { size: 12 },
                     cornerRadius: 8,
-                    displayColors: true,
+                    displayColors: false,
                     callbacks: {
                         title: function(items) { return 'Week of ' + items[0].label; },
                         label: function(ctx) {
-                            if (ctx.dataset.label === 'AHS Score') {
-                                if (ctx.parsed.y == null) return 'AHS: no data';
-                                var tier = ctx.parsed.y >= 75 ? 'Excellent' : ctx.parsed.y >= 60 ? 'Healthy' : ctx.parsed.y >= 45 ? 'Fair' : 'Weak';
-                                return 'AHS: ' + ctx.parsed.y + '/100  (' + tier + ')';
-                            }
-                            if (ctx.dataset.label === 'Sentiment') {
-                                if (ctx.parsed.y == null) return 'Sentiment: no comments';
-                                var tier = ctx.parsed.y >= 60 ? 'Positive' : ctx.parsed.y <= 40 ? 'Negative' : 'Neutral';
-                                return 'Sentiment: ' + ctx.parsed.y + '/100  (' + tier + ')';
-                            }
-                            if (ctx.dataset.label === 'Engagement') {
-                                return 'Engagement: ' + (ctx.parsed.y || 0).toLocaleString();
-                            }
-                            return 'Comments: ' + (ctx.parsed.y || 0);
+                            if (ctx.parsed.y == null) return 'AHS: no data';
+                            var tier = ctx.parsed.y >= 75 ? 'Excellent' : ctx.parsed.y >= 60 ? 'Healthy' : ctx.parsed.y >= 45 ? 'Fair' : 'Weak';
+                            return 'AHS: ' + ctx.parsed.y + '/100  (' + tier + ')';
                         }
                     }
                 }
@@ -5826,15 +5880,8 @@ function renderSentimentTimeline(rawOrData, processedData) {
             scales: {
                 y: {
                     min: 0, max: 100, position: 'left',
-                    title: { display: true, text: 'Score (0-100)', font: { size: 11, weight: '600' }, color: '#64748B' },
                     grid: { color: '#F1F5F9' },
-                    ticks: { font: { size: 10 }, color: '#94A3B8', stepSize: 20 }
-                },
-                yVolume: {
-                    min: 0, position: 'right', stacked: true,
-                    title: { display: true, text: 'Volume', font: { size: 11, weight: '600' }, color: '#64748B' },
-                    grid: { display: false },
-                    ticks: { font: { size: 10 }, color: '#94A3B8', precision: 0 }
+                    ticks: { font: { size: 10 }, color: '#94A3B8', stepSize: 25 }
                 },
                 x: {
                     grid: { display: false },
@@ -5842,11 +5889,10 @@ function renderSentimentTimeline(rawOrData, processedData) {
                         font: { size: 10 },
                         color: '#64748B',
                         autoSkip: true,
-                        maxTicksLimit: 13, // ~1 tick per month across 52 weeks
+                        maxTicksLimit: 7, // monthly-ish, less label noise
                         maxRotation: 0,
                         minRotation: 0
-                    },
-                    stacked: true
+                    }
                 }
             }
         },
