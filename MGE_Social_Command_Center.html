@@ -5022,7 +5022,7 @@ function showAhsBreakdown() {
     const fmt = n => (n === null || n === undefined) ? '&mdash;' : Number(n).toLocaleString();
     const fmtScore = n => (n === null || n === undefined) ? '<span style="color:#94A3B8;">N/A</span>' : Math.round(n);
 
-    // Build per-platform table rows
+    // Build per-platform table rows — now showing all 4 pillars
     const tableRows = b.rows.map(r => {
         if (!r.included) {
             const reason = (r.postCount < 2)
@@ -5032,6 +5032,8 @@ function showAhsBreakdown() {
                 <td class="platform-name">${platName[r.key]}</td>
                 <td>${fmt(r.postCount)}</td>
                 <td>${fmt(r.commentCount)}</td>
+                <td class="excluded">&mdash;</td>
+                <td class="excluded">&mdash;</td>
                 <td class="excluded">&mdash;</td>
                 <td class="excluded">&mdash;</td>
                 <td class="excluded">&mdash;</td>
@@ -5046,6 +5048,8 @@ function showAhsBreakdown() {
             <td>${fmt(r.commentCount)}</td>
             <td>${fmtScore(r.engagementScore)}</td>
             <td>${fmtScore(r.sentimentScore)}</td>
+            <td>${fmtScore(r.reachScore)}</td>
+            <td>${fmtScore(r.attentionScore)}</td>
             <td><strong>${fmtScore(r.compositeScore)}</strong></td>
             <td>${fmt(r.followers)}</td>
             <td>${pctOfWeight}</td>
@@ -5067,31 +5071,55 @@ function showAhsBreakdown() {
         <div class="ahs-modal-section">
             <h4>How the Score Works</h4>
             <div class="ahs-formula-box">
-                Platform Composite = (Engagement Quality &times; 0.5) + (Comment Sentiment &times; 0.5)<br>
+                Platform Composite = (Engagement &times; 0.40) + (Sentiment &times; 0.40) + (Reach &times; 0.05) + (Attention &times; 0.15)<br>
                 Overall Score = &Sigma; (Platform Composite &times; Followers) &divide; &Sigma; Followers
             </div>
-            <p style="color:#475569; margin:8px 0 0;">A 0&ndash;100 composite blending two equally weighted pillars. Engagement is normalized <strong>per post</strong> so low-volume platforms aren&rsquo;t penalized. Platforms with fewer than 2 posts in the range are excluded. The headline gauge is a follower-weighted average of qualifying platforms.</p>
+            <p style="color:#475569; margin:8px 0 0;">A 0&ndash;100 composite blending <strong>four weighted pillars</strong>, custom-tuned for utility-marketing context. Engagement and Sentiment carry the most weight (40% each) because audience action and perception matter most for MGE; Reach is intentionally light (5%) since utility reach matters less than engagement quality; Attention (video views per follower) gets a moderate 15% to capture content depth. Platforms with fewer than 2 posts are excluded. The headline gauge is a follower-weighted average of qualifying platforms.</p>
+            <p style="color:#475569; margin:8px 0 0;"><strong>Baseline-relative scoring (new):</strong> Engagement, Reach, and Attention pillars are now scored against MGE's own running average for each platform &mdash; not generic thresholds. So a high score means MGE actually outperformed its typical week, not that it met some B2C benchmark. The baselines are stored locally and refine with each dashboard view (capped at ~26 weeks of memory).</p>
         </div>
 
         <div class="ahs-modal-section">
-            <h4>The Two Pillars</h4>
+            <h4>The Four Pillars</h4>
             <div class="ahs-pillar-grid">
                 <div class="ahs-pillar-box">
-                    <div class="ahs-pillar-title">Engagement Quality &mdash; 50%</div>
-                    <p>Each interaction is weighted by depth, summed, divided by post count, and normalized via tanh (baseline: ~30 weighted engagements/post = score 50).</p>
+                    <div class="ahs-pillar-title">Engagement &mdash; 40%</div>
+                    <p>Each interaction is weighted by depth, summed, and divided by post count to get per-post engagement. Scored relative to MGE's running average for the platform.</p>
                     <ul class="ahs-tier-list">
                         <li><span class="ahs-tier-w">5&times;</span> <strong>Comments</strong> &mdash; real conversation</li>
                         <li><span class="ahs-tier-w">3&times;</span> <strong>Shares &amp; Saves</strong> &mdash; amplification</li>
-                        <li><span class="ahs-tier-w">1&times;</span> <strong>Reactions/Likes</strong> &mdash; light positive signal (negative reactions subtract)</li>
+                        <li><span class="ahs-tier-w">1&times;</span> <strong>Reactions</strong> &mdash; light signal (negatives subtract)</li>
                         <li><span class="ahs-tier-w">0.2&times;</span> <strong>Views</strong> &mdash; passive reach</li>
                     </ul>
+                    <div class="ahs-formula-box" style="font-size:10.5px; margin:8px 0 0;">
+                        ratio = perPost &divide; baseline<br>
+                        score = 50 + 50 &times; tanh((ratio &minus; 1) &divide; 0.6)
+                    </div>
                 </div>
                 <div class="ahs-pillar-box">
-                    <div class="ahs-pillar-title">Comment Sentiment &mdash; 50%</div>
-                    <p>Keyword-based sentiment on the comment stream, then pulled toward neutral when the sample is small to avoid over-reacting.</p>
+                    <div class="ahs-pillar-title">Sentiment &mdash; 40%</div>
+                    <p>Average of per-comment sentiment scores. Each comment is AI-scored by Claude Haiku 4.5 with full post context + parent-comment context (for replies). Pulled toward neutral when the sample is small.</p>
                     <div class="ahs-formula-box" style="font-size:10.5px; margin:6px 0;">
-                        final = (raw &times; conf) + (50 &times; (1 &minus; conf))<br>
-                        conf = min(1, comments &divide; 15)
+                        avgScore = mean(per-comment AI score)<br>
+                        conf = min(1, comments &divide; 15)<br>
+                        final = (avgScore &times; conf) + (50 &times; (1 &minus; conf))
+                    </div>
+                    <p style="color:#64748B; margin:0;">No baseline calibration &mdash; the AI score is already calibrated against real comment text.</p>
+                </div>
+                <div class="ahs-pillar-box">
+                    <div class="ahs-pillar-title">Reach &mdash; 5%</div>
+                    <p>Window reach divided by current follower count. Scored relative to MGE's running average reach ratio for the platform.</p>
+                    <div class="ahs-formula-box" style="font-size:10.5px; margin:6px 0;">
+                        ratio = (windowReach &divide; followers) &divide; baseline<br>
+                        score = 50 + 50 &times; tanh((ratio &minus; 1) &divide; 0.6)
+                    </div>
+                    <p style="color:#64748B; margin:0;">Weighted lightly because utility reach matters less than engagement quality.</p>
+                </div>
+                <div class="ahs-pillar-box">
+                    <div class="ahs-pillar-title">Attention &mdash; 15%</div>
+                    <p>Video views in the window divided by follower count. Captures depth of consumption. Scored relative to MGE's running average attention ratio for the platform.</p>
+                    <div class="ahs-formula-box" style="font-size:10.5px; margin:6px 0;">
+                        ratio = (videoViews &divide; followers) &divide; baseline<br>
+                        score = 50 + 50 &times; tanh((ratio &minus; 1) &divide; 0.6)
                     </div>
                     <p style="color:#64748B; margin:0;">If a pillar or platform has no data, it&rsquo;s dropped and the remaining weights rescale automatically.</p>
                 </div>
@@ -5106,8 +5134,10 @@ function showAhsBreakdown() {
                         <th>Platform</th>
                         <th>Posts</th>
                         <th>Comments</th>
-                        <th>Eng Quality</th>
+                        <th>Engagement</th>
                         <th>Sentiment</th>
+                        <th>Reach</th>
+                        <th>Attention</th>
                         <th>Composite</th>
                         <th>Followers (Weight)</th>
                         <th>% of Weight</th>
@@ -5116,7 +5146,7 @@ function showAhsBreakdown() {
                 <tbody>${tableRows}</tbody>
                 <tfoot>
                     <tr>
-                        <td colspan="6">Total weight (followers across qualifying platforms)</td>
+                        <td colspan="8">Total weight (followers across qualifying platforms)</td>
                         <td>${fmt(b.totalWeight)}</td>
                         <td>100%</td>
                     </tr>
@@ -5134,7 +5164,7 @@ function showAhsBreakdown() {
                 </div>
                 <div class="ahs-final-score-value">${b.overallScore === null ? '--' : b.overallScore}</div>
             </div>
-            <div class="ahs-note"><strong>Why it moves slowly:</strong> tanh normalization caps how much a few extra interactions can shift each pillar, sentiment damps toward 50 on low volume, and the largest-follower platform dominates the weighted average. Net effect: ~1-point daily moves are the index working as designed. Switch the date range above to see it recompute against a different window.</div>
+            <div class="ahs-note"><strong>Why it moves slowly:</strong> tanh normalization caps how much a single great (or terrible) week can shift each pillar; sentiment damps toward 50 on low comment volume; baseline-relative scoring means an exceptional week needs to actually outperform MGE's running average; and the largest-follower platform dominates the weighted average. Net effect: meaningful score moves require sustained shifts across multiple weeks. Switch the date range above to see it recompute against a different window.</div>
         </div>
     `;
     overlay.classList.add('active');
