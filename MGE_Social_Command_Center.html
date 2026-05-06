@@ -3589,8 +3589,12 @@ function processData(raw, dateRangeOverride) {
                 fb: { count: 0, reach: 0, impressions: 0, replies: 0, shares: 0 }
             }
         },
-        // Content Type Mix — categorized counts of posts in window, plus video views where applicable.
-        // Stories require a separate API + 24h polling; tracked but currently 0.
+        // Content Type Mix — categorized counts of posts in window, plus views where applicable.
+        // Stories ARE tracked: IG + FB stories captured every 12h by the stories.js poller and
+        // archived via the GitHub data-archive branch. Story metrics (reach, views, replies,
+        // shares) are blended into Platform Performance and surfaced in the dedicated Stories
+        // block under each platform card. Note: stories can be image OR video — for image stories
+        // Meta returns no video-views metric, so they show 0 in 'views' but real numbers in 'reach'.
         contentMix: {
             ig_reel:     { label: 'Instagram Reels',     icon: '🎬', count: 0, views: 0 },
             ig_video:    { label: 'Instagram Videos',    icon: '📹', count: 0, views: 0 },
@@ -4080,6 +4084,13 @@ function processData(raw, dateRangeOverride) {
         sm.impressions += (m.impressions || m.views || 0);
         sm.replies += (m.replies || 0);
         sm.shares += (m.shares || 0);
+        // Track image vs video distribution. Stories can be either. mediaType is normalized
+        // upstream to lowercase 'image'|'video'|'photo' (FB) or uppercase 'IMAGE'|'VIDEO' (IG).
+        var mt = (s.mediaType || '').toUpperCase();
+        if (!sm.byMediaType) sm.byMediaType = { video: 0, image: 0, other: 0 };
+        if (mt === 'VIDEO') sm.byMediaType.video += 1;
+        else if (mt === 'IMAGE' || mt === 'PHOTO') sm.byMediaType.image += 1;
+        else sm.byMediaType.other += 1;
         if (plat === 'ig') {
             sm.profile_visits += (m.profile_visits || 0);
             sm.follows += (m.follows || 0);
@@ -4094,12 +4105,20 @@ function processData(raw, dateRangeOverride) {
             result.contentMix[cmKey].replies = (result.contentMix[cmKey].replies || 0) + (m.replies || 0);
             result.contentMix[cmKey].shares = (result.contentMix[cmKey].shares || 0) + (m.shares || 0);
         }
-        // Roll story metrics into headline KPIs so the dashboard reflects everything
+        // Roll story metrics into headline KPIs — but ONLY the ones that are
+        // conceptually comparable to feed-post equivalents:
+        //   - reach: unique-account count, same concept as post reach
+        //   - impressions: total view events, same concept as post impressions
+        //   - comments: story replies are direct DMs, same engagement category as post comments
+        //   - shares: story shares are reposts, same concept as post shares
+        // We deliberately do NOT add story 'views' to kpis.views (Total Video Views)
+        // because story 'views' counts every story view including image stories, which
+        // aren't video plays. Story view counts are surfaced in the dedicated Stories
+        // block under each platform card in Platform Performance.
         result.kpis.reach += (m.reach || 0);
         result.kpis.impressions += (m.impressions || m.views || 0);
         result.kpis.comments += (m.replies || 0);
         result.kpis.shares += (m.shares || 0);
-        result.kpis.views += (m.views || m.impressions || 0);
         // Build a post-card-shaped record for the Posts section "Stories" toggle.
         var storyEng = (m.replies || 0) + (m.shares || 0) + (m.profile_visits || 0) + (m.total_interactions || 0);
         result.allStories.push({
@@ -4259,7 +4278,7 @@ var KPI_META = {
     },
     views: {
         label: 'Total Video Views',
-        description: 'Video plays across all platforms. YT: video viewCount. FB: page-level video plays >3s (page_video_views). IG: Reel + video post views (Stories not included — separate API + 24h data lifetime). LI: pending Community Management API approval.',
+        description: 'Video plays across all platforms. YT: video viewCount. FB: page-level video plays >3s (page_video_views). IG: Reel + video post views. LI: pending Community Management API approval. Story views are tracked separately under each platform\'s Stories block (Platform Performance) since stories can be image OR video and aren\'t directly comparable to video plays.',
         platformValue: function(pe, k) { return pe[k] ? (pe[k].views || 0) : 0; },
         platformNote: function(k, value) {
             if (k === 'li' && value === 0) return 'Community Management API approval pending';
@@ -4587,7 +4606,7 @@ function renderPlatformPerformance(data) {
     const platforms = [
         {
             key: 'fb', name: 'Facebook', icon: 'f', cls: 'fb',
-            mixKeys: ['fb_video', 'fb_photo', 'fb_link', 'fb_status'],
+            mixKeys: ['fb_video', 'fb_photo', 'fb_link', 'fb_status', 'fb_story'],
             engagement: function(d) {
                 const reactions = d.like + d.love + d.wow + d.haha + d.sad + d.angry + d.care;
                 return [
@@ -4765,13 +4784,23 @@ function renderPlatformPerformance(data) {
             const sm = data.stories.summary[p.key] || {};
             const cnt = sm.count || 0;
             if (cnt > 0) {
+                const bmt = sm.byMediaType || { video: 0, image: 0, other: 0 };
+                const breakdownParts = [];
+                if (bmt.video) breakdownParts.push(bmt.video + ' video');
+                if (bmt.image) breakdownParts.push(bmt.image + ' image');
+                if (bmt.other) breakdownParts.push(bmt.other + ' other');
+                const breakdownStr = breakdownParts.join(' · ');
                 const rowsList = [
                     { label: 'Stories', val: cnt },
-                    { label: 'Reach', val: sm.reach || 0 },
-                    { label: 'Views', val: sm.impressions || 0 },
-                    { label: 'Replies', val: sm.replies || 0 },
-                    { label: 'Shares', val: sm.shares || 0 }
+                    { label: 'Reach', val: sm.reach || 0 }
                 ];
+                // Only show Views row if any story in this set produced view counts.
+                // Stories can be image-only (no view metric) so a 0 here would be misleading.
+                if ((sm.impressions || 0) > 0) {
+                    rowsList.push({ label: 'Views', val: sm.impressions });
+                }
+                rowsList.push({ label: 'Replies', val: sm.replies || 0 });
+                rowsList.push({ label: 'Shares', val: sm.shares || 0 });
                 if (p.key === 'ig') {
                     if (sm.profile_visits) rowsList.push({ label: 'Profile visits', val: sm.profile_visits });
                     if (sm.follows) rowsList.push({ label: 'Follows', val: sm.follows });
@@ -4782,7 +4811,7 @@ function renderPlatformPerformance(data) {
                 storiesHtml =
                     '<div class="pp-stories">' +
                       '<div class="pp-stories-head">' +
-                        '<span class="pp-stories-title">📱 Stories</span>' +
+                        '<span class="pp-stories-title">📱 Stories' + (breakdownStr ? ' <span style="font-weight:500;color:#9ca3af;text-transform:none;letter-spacing:0;font-size:10px;margin-left:6px;">(' + breakdownStr + ')</span>' : '') + '</span>' +
                         '<span class="pp-stories-count">' + cnt + (cnt === 1 ? ' story' : ' stories') + ' in window</span>' +
                       '</div>' +
                       '<div class="pp-stories-grid">' + rowsHtml + '</div>' +
