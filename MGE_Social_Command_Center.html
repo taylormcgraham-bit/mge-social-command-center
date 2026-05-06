@@ -1254,6 +1254,32 @@
         .plat-eng-row.neg-row .plat-eng-row-val { color: #DC2626; }
         .plat-eng-row.bold-row { font-weight: 600; color: #1B2559; border-bottom: 1px solid #F1F5F9; padding-bottom: 3px; margin-bottom: 1px; }
 
+        /* Stories block within a Platform Performance card */
+        .pp-stories { margin-top: 14px; padding: 10px 12px; background: #FAFBFC; border: 1px solid #E2E8F0; border-radius: 8px; }
+        .pp-stories-head { display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px; }
+        .pp-stories-title { font-size: 11px; font-weight: 700; color: #4B5563; text-transform: uppercase; letter-spacing: 0.05em; display:flex; align-items:center; gap:6px; }
+        .pp-stories-count { font-size: 11px; color: #6b7280; font-weight: 600; }
+        .pp-stories-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 12px; }
+        .pp-stories-stat { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; }
+        .pp-stories-stat-label { color: #6b7280; }
+        .pp-stories-stat-val { font-weight: 700; color: #111; font-variant-numeric: tabular-nums; }
+        .pp-stories-empty { font-size: 12px; color: #9ca3af; padding: 4px 0; }
+
+        /* Posts/Stories toggle within the Posts section */
+        .posts-mode-toggle { display: inline-flex; gap: 0; padding: 3px; background: #F1F5F9; border-radius: 8px; margin-bottom: 12px; }
+        .posts-mode-btn { background: transparent; border: none; padding: 6px 14px; font-size: 13px; font-weight: 600; color: #64748B; cursor: pointer; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s; }
+        .posts-mode-btn:hover { color: #111; }
+        .posts-mode-btn.active { background: #fff; color: #006553; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+        .posts-mode-btn .posts-mode-count { font-size: 11px; color: #94A3B8; font-weight: 700; padding: 1px 6px; background: #E2E8F0; border-radius: 999px; }
+        .posts-mode-btn.active .posts-mode-count { background: #D1FAE5; color: #006553; }
+
+        /* Story-as-post-card visuals — stories are vertical 9:16 in the posts feed */
+        .post-card.is-story .post-card-image { aspect-ratio: 9 / 16; height: auto; max-height: 320px; object-fit: cover; }
+        .post-card.is-story .post-card-image.no-img { aspect-ratio: 9/16; min-height: 200px; }
+        .post-card.is-story::before { content: 'STORY'; position: absolute; top: 8px; right: 8px; background: linear-gradient(45deg,#f09433,#dc2743,#bc1888); color: #fff; font-size: 9px; font-weight: 700; letter-spacing: 0.08em; padding: 2px 6px; border-radius: 4px; z-index: 2; }
+        .post-card.is-story.fb::before { background: #1877F2; }
+        .post-card.is-story { position: relative; }
+
         /* --- Platform Performance (unified engagement + content mix per platform) --- */
         .platform-performance {
             display: grid;
@@ -1693,42 +1719,6 @@
         }
         .view-panel { display: none; }
         .view-panel.active { display: block; }
-        /* Stories tab — captured IG/FB story snapshots */
-        .stories-toolbar { display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin: 16px 0 20px; padding: 12px 16px; background:#fff; border:1px solid #e5e7eb; border-radius:10px; box-shadow:0 1px 2px rgba(0,0,0,.04); }
-        .stories-toolbar-label { font-size:12px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.04em; }
-        .stories-status { font-size:12px; color:#6b7280; margin-left:auto; }
-        .stories-status strong { color:#111; }
-        .stories-refresh-btn { background:#006553; color:#fff; border:none; border-radius:6px; padding:7px 14px; font-size:13px; font-weight:600; cursor:pointer; }
-        .stories-refresh-btn:hover { background:#004d3f; }
-        .stories-refresh-btn:disabled { background:#9ca3af; cursor:not-allowed; }
-        .stories-chip { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:999px; border:1px solid #d1d5db; background:#fff; font-size:13px; font-weight:500; cursor:pointer; }
-        .stories-chip.active { background:#006553; color:#fff; border-color:#006553; }
-        .stories-summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:20px; }
-        .stories-kpi { background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:14px 16px; }
-        .stories-kpi-label { font-size:11px; color:#6b7280; text-transform:uppercase; letter-spacing:.04em; font-weight:600; }
-        .stories-kpi-value { font-size:24px; font-weight:700; color:#111; margin-top:4px; }
-        .stories-kpi-sub { font-size:12px; color:#9ca3af; margin-top:2px; }
-        .stories-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; }
-        .story-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.06); display:flex; flex-direction:column; }
-        .story-thumb-wrap { position:relative; width:100%; aspect-ratio: 9/16; background:#f3f4f6; overflow:hidden; }
-        .story-thumb { width:100%; height:100%; object-fit:cover; display:block; }
-        .story-platform-badge { position:absolute; top:8px; left:8px; padding:3px 8px; border-radius:6px; font-size:11px; font-weight:600; color:#fff; text-transform:uppercase; letter-spacing:.04em; }
-        .story-platform-badge.ig { background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888); }
-        .story-platform-badge.fb { background:#1877F2; }
-        .story-active-pill { position:absolute; top:8px; right:8px; padding:3px 8px; border-radius:6px; font-size:11px; font-weight:600; background:#10b981; color:#fff; }
-        .story-active-pill.expired { background:#9ca3af; }
-        .story-meta { padding:12px 14px 8px; }
-        .story-time { font-size:11px; color:#6b7280; }
-        .story-caption { font-size:13px; color:#111; margin-top:4px; line-height:1.35; max-height:3.6em; overflow:hidden; }
-        .story-metrics { display:grid; grid-template-columns:1fr 1fr; gap:8px 12px; padding:8px 14px 14px; border-top:1px solid #f3f4f6; margin-top:auto; }
-        .story-metric { display:flex; flex-direction:column; }
-        .story-metric-label { font-size:10px; color:#6b7280; text-transform:uppercase; letter-spacing:.04em; font-weight:600; }
-        .story-metric-value { font-size:16px; font-weight:700; color:#111; }
-        .story-nav-bd { padding:8px 14px 12px; border-top:1px solid #f3f4f6; font-size:11px; color:#6b7280; display:flex; justify-content:space-between; gap:8px; }
-        .story-nav-bd span strong { color:#111; }
-        .stories-empty { background:#fff; border:1px dashed #d1d5db; border-radius:12px; padding:40px; text-align:center; color:#6b7280; }
-        .stories-empty h3 { margin:0 0 6px; color:#111; font-size:16px; }
-        .stories-empty p { margin:0; font-size:13px; }
 
 
         /* Audience Pulse — NEW pill on tab nav */
@@ -2692,7 +2682,6 @@
     <button class="view-nav-btn active" data-view="dashboard" onclick="switchView('dashboard')">Social Performance</button>
     <button class="view-nav-btn" data-view="mentions" onclick="switchView('mentions')">Media Monitoring</button>
     <button class="view-nav-btn" data-view="pulse" onclick="switchView('pulse')">Audience Pulse<span class="pulse-new-pill" id="pulseNewPill" style="display:none;">NEW</span></button>
-    <button class="view-nav-btn" data-view="stories" onclick="switchView('stories')">Stories</button>
 </div>
 
 <div id="dashboardView" class="view-panel active">
@@ -2964,6 +2953,11 @@
             <div class="card-title">Our Posts <span class="posts-count" id="postsCount"></span></div>
             <!-- Active content-type filter banner (hidden when no filter active) -->
             <div class="posts-filter-banner" id="postsFilterBanner" style="display:none;"></div>
+            <!-- Posts vs Stories mode toggle. Default = posts (stories filtered out). -->
+            <div class="posts-mode-toggle" id="postsModeToggle">
+                <button type="button" class="posts-mode-btn active" data-posts-mode="posts" onclick="setPostsMode('posts')">📰 Posts <span class="posts-mode-count" id="postsModeCountPosts">0</span></button>
+                <button type="button" class="posts-mode-btn" data-posts-mode="stories" onclick="setPostsMode('stories')">📱 Stories <span class="posts-mode-count" id="postsModeCountStories">0</span></button>
+            </div>
             <div class="posts-category-tabs" id="postsCategoryTabs"></div>
             <div class="posts-feed-wrap">
                 <div class="posts-feed-section">
@@ -3126,25 +3120,6 @@
         </div>
     </div>
 </div><!-- /#pulseView -->
-
-<div id="storiesView" class="view-panel">
-    <div class="stories-toolbar">
-        <span class="stories-toolbar-label">Platform:</span>
-        <button class="stories-chip active" data-stories-platform="all" onclick="filterStoriesPlatform('all', this)">All</button>
-        <button class="stories-chip" data-stories-platform="instagram" onclick="filterStoriesPlatform('instagram', this)">Instagram</button>
-        <button class="stories-chip" data-stories-platform="facebook" onclick="filterStoriesPlatform('facebook', this)">Facebook</button>
-        <span class="stories-toolbar-label" style="margin-left:14px;">Window:</span>
-        <button class="stories-chip active" data-stories-window="all" onclick="filterStoriesWindow('all', this)">All Time</button>
-        <button class="stories-chip" data-stories-window="active" onclick="filterStoriesWindow('active', this)">Active Now</button>
-        <button class="stories-chip" data-stories-window="7d" onclick="filterStoriesWindow('7d', this)">Last 7D</button>
-        <button class="stories-chip" data-stories-window="30d" onclick="filterStoriesWindow('30d', this)">Last 30D</button>
-        <button class="stories-refresh-btn" id="storiesRefreshBtn" onclick="refreshStoriesNow()">Capture Now</button>
-        <span class="stories-status" id="storiesStatus">Loading...</span>
-    </div>
-
-    <div class="stories-summary" id="storiesSummary"></div>
-    <div class="stories-grid" id="storiesGrid"></div>
-</div><!-- /#storiesView -->
 
 
 <!-- Pulse modal -->
@@ -3562,6 +3537,9 @@ async function fetchAllData() {
         status.youtube   ? apiFetch('/api/youtube/all-comments' + dateQS)  : null,
         status.youtube   ? apiFetch('/api/youtube/channel')                : null
     ]);
+    // Stories archive — IG + FB stories captured by the 12h poller. Filtered by
+    // postedAt downstream in processData. Failure is non-fatal (returns empty).
+    var storiesArchive = await apiFetch('/api/stories/archive').catch(function(){ return { stories: [] }; });
 
     const quotaHit = [fbPosts,fbComments,igMedia,igComments,liPosts,liComments,ytVideos,ytComments]
         .some(r => r && r.quotaExceeded);
@@ -3574,7 +3552,8 @@ async function fetchAllData() {
         facebook:  { posts: fbPosts, comments: fbComments, insights: fbInsights, page: fbPage },
         instagram: { media: igMedia, comments: igComments, profile: igProfile, reach: igReach },
         linkedin:  { posts: liPosts, comments: liComments, organization: liOrg, pageStats: liPageStats },
-        youtube:   { videos: ytVideos, comments: ytComments, channel: ytChannel }
+        youtube:   { videos: ytVideos, comments: ytComments, channel: ytChannel },
+        stories:   storiesArchive
     };
 }
 
@@ -3602,6 +3581,14 @@ function processData(raw, dateRangeOverride) {
         },
         postEngagement: [],
         allPosts: [],
+        allStories: [],
+        stories: {
+            ig: [], fb: [],
+            summary: {
+                ig: { count: 0, reach: 0, impressions: 0, replies: 0, shares: 0, profile_visits: 0, follows: 0, total_interactions: 0 },
+                fb: { count: 0, reach: 0, impressions: 0, replies: 0, shares: 0 }
+            }
+        },
         // Content Type Mix — categorized counts of posts in window, plus video views where applicable.
         // Stories require a separate API + 24h polling; tracked but currently 0.
         contentMix: {
@@ -3609,7 +3596,8 @@ function processData(raw, dateRangeOverride) {
             ig_video:    { label: 'Instagram Videos',    icon: '📹', count: 0, views: 0 },
             ig_carousel: { label: 'Instagram Carousels', icon: '🖼️', count: 0, views: null },
             ig_image:    { label: 'Instagram Photos',    icon: '📸', count: 0, views: null },
-            ig_story:    { label: 'Instagram Stories',   icon: '📱', count: 0, views: 0, note: 'Not tracked yet — needs 24h polling setup' },
+            ig_story:    { label: 'Instagram Stories',   icon: '📱', count: 0, views: 0, reach: 0, replies: 0, shares: 0 },
+            fb_story:    { label: 'Facebook Stories',    icon: '📱', count: 0, views: 0, reach: 0, replies: 0, shares: 0 },
             fb_video:    { label: 'Facebook Videos',     icon: '🎬', count: 0, views: 0 },
             fb_photo:    { label: 'Facebook Photos',     icon: '📸', count: 0, views: null },
             fb_link:     { label: 'Facebook Links',      icon: '🔗', count: 0, views: null },
@@ -4068,6 +4056,77 @@ function processData(raw, dateRangeOverride) {
         result.kpis.impressions += result.audience[k].impressions || 0;
         result.kpis.followers += result.audience[k].followers || 0;
     });
+
+    // ---------- Stories — IG + FB ----------
+    // Pull from raw.stories.stories (returned by /api/stories/archive). Filter by
+    // postedAt within the active date range, then aggregate into platform summaries,
+    // contentMix, KPI rollups, and a separate allStories list for the toggle in
+    // the Posts section. allStories is intentionally kept separate from allPosts so
+    // the default posts feed shows only feed posts (user wants stories filtered out
+    // by default; toggle to view).
+    var storyItems = (raw.stories && Array.isArray(raw.stories.stories)) ? raw.stories.stories : [];
+    storyItems.forEach(function(s) {
+        if (!s || !s.platform) return;
+        if (!isInRange(s.postedAt)) return;
+        var plat = s.platform === 'instagram' ? 'ig' : (s.platform === 'facebook' ? 'fb' : null);
+        if (!plat) return;
+        var m = s.metrics || {};
+        // Push into per-platform list
+        result.stories[plat].push(s);
+        // Aggregate into summary
+        var sm = result.stories.summary[plat];
+        sm.count += 1;
+        sm.reach += (m.reach || 0);
+        sm.impressions += (m.impressions || m.views || 0);
+        sm.replies += (m.replies || 0);
+        sm.shares += (m.shares || 0);
+        if (plat === 'ig') {
+            sm.profile_visits += (m.profile_visits || 0);
+            sm.follows += (m.follows || 0);
+            sm.total_interactions += (m.total_interactions || 0);
+        }
+        // Update contentMix
+        var cmKey = plat + '_story';
+        if (result.contentMix[cmKey]) {
+            result.contentMix[cmKey].count += 1;
+            result.contentMix[cmKey].views = (result.contentMix[cmKey].views || 0) + (m.impressions || m.views || 0);
+            result.contentMix[cmKey].reach = (result.contentMix[cmKey].reach || 0) + (m.reach || 0);
+            result.contentMix[cmKey].replies = (result.contentMix[cmKey].replies || 0) + (m.replies || 0);
+            result.contentMix[cmKey].shares = (result.contentMix[cmKey].shares || 0) + (m.shares || 0);
+        }
+        // Roll story metrics into headline KPIs so the dashboard reflects everything
+        result.kpis.reach += (m.reach || 0);
+        result.kpis.impressions += (m.impressions || m.views || 0);
+        result.kpis.comments += (m.replies || 0);
+        result.kpis.shares += (m.shares || 0);
+        result.kpis.views += (m.views || m.impressions || 0);
+        // Build a post-card-shaped record for the Posts section "Stories" toggle.
+        var storyEng = (m.replies || 0) + (m.shares || 0) + (m.profile_visits || 0) + (m.total_interactions || 0);
+        result.allStories.push({
+            platform: plat,
+            postId: s.storyId,
+            text: s.caption || '',
+            image: s.thumbnailUrl || s.mediaUrl || null,
+            mediaUrl: s.mediaUrl || null,
+            permalink: s.permalink || null,
+            date: s.postedAt,
+            isStory: true,
+            mediaType: s.mediaType || null,
+            contentType: cmKey,
+            metrics: m,
+            navigationBreakdown: s.navigationBreakdown || null,
+            likes: 0,
+            comments: m.replies || 0,
+            shares: m.shares || 0,
+            views: m.views || m.impressions || 0,
+            reach: m.reach || 0,
+            totalEngagement: storyEng,
+            _story: s
+        });
+    });
+    result.allStories.sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
+    var rankedStories = result.allStories.slice().sort(function(a, b) { return b.totalEngagement - a.totalEngagement; });
+    rankedStories.forEach(function(s, idx) { s.rank = idx + 1; });
 
     return result;
 }
@@ -4700,6 +4759,45 @@ function renderPlatformPerformance(data) {
             : ahsScoreHeader >= 35 ? 'tier-weak' : 'tier-poor';
         const ahsTierLabel = ahsScoreHeader == null ? '' : ahsLabel(ahsScoreHeader);
 
+        // Stories sub-block — only IG + FB have stories. Pulls from data.stories.summary[platform].
+        let storiesHtml = '';
+        if ((p.key === 'ig' || p.key === 'fb') && data.stories && data.stories.summary) {
+            const sm = data.stories.summary[p.key] || {};
+            const cnt = sm.count || 0;
+            if (cnt > 0) {
+                const rowsList = [
+                    { label: 'Stories', val: cnt },
+                    { label: 'Reach', val: sm.reach || 0 },
+                    { label: 'Views', val: sm.impressions || 0 },
+                    { label: 'Replies', val: sm.replies || 0 },
+                    { label: 'Shares', val: sm.shares || 0 }
+                ];
+                if (p.key === 'ig') {
+                    if (sm.profile_visits) rowsList.push({ label: 'Profile visits', val: sm.profile_visits });
+                    if (sm.follows) rowsList.push({ label: 'Follows', val: sm.follows });
+                }
+                const rowsHtml = rowsList.map(function(r) {
+                    return '<div class="pp-stories-stat"><span class="pp-stories-stat-label">' + r.label + '</span><span class="pp-stories-stat-val">' + fmt(r.val) + '</span></div>';
+                }).join('');
+                storiesHtml =
+                    '<div class="pp-stories">' +
+                      '<div class="pp-stories-head">' +
+                        '<span class="pp-stories-title">📱 Stories</span>' +
+                        '<span class="pp-stories-count">' + cnt + (cnt === 1 ? ' story' : ' stories') + ' in window</span>' +
+                      '</div>' +
+                      '<div class="pp-stories-grid">' + rowsHtml + '</div>' +
+                    '</div>';
+            } else {
+                storiesHtml =
+                    '<div class="pp-stories">' +
+                      '<div class="pp-stories-head">' +
+                        '<span class="pp-stories-title">📱 Stories</span>' +
+                      '</div>' +
+                      '<div class="pp-stories-empty">No stories captured in this date range.</div>' +
+                    '</div>';
+            }
+        }
+
         return '<div class="pp-card ' + p.cls + '" data-platform="' + p.key + '">' +
                  (isTop ? '<div class="pp-top-badge">Top</div>' : '') +
                  '<div class="pp-card-header">' +
@@ -4720,6 +4818,7 @@ function renderPlatformPerformance(data) {
                    '<div class="pp-section-title">Engagement</div>' +
                    '<div class="pp-engagement-grid">' + statsHtml + '</div>' +
                  '</div>' +
+                 storiesHtml +
                  '<div>' +
                    '<div class="pp-section-title">Content Types</div>' +
                    '<div class="pp-content-types">' + ctHtml + '</div>' +
@@ -4769,9 +4868,11 @@ function updateFilterBanner() {
 
 // Applies BOTH theme filter (existing posts category tabs) AND content-type filter (new) to the posts feed.
 function applyPostsFilters() {
-    if (!_allPostsCached || !_allPostsCached.length) return;
-    let filtered = _allPostsCached;
-    if (_activePostCategory && _activePostCategory !== 'all') {
+    var sourceList = _postsMode === 'stories' ? _allStoriesCached : _allPostsCached;
+    if (!sourceList) sourceList = [];
+    let filtered = sourceList;
+    // Theme tabs only apply to feed posts mode
+    if (_postsMode !== 'stories' && _activePostCategory && _activePostCategory !== 'all') {
         filtered = filtered.filter(function(p) {
             return (p._theme || classifyPostTheme(p.text)) === _activePostCategory;
         });
@@ -4779,7 +4880,7 @@ function applyPostsFilters() {
     if (_activeContentTypeFilter) {
         filtered = filtered.filter(function(p) { return p.contentType === _activeContentTypeFilter; });
     }
-    renderPostCards(filtered, _allPostsCached.length);
+    renderPostCards(filtered, sourceList.length);
     const wrap = document.getElementById('postsWrap');
     if (wrap) wrap.scrollLeft = 0;
 }
@@ -5961,11 +6062,35 @@ function classifyPostTheme(text) {
 }
 
 var _allPostsCached = [];
+var _allStoriesCached = [];
 var _activePostCategory = 'all';
+// Posts vs Stories mode for the Posts section. Default 'posts' so stories are
+// filtered out unless the user toggles. The user wants stories visible in this
+// section only on demand, with the existing theme + content-type filters still
+// composing on top of whichever mode is active.
+var _postsMode = 'posts';
+window.setPostsMode = function(mode) {
+    if (mode !== 'posts' && mode !== 'stories') return;
+    if (_postsMode === mode) return;
+    _postsMode = mode;
+    document.querySelectorAll('.posts-mode-btn').forEach(function(b) {
+        b.classList.toggle('active', b.getAttribute('data-posts-mode') === mode);
+    });
+    // Reset category to All when switching modes (themes mostly apply to feed posts)
+    _activePostCategory = 'all';
+    renderPostsCategoryTabs(_postsMode === 'stories' ? _allStoriesCached : _allPostsCached);
+    applyPostsFilters();
+};
 
 function renderPostsCategoryTabs(allPosts) {
     var tabsEl = document.getElementById('postsCategoryTabs');
     if (!tabsEl) return;
+    // In stories mode, themes don't apply (most stories have no caption);
+    // just hide the theme tabs entirely.
+    if (_postsMode === 'stories') {
+        tabsEl.innerHTML = '';
+        return;
+    }
     var counts = { all: allPosts.length };
     allPosts.forEach(function(p) {
         var cat = p._theme || classifyPostTheme(p.text);
@@ -5999,24 +6124,32 @@ function renderPostsCategoryTabs(allPosts) {
 
 function renderPostsFeed(data) {
     const countEl = document.getElementById('postsCount');
-    if (!data.allPosts || data.allPosts.length === 0) {
-        document.getElementById('postsFeed').innerHTML = '<div style="padding:40px;text-align:center;color:#8F9BBA;">No posts found in this date range.</div>';
+    _allPostsCached = data.allPosts || [];
+    _allStoriesCached = data.allStories || [];
+    _activePostCategory = 'all';
+    // Update both mode-toggle count badges
+    var pCnt = document.getElementById('postsModeCountPosts');
+    var sCnt = document.getElementById('postsModeCountStories');
+    if (pCnt) pCnt.textContent = _allPostsCached.length;
+    if (sCnt) sCnt.textContent = _allStoriesCached.length;
+
+    var activeList = _postsMode === 'stories' ? _allStoriesCached : _allPostsCached;
+    if (!activeList || activeList.length === 0) {
+        document.getElementById('postsFeed').innerHTML = '<div style="padding:40px;text-align:center;color:#8F9BBA;">No ' + (_postsMode === 'stories' ? 'stories captured' : 'posts found') + ' in this date range.</div>';
         if (countEl) countEl.textContent = '';
         var tabsEl = document.getElementById('postsCategoryTabs');
         if (tabsEl) tabsEl.innerHTML = '';
         return;
     }
-    _allPostsCached = data.allPosts;
-    _activePostCategory = 'all';
-    if (countEl) countEl.textContent = '(' + data.allPosts.length + ')';
-    renderPostsCategoryTabs(data.allPosts);
-    renderPostCards(data.allPosts, data.allPosts.length);
+    if (countEl) countEl.textContent = '(' + activeList.length + ')';
+    renderPostsCategoryTabs(activeList);
+    renderPostCards(activeList, activeList.length);
 }
 
 function renderPostCards(posts, totalCount) {
     const container = document.getElementById('postsFeed');
     if (!posts || posts.length === 0) {
-        container.innerHTML = '<div style="padding:40px;text-align:center;color:#8F9BBA;width:100%;">No posts in this category.</div>';
+        container.innerHTML = '<div style="padding:40px;text-align:center;color:#8F9BBA;width:100%;">No items in this category.</div>';
         return;
     }
     var platLetters = { fb: 'f', ig: 'IG', li: 'in', yt: String.fromCharCode(9654) };
@@ -6030,7 +6163,29 @@ function renderPostCards(posts, totalCount) {
             ? '<img class="post-card-image" src="' + escapeHtml(p.image) + '" alt="" onerror="this.style.display=\'none\'">'
             : '<div class="post-card-image no-img">&#128221;</div>';
         var rankClass = p.rank <= 3 ? ' top3' : '';
-        return '<div class="post-card ' + (p.platform || '') + '">' +
+        var isStory = !!p.isStory;
+        var cardCls = 'post-card ' + (p.platform || '') + (isStory ? ' is-story' : '');
+        var statsHtml;
+        if (isStory) {
+            // Story-specific stats: reach, replies (as comments), shares, views
+            var m = p.metrics || {};
+            statsHtml = '<div class="post-card-stats">' +
+                ((p.reach || m.reach) > 0 ? '<div class="stat"><span class="stat-icon">&#128065;</span> ' + fmt(p.reach || m.reach) + ' reach</div>' : '') +
+                ((m.views || m.impressions) > 0 ? '<div class="stat"><span class="stat-icon">&#9654;</span> ' + fmt(m.views || m.impressions) + ' views</div>' : '') +
+                (p.comments > 0 ? '<div class="stat"><span class="stat-icon">&#128172;</span> ' + fmt(p.comments) + ' replies</div>' : '') +
+                (p.shares > 0 ? '<div class="stat"><span class="stat-icon">&#128257;</span> ' + fmt(p.shares) + '</div>' : '') +
+                (m.profile_visits > 0 ? '<div class="stat"><span class="stat-icon">&#128100;</span> ' + fmt(m.profile_visits) + ' visits</div>' : '') +
+            '</div>';
+        } else {
+            statsHtml = '<div class="post-card-stats">' +
+                '<div class="stat"><span class="stat-icon">&#10084;</span> ' + fmt(p.reactions) + '</div>' +
+                '<div class="stat"><span class="stat-icon">&#128172;</span> ' + fmt(p.comments) + '</div>' +
+                (p.shares > 0 ? '<div class="stat"><span class="stat-icon">&#128257;</span> ' + fmt(p.shares) + '</div>' : '') +
+                (p.views > 0 ? '<div class="stat"><span class="stat-icon">&#9654;</span> ' + fmt(p.views) + '</div>' : '') +
+            '</div>';
+        }
+        var bodyText = p.text || (isStory ? '(no caption)' : '');
+        return '<div class="' + cardCls + '">' +
             '<div class="post-card-header">' +
                 '<div class="post-card-plat-icon ' + p.platform + '">' + platLetters[p.platform] + '</div>' +
                 '<div class="post-card-meta">' +
@@ -6041,14 +6196,9 @@ function renderPostCards(posts, totalCount) {
             '</div>' +
             imageHtml +
             '<div class="post-card-body">' +
-                '<div class="post-card-text">' + escapeHtml(p.text) + '</div>' +
+                '<div class="post-card-text">' + escapeHtml(bodyText) + '</div>' +
             '</div>' +
-            '<div class="post-card-stats">' +
-                '<div class="stat"><span class="stat-icon">&#10084;</span> ' + fmt(p.reactions) + '</div>' +
-                '<div class="stat"><span class="stat-icon">&#128172;</span> ' + fmt(p.comments) + '</div>' +
-                (p.shares > 0 ? '<div class="stat"><span class="stat-icon">&#128257;</span> ' + fmt(p.shares) + '</div>' : '') +
-                (p.views > 0 ? '<div class="stat"><span class="stat-icon">&#9654;</span> ' + fmt(p.views) + '</div>' : '') +
-            '</div>' +
+            statsHtml +
         '</div>';
     }).join('');
 }
@@ -7140,184 +7290,6 @@ async function renderInsightsPanel(data, previousData, force) {
     };
 
 
-    /* ============================================================
-       STORIES TAB — captured IG/FB story archive renderer
-       ============================================================ */
-    var _storiesState = { data: null, platform: 'all', window: 'all' };
-
-    window.refreshStoriesNow = async function() {
-        var btn = document.getElementById('storiesRefreshBtn');
-        var status = document.getElementById('storiesStatus');
-        if (btn) { btn.disabled = true; btn.textContent = 'Capturing...'; }
-        if (status) status.textContent = 'Triggering capture...';
-        try {
-            const r = await fetch('/api/stories/refresh');
-            const j = await r.json();
-            if (j && j.ok) {
-                if (status) {
-                    var ig = (j.activeNow && j.activeNow.instagram) || 0;
-                    var fb = (j.activeNow && j.activeNow.facebook) || 0;
-                    status.innerHTML = 'Captured at <strong>' + new Date(j.finishedAt).toLocaleTimeString() + '</strong> — IG: ' + ig + ' active, FB: ' + fb + ' active.';
-                }
-                await loadStoriesData();
-            } else {
-                if (status) status.textContent = 'Capture failed: ' + ((j && j.error) || 'unknown');
-            }
-        } catch (err) {
-            if (status) status.textContent = 'Capture error: ' + err.message;
-        } finally {
-            if (btn) { btn.disabled = false; btn.textContent = 'Capture Now'; }
-        }
-    };
-
-    window.filterStoriesPlatform = function(platform, el) {
-        _storiesState.platform = platform;
-        document.querySelectorAll('.stories-chip[data-stories-platform]').forEach(c => c.classList.remove('active'));
-        if (el) el.classList.add('active');
-        renderStories();
-    };
-
-    window.filterStoriesWindow = function(win, el) {
-        _storiesState.window = win;
-        document.querySelectorAll('.stories-chip[data-stories-window]').forEach(c => c.classList.remove('active'));
-        if (el) el.classList.add('active');
-        renderStories();
-    };
-
-    async function loadStoriesData() {
-        var status = document.getElementById('storiesStatus');
-        if (status) status.textContent = 'Loading archive...';
-        try {
-            const [archiveRes, statusRes] = await Promise.all([
-                fetch('/api/stories/archive').then(r => r.json()),
-                fetch('/api/stories/status').then(r => r.json()).catch(() => null)
-            ]);
-            _storiesState.data = archiveRes;
-            _storiesState.status = statusRes;
-            if (status) {
-                var t = archiveRes.lastUpdatedAt ? new Date(archiveRes.lastUpdatedAt).toLocaleString() : 'never';
-                var nextWord = (statusRes && statusRes.githubCommitEnabled) ? 'GitHub-archived' : 'Local archive only';
-                status.innerHTML = '<strong>' + (archiveRes.total || 0) + '</strong> stories archived &mdash; last update ' + t + ' &mdash; ' + nextWord;
-            }
-            renderStories();
-        } catch (err) {
-            if (status) status.textContent = 'Failed to load: ' + err.message;
-        }
-    }
-
-    function renderStories() {
-        var grid = document.getElementById('storiesGrid');
-        var summary = document.getElementById('storiesSummary');
-        if (!grid || !_storiesState.data) return;
-
-        var all = (_storiesState.data.stories || []).slice();
-        var now = Date.now();
-
-        // Filter by platform
-        if (_storiesState.platform !== 'all') {
-            all = all.filter(s => s.platform === _storiesState.platform);
-        }
-        // Filter by window
-        if (_storiesState.window === 'active') {
-            all = all.filter(s => s.postedAt && (now - new Date(s.postedAt).getTime()) < 24 * 60 * 60 * 1000);
-        } else if (_storiesState.window === '7d') {
-            all = all.filter(s => s.postedAt && (now - new Date(s.postedAt).getTime()) < 7 * 24 * 60 * 60 * 1000);
-        } else if (_storiesState.window === '30d') {
-            all = all.filter(s => s.postedAt && (now - new Date(s.postedAt).getTime()) < 30 * 24 * 60 * 60 * 1000);
-        }
-
-        // Build summary KPIs
-        var totalReach = 0, totalImpressions = 0, totalReplies = 0, totalShares = 0;
-        var igCount = 0, fbCount = 0;
-        all.forEach(s => {
-            var m = s.metrics || {};
-            totalReach += (m.reach || 0);
-            totalImpressions += (m.impressions || m.views || 0);
-            totalReplies += (m.replies || 0);
-            totalShares += (m.shares || 0);
-            if (s.platform === 'instagram') igCount++;
-            if (s.platform === 'facebook') fbCount++;
-        });
-
-        if (summary) {
-            summary.innerHTML = [
-                kpi('Stories', all.length, igCount + ' IG · ' + fbCount + ' FB'),
-                kpi('Total Reach', totalReach.toLocaleString(), 'Unique accounts reached'),
-                kpi('Impressions / Views', totalImpressions.toLocaleString(), 'All views'),
-                kpi('Replies', totalReplies.toLocaleString(), 'Direct DM replies'),
-                kpi('Shares', totalShares.toLocaleString(), 'Story shares')
-            ].join('');
-        }
-
-        if (all.length === 0) {
-            grid.innerHTML = '<div class="stories-empty"><h3>No stories captured yet</h3><p>If you have stories live right now, click <strong>Capture Now</strong> to grab them. Otherwise, the system will check every 12 hours automatically.</p></div>';
-            return;
-        }
-
-        grid.innerHTML = all.map(s => storyCard(s, now)).join('');
-    }
-
-    function kpi(label, value, sub) {
-        return '<div class="stories-kpi"><div class="stories-kpi-label">' + label + '</div><div class="stories-kpi-value">' + value + '</div><div class="stories-kpi-sub">' + (sub || '') + '</div></div>';
-    }
-
-    function storyCard(s, now) {
-        var m = s.metrics || {};
-        var posted = s.postedAt ? new Date(s.postedAt) : null;
-        var ageMs = posted ? (now - posted.getTime()) : null;
-        var isActive = ageMs !== null && ageMs < 24 * 60 * 60 * 1000;
-        var ageLabel = posted ? humanAge(ageMs) : 'unknown';
-        var thumb = s.thumbnailUrl || s.mediaUrl || '';
-        var platformClass = s.platform === 'instagram' ? 'ig' : 'fb';
-        var platformLabel = s.platform === 'instagram' ? 'Instagram' : 'Facebook';
-        var caption = (s.caption || '').replace(/</g, '&lt;');
-        var nav = s.navigationBreakdown || {};
-
-        var html = '<div class="story-card">';
-        html += '<div class="story-thumb-wrap">';
-        if (thumb) {
-            html += '<img class="story-thumb" src="' + thumb + '" loading="lazy" onerror="this.style.display=\'none\'">';
-        }
-        html += '<span class="story-platform-badge ' + platformClass + '">' + platformLabel + '</span>';
-        html += '<span class="story-active-pill' + (isActive ? '' : ' expired') + '">' + (isActive ? 'Active · ' + ageLabel : 'Expired · ' + ageLabel) + '</span>';
-        html += '</div>';
-        html += '<div class="story-meta">';
-        html += '<div class="story-time">Posted ' + (posted ? posted.toLocaleString() : 'unknown') + '</div>';
-        if (caption) html += '<div class="story-caption">' + caption + '</div>';
-        html += '</div>';
-        html += '<div class="story-metrics">';
-        html += metric('Reach', m.reach);
-        html += metric('Impressions', m.impressions || m.views);
-        html += metric('Replies', m.replies);
-        html += metric('Shares', m.shares);
-        html += metric('Profile visits', m.profile_visits);
-        html += metric('Follows', m.follows);
-        html += '</div>';
-        if (nav && (nav.tap_forward || nav.tap_back || nav.exit || nav.swipe_forward)) {
-            html += '<div class="story-nav-bd">';
-            html += '<span>Fwd <strong>' + (nav.tap_forward || 0) + '</strong></span>';
-            html += '<span>Back <strong>' + (nav.tap_back || 0) + '</strong></span>';
-            html += '<span>Exit <strong>' + (nav.exit || 0) + '</strong></span>';
-            html += '<span>Swipe <strong>' + (nav.swipe_forward || 0) + '</strong></span>';
-            html += '</div>';
-        }
-        html += '</div>';
-        return html;
-    }
-
-    function metric(label, value) {
-        var v = (typeof value === 'number') ? value.toLocaleString() : '—';
-        return '<div class="story-metric"><span class="story-metric-label">' + label + '</span><span class="story-metric-value">' + v + '</span></div>';
-    }
-
-    function humanAge(ms) {
-        if (ms === null || ms === undefined) return '';
-        var hrs = Math.floor(ms / 3600000);
-        if (hrs < 1) return Math.floor(ms / 60000) + 'm ago';
-        if (hrs < 24) return hrs + 'h ago';
-        var days = Math.floor(hrs / 24);
-        return days + 'd ago';
-    }
 
     window.switchView = function(view) {
         document.querySelectorAll('.view-nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
@@ -7325,11 +7297,8 @@ async function renderInsightsPanel(data, previousData, force) {
         document.getElementById('mentionsView').classList.toggle('active', view === 'mentions');
         var pulseViewEl = document.getElementById('pulseView');
         if (pulseViewEl) pulseViewEl.classList.toggle('active', view === 'pulse');
-        var storiesViewEl = document.getElementById('storiesView');
-        if (storiesViewEl) storiesViewEl.classList.toggle('active', view === 'stories');
         if (view === 'mentions' && !_mentionsState.data) loadMentionsWithAutoRefresh();
         if (view === 'pulse' && typeof loadPulseData === 'function') loadPulseData();
-        if (view === 'stories' && typeof loadStoriesData === 'function') loadStoriesData();
     };
 
     window.filterMentionsSource = function(source, el) {
