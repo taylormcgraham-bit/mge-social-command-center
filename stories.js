@@ -170,43 +170,67 @@ async function fetchInstagramStories(config) {
   return { stories: enriched };
 }
 
-// FB Page Story insights — Meta is fussy about which metrics are supported for
-// stories vs. regular posts. We try a comprehensive set per-metric so a single
-// bad name doesn't void the rest.
+// FB Page Story insights — Meta uses a COMPLETELY different metric set for
+// stories vs. regular posts. The valid story metrics (per Meta's own error message)
+// are listed below. We map each to a friendly key on the way out so the dashboard
+// can use the same property names as IG ('reach', 'views', 'replies', etc.).
 const FB_STORY_METRICS = [
-  'post_impressions',
-  'post_impressions_unique',
-  'post_engaged_users',
-  'post_clicks',
-  'post_video_views',
-  'post_reactions_by_type_total'
+  'page_story_impressions_by_story_id',          // total impressions
+  'page_story_impressions_by_story_id_unique',   // unique reach
+  'pages_fb_story_replies',                       // DM replies
+  'pages_fb_story_shares',                        // shares
+  'pages_fb_story_thread_lightweight_reactions',  // quick reactions
+  'pages_fb_story_sticker_interactions',          // sticker interactions (polls/quizzes/etc)
+  'story_interaction',                            // total interactions composite
+  'story_media_view',                             // total story media views
+  'story_total_media_view_unique'                 // unique story media views
 ];
+
+// Map Meta's verbose metric names to friendlier keys the dashboard renders.
+const FB_STORY_METRIC_ALIASES = {
+  page_story_impressions_by_story_id: 'impressions',
+  page_story_impressions_by_story_id_unique: 'reach',
+  pages_fb_story_replies: 'replies',
+  pages_fb_story_shares: 'shares',
+  pages_fb_story_thread_lightweight_reactions: 'reactions',
+  pages_fb_story_sticker_interactions: 'sticker_interactions',
+  story_interaction: 'total_interactions',
+  story_media_view: 'views',
+  story_total_media_view_unique: 'unique_views'
+};
+
+function _absorbFbMetric(m, metrics) {
+  const v = (m.values && m.values[0] && m.values[0].value);
+  const numeric = (typeof v === 'number') ? v : 0;
+  // Store under both the raw name AND the friendly alias so the rest of the
+  // pipeline can look up either.
+  metrics[m.name] = numeric;
+  const alias = FB_STORY_METRIC_ALIASES[m.name];
+  if (alias) metrics[alias] = numeric;
+}
 
 async function fetchFbInsights(postId, pageAccessToken) {
   const metrics = {};
   const errors = [];
 
-  // Try bulk first
+  // Try bulk first — fast path when all metrics happen to apply
   const bulkUrl = `${META_BASE}/${postId}/insights?metric=${FB_STORY_METRICS.join(',')}&access_token=${pageAccessToken}`;
   const bulk = await apiFetch(bulkUrl);
   if (bulk && Array.isArray(bulk.data) && bulk.data.length > 0) {
-    bulk.data.forEach(m => {
-      const v = (m.values && m.values[0] && m.values[0].value);
-      metrics[m.name] = (typeof v === 'number') ? v : (typeof v === 'object' ? v : 0);
-    });
+    bulk.data.forEach(m => _absorbFbMetric(m, metrics));
     return { metrics, errors };
   }
   if (bulk && bulk.error) errors.push({ stage: 'bulk', message: bulk.message });
 
-  // Per-metric fallback
+  // Per-metric fallback — story metric availability differs by media type
+  // (image vs. video stories don't return identical metric sets), so a bulk
+  // call with a metric that's invalid for THIS story type voids the whole
+  // batch. Per-metric requests pick up everything that's actually available.
   await Promise.all(FB_STORY_METRICS.map(async (metric) => {
     const url = `${META_BASE}/${postId}/insights?metric=${metric}&access_token=${pageAccessToken}`;
     const r = await apiFetch(url);
     if (r && Array.isArray(r.data) && r.data.length > 0) {
-      r.data.forEach(m => {
-        const v = (m.values && m.values[0] && m.values[0].value);
-        metrics[m.name] = (typeof v === 'number') ? v : (typeof v === 'object' ? v : 0);
-      });
+      r.data.forEach(m => _absorbFbMetric(m, metrics));
     } else if (r && r.error) {
       errors.push({ metric, message: r.message });
     }
