@@ -34,10 +34,12 @@ const ARCHIVE_PATH_IN_REPO = 'data/stories-archive.json';
 // 12 hours
 const POLL_INTERVAL_MS = 12 * 60 * 60 * 1000;
 
+// v22 deprecated `impressions` for IG media — and Meta rejects the WHOLE bulk
+// insights call when any single metric is invalid for a given media. So we keep
+// the supported list small and use per-metric fallback (see fetchIgInsights below).
 const IG_STORY_METRICS = [
   'reach',
   'views',
-  'impressions',
   'replies',
   'navigation',
   'follows',
@@ -86,6 +88,58 @@ async function apiFetch(url, options = {}) {
   }
 }
 
+// Parse a single insights `data` array into the metrics map. Used by both bulk and
+// per-metric fallback paths.
+function _absorbIgInsights(insData, metrics, navState) {
+  insData.forEach(m => {
+    if (m.name === 'navigation') {
+      const val = m.total_value || (m.values && m.values[0] && { value: m.values[0].value });
+      if (val && Array.isArray(val.breakdowns) && val.breakdowns[0]) {
+        navState.breakdown = (val.breakdowns[0].results || []).reduce((acc, r) => {
+          acc[(r.dimension_values && r.dimension_values[0]) || 'unknown'] = r.value;
+          return acc;
+        }, {});
+      }
+      metrics.navigation = (val && (val.value !== undefined ? val.value : 0)) || 0;
+    } else {
+      let v = 0;
+      if (m.values && m.values[0] && typeof m.values[0].value === 'number') v = m.values[0].value;
+      else if (m.total_value && typeof m.total_value.value === 'number') v = m.total_value.value;
+      metrics[m.name] = v;
+    }
+  });
+}
+
+// Fetch IG story insights with per-metric fallback. v22 returns 400 for the WHOLE
+// bulk request if any metric isn't supported for the queried media (Reels vs.
+// photo vs. video stories all have different supported metrics). When the bulk
+// fails, we re-issue one request per metric and aggregate whatever works.
+async function fetchIgInsights(storyId, accessToken) {
+  const metrics = {};
+  const navState = { breakdown: null };
+  const errors = [];
+
+  const bulkUrl = `${META_BASE}/${storyId}/insights?metric=${IG_STORY_METRICS.join(',')}&access_token=${accessToken}`;
+  const bulk = await apiFetch(bulkUrl);
+  if (bulk && Array.isArray(bulk.data) && bulk.data.length > 0) {
+    _absorbIgInsights(bulk.data, metrics, navState);
+    return { metrics, navigationBreakdown: navState.breakdown, errors };
+  }
+  if (bulk && bulk.error) errors.push({ stage: 'bulk', message: bulk.message });
+
+  // Per-metric fallback
+  await Promise.all(IG_STORY_METRICS.map(async (metric) => {
+    const url = `${META_BASE}/${storyId}/insights?metric=${metric}&access_token=${accessToken}`;
+    const r = await apiFetch(url);
+    if (r && Array.isArray(r.data) && r.data.length > 0) {
+      _absorbIgInsights(r.data, metrics, navState);
+    } else if (r && r.error) {
+      errors.push({ metric, message: r.message });
+    }
+  }));
+  return { metrics, navigationBreakdown: navState.breakdown, errors };
+}
+
 async function fetchInstagramStories(config) {
   const { accessToken, igUserId } = config.instagram || {};
   if (!accessToken || !igUserId) {
@@ -97,29 +151,7 @@ async function fetchInstagramStories(config) {
 
   const items = list.data || [];
   const enriched = await Promise.all(items.map(async (s) => {
-    const insightsUrl = `${META_BASE}/${s.id}/insights?metric=${IG_STORY_METRICS.join(',')}&access_token=${accessToken}`;
-    const ins = await apiFetch(insightsUrl);
-    const metrics = {};
-    let navigationBreakdown = null;
-    if (ins && Array.isArray(ins.data)) {
-      ins.data.forEach(m => {
-        if (m.name === 'navigation') {
-          const val = m.total_value || (m.values && m.values[0] && { value: m.values[0].value });
-          if (val && Array.isArray(val.breakdowns) && val.breakdowns[0]) {
-            navigationBreakdown = (val.breakdowns[0].results || []).reduce((acc, r) => {
-              acc[(r.dimension_values && r.dimension_values[0]) || 'unknown'] = r.value;
-              return acc;
-            }, {});
-          }
-          metrics.navigation = (val && (val.value !== undefined ? val.value : 0)) || 0;
-        } else {
-          let v = 0;
-          if (m.values && m.values[0] && typeof m.values[0].value === 'number') v = m.values[0].value;
-          else if (m.total_value && typeof m.total_value.value === 'number') v = m.total_value.value;
-          metrics[m.name] = v;
-        }
-      });
-    }
+    const { metrics, navigationBreakdown, errors } = await fetchIgInsights(s.id, accessToken);
     return {
       platform: 'instagram',
       storyId: s.id,
@@ -132,10 +164,66 @@ async function fetchInstagramStories(config) {
       capturedAt: new Date().toISOString(),
       metrics,
       navigationBreakdown,
-      raw: { insightsRaw: ins && ins.error ? { error: ins.message } : undefined }
+      raw: errors.length ? { insightsErrors: errors } : undefined
     };
   }));
   return { stories: enriched };
+}
+
+// FB Page Story insights — Meta is fussy about which metrics are supported for
+// stories vs. regular posts. We try a comprehensive set per-metric so a single
+// bad name doesn't void the rest.
+const FB_STORY_METRICS = [
+  'post_impressions',
+  'post_impressions_unique',
+  'post_engaged_users',
+  'post_clicks',
+  'post_video_views',
+  'post_reactions_by_type_total'
+];
+
+async function fetchFbInsights(postId, pageAccessToken) {
+  const metrics = {};
+  const errors = [];
+
+  // Try bulk first
+  const bulkUrl = `${META_BASE}/${postId}/insights?metric=${FB_STORY_METRICS.join(',')}&access_token=${pageAccessToken}`;
+  const bulk = await apiFetch(bulkUrl);
+  if (bulk && Array.isArray(bulk.data) && bulk.data.length > 0) {
+    bulk.data.forEach(m => {
+      const v = (m.values && m.values[0] && m.values[0].value);
+      metrics[m.name] = (typeof v === 'number') ? v : (typeof v === 'object' ? v : 0);
+    });
+    return { metrics, errors };
+  }
+  if (bulk && bulk.error) errors.push({ stage: 'bulk', message: bulk.message });
+
+  // Per-metric fallback
+  await Promise.all(FB_STORY_METRICS.map(async (metric) => {
+    const url = `${META_BASE}/${postId}/insights?metric=${metric}&access_token=${pageAccessToken}`;
+    const r = await apiFetch(url);
+    if (r && Array.isArray(r.data) && r.data.length > 0) {
+      r.data.forEach(m => {
+        const v = (m.values && m.values[0] && m.values[0].value);
+        metrics[m.name] = (typeof v === 'number') ? v : (typeof v === 'object' ? v : 0);
+      });
+    } else if (r && r.error) {
+      errors.push({ metric, message: r.message });
+    }
+  }));
+  return { metrics, errors };
+}
+
+// Meta returns FB story creation_time as either ISO ('2026-05-05T22:24:17+0000')
+// or Unix seconds string ('1778022257'). Normalize to ISO.
+function normalizeFbTime(v) {
+  if (!v) return null;
+  const s = String(v);
+  if (/^\d+$/.test(s)) {
+    const ms = (s.length <= 10) ? Number(s) * 1000 : Number(s);
+    return new Date(ms).toISOString();
+  }
+  return s;
 }
 
 async function fetchFacebookStories(config) {
@@ -143,39 +231,61 @@ async function fetchFacebookStories(config) {
   if (!pageAccessToken || !pageId) {
     return { error: true, message: 'Facebook not configured' };
   }
-  const listUrl = `${META_BASE}/${pageId}/stories?fields=id,status,media_type,media_url,creation_time,expiration_time,url,post_id&access_token=${pageAccessToken}`;
+  // FB /{page-id}/stories returns post_id reliably but `id` is often missing,
+  // and `media_url` is rarely populated — use attachments expansion for the thumbnail.
+  const fields = [
+    'id',
+    'status',
+    'media_type',
+    'media_url',
+    'creation_time',
+    'expiration_time',
+    'url',
+    'post_id',
+    'attachments{media_type,media{image{src},source},url,title,description}'
+  ].join(',');
+  const listUrl = `${META_BASE}/${pageId}/stories?fields=${encodeURIComponent(fields)}&access_token=${pageAccessToken}`;
   const list = await apiFetch(listUrl);
   if (list.error) return list;
   const items = list.data || [];
 
   const enriched = await Promise.all(items.map(async (s) => {
-    let metrics = {};
-    if (s.post_id) {
-      const fbStoryMetrics = ['post_impressions', 'post_impressions_unique', 'post_engaged_users', 'post_clicks'];
-      const insightsUrl = `${META_BASE}/${s.post_id}/insights?metric=${fbStoryMetrics.join(',')}&access_token=${pageAccessToken}`;
-      const ins = await apiFetch(insightsUrl);
-      if (ins && Array.isArray(ins.data)) {
-        ins.data.forEach(m => {
-          const v = (m.values && m.values[0] && m.values[0].value) || 0;
-          metrics[m.name] = (typeof v === 'number') ? v : 0;
-        });
+    // Pull thumbnail from attachments if media_url isn't returned (typical case)
+    let mediaUrl = s.media_url || null;
+    let thumbnailUrl = s.media_url || null;
+    if (s.attachments && Array.isArray(s.attachments.data)) {
+      const att = s.attachments.data[0];
+      if (att && att.media && att.media.image && att.media.image.src) {
+        thumbnailUrl = att.media.image.src;
+        if (!mediaUrl && att.media.source) mediaUrl = att.media.source;
       }
     }
+
+    let insightsResult = { metrics: {}, errors: [] };
+    if (s.post_id) {
+      insightsResult = await fetchFbInsights(s.post_id, pageAccessToken);
+    }
+
+    // FB stories don't always return `id` at the top level. Fall back to post_id
+    // so the merge step has a stable archive key.
+    const stableId = s.id || s.post_id || null;
+
     return {
       platform: 'facebook',
-      storyId: s.id,
+      storyId: stableId,
       postId: s.post_id || null,
       status: s.status || null,
       mediaType: s.media_type || null,
-      mediaUrl: s.media_url || null,
-      thumbnailUrl: s.media_url || null,
+      mediaUrl,
+      thumbnailUrl,
       permalink: s.url || null,
       caption: '',
-      postedAt: s.creation_time || null,
-      expiresAt: s.expiration_time || null,
+      postedAt: normalizeFbTime(s.creation_time),
+      expiresAt: normalizeFbTime(s.expiration_time),
       capturedAt: new Date().toISOString(),
-      metrics,
-      navigationBreakdown: null
+      metrics: insightsResult.metrics,
+      navigationBreakdown: null,
+      raw: insightsResult.errors.length ? { insightsErrors: insightsResult.errors } : undefined
     };
   }));
   return { stories: enriched };
