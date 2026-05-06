@@ -6,6 +6,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const pulse = require('./pulse');
+const stories = require('./stories');
 const app = express();
 app.use(express.json());
 
@@ -2467,6 +2468,65 @@ app.post('/api/score-comments', express.json({ limit: '512kb' }), async (req, re
 });
 
 
+
+// ============================================================
+// STORIES — Instagram + Facebook Stories capture
+// Live read endpoints, archive read, manual capture trigger.
+// 12-hour automated poller starts in app.listen below.
+// ============================================================
+
+// Active stories on Instagram with live insights (no archive write)
+app.get('/api/instagram/stories', async (req, res) => {
+  const data = await stories.fetchInstagramStories(config);
+  res.json(data);
+});
+
+// Active stories on Facebook with live insights (no archive write)
+app.get('/api/facebook/stories', async (req, res) => {
+  const data = await stories.fetchFacebookStories(config);
+  res.json(data);
+});
+
+// Full archive (everything captured so far across both platforms)
+app.get('/api/stories/archive', (req, res) => {
+  const archive = stories.loadArchive();
+  // Return as a sorted array, newest first by postedAt
+  const arr = Object.values(archive.stories).sort((a, b) => {
+    const ta = new Date(a.postedAt || 0).getTime();
+    const tb = new Date(b.postedAt || 0).getTime();
+    return tb - ta;
+  });
+  res.json({
+    lastUpdatedAt: archive.lastUpdatedAt,
+    total: arr.length,
+    stories: arr
+  });
+});
+
+// Status of last automated capture run
+app.get('/api/stories/status', (req, res) => {
+  res.json({
+    lastResult: stories.getLastResult(),
+    pollIntervalHours: stories.POLL_INTERVAL_MS / 3600000,
+    archiveBranch: stories.ARCHIVE_BRANCH,
+    archiveRepo: stories.ARCHIVE_REPO,
+    githubCommitEnabled: !!process.env.GITHUB_PAT
+  });
+});
+
+// Manual capture trigger — fetches active stories now, archives, optionally commits
+// Useful when you have stories live that you want captured immediately.
+app.post('/api/stories/refresh', async (req, res) => {
+  const result = await stories.runStoryCapture(config);
+  res.json(result);
+});
+// Allow GET for convenience (browser / curl one-liner)
+app.get('/api/stories/refresh', async (req, res) => {
+  const result = await stories.runStoryCapture(config);
+  res.json(result);
+});
+
+
 const PORT = config.server.port;
 app.listen(PORT, () => {
   console.log('');
@@ -2486,4 +2546,6 @@ app.listen(PORT, () => {
   console.log('');
   // Audience Pulse: trigger background generation if cache is empty or stale (week rollover)
   pulse.maybeBackgroundGenerate();
+  // Stories: 12-hour poller for IG + FB story capture (commits archive to data-archive branch on GitHub)
+  stories.startStoryPoller(() => config);
 });
