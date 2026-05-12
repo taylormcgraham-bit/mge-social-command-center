@@ -1041,6 +1041,66 @@
             letter-spacing: 0.4px;
             box-shadow: 0 2px 4px rgba(99,102,241,0.25);
         }
+        /* Pillar mini-viz — per-platform contribution row inside each pillar card.
+           Consistent visual language across all 4 pillars: 4 platform pills with brand color
+           accent + scaled bar showing each platform's contribution to this pillar's total. */
+        .pillar-mix {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin: 6px 0 2px;
+            padding: 8px 10px;
+            background: linear-gradient(180deg, #F8FAFC, #FFFFFF);
+            border: 1px solid #EEF2F7;
+            border-radius: 10px;
+        }
+        .pillar-mix:empty { display: none; }
+        .pillar-mix-head {
+            display: flex; justify-content: space-between; align-items: baseline;
+            font-size: 9px; font-weight: 700; color: #94A3B8;
+            text-transform: uppercase; letter-spacing: 0.6px;
+            margin-bottom: 2px;
+        }
+        .pillar-mix-head-total { color: #475569; font-weight: 800; letter-spacing: 0; text-transform: none; font-size: 10px; }
+        .pillar-mix-row {
+            display: grid;
+            grid-template-columns: 14px 36px 1fr auto;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            line-height: 1.2;
+        }
+        .pillar-mix-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .pillar-mix-dot.fb { background: #1877F2; }
+        .pillar-mix-dot.ig { background: linear-gradient(135deg, #F58529, #DD2A7B, #8134AF); }
+        .pillar-mix-dot.li { background: #0A66C2; }
+        .pillar-mix-dot.yt { background: #FF0000; }
+        .pillar-mix-name { font-size: 10px; font-weight: 700; color: #475569; letter-spacing: 0.3px; }
+        .pillar-mix-bar {
+            height: 5px; background: #F1F5F9; border-radius: 3px; overflow: hidden;
+        }
+        .pillar-mix-bar-fill { display: block; height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+        .pillar-mix-bar-fill.fb { background: linear-gradient(90deg, #1877F2, #4267B2); }
+        .pillar-mix-bar-fill.ig { background: linear-gradient(90deg, #F58529, #DD2A7B, #8134AF); }
+        .pillar-mix-bar-fill.li { background: linear-gradient(90deg, #0A66C2, #004182); }
+        .pillar-mix-bar-fill.yt { background: linear-gradient(90deg, #FF0000, #CC0000); }
+        .pillar-mix-val {
+            font-size: 11px; font-weight: 800; color: #1B2559;
+            font-variant-numeric: tabular-nums;
+            text-align: right;
+            min-width: 38px;
+        }
+        /* Sentiment variant — bars are tier-colored (pos/neu/neg) not platform-colored */
+        .pillar-mix-bar-fill.tier-strong  { background: linear-gradient(90deg, #16A34A, #15803D); }
+        .pillar-mix-bar-fill.tier-good    { background: linear-gradient(90deg, #84CC16, #65A30D); }
+        .pillar-mix-bar-fill.tier-fair    { background: linear-gradient(90deg, #EAB308, #CA8A04); }
+        .pillar-mix-bar-fill.tier-weak    { background: linear-gradient(90deg, #F97316, #EA580C); }
+        .pillar-mix-bar-fill.tier-poor    { background: linear-gradient(90deg, #DC2626, #B91C1C); }
+        .pillar-mix-bar-fill.tier-none    { background: #CBD5E1; }
+        .pillar-mix-empty {
+            font-size: 10px; color: #94A3B8; font-style: italic;
+            text-align: center; padding: 4px 0;
+        }
         /* Promote the period-over-period change badge — bigger, bolder, more prominent */
         .pillar-card .kpi-change {
             min-height: 22px;
@@ -3030,10 +3090,12 @@
             </div>
             <div class="kpi-grid">
                 <button type="button" class="kpi-card pillar-card" data-kpi="reach" data-pillar="reach" onclick="toggleKpiBreakdown(this)" aria-expanded="false">
-                    <div class="pillar-tag"><span class="pillar-icon">📡</span>Reach <span class="pillar-weight">15%</span></div>
+                    <div class="pillar-tag"><span class="pillar-icon">📡</span>Reach <span class="pillar-weight">25%</span></div>
                     <div class="kpi-value" id="kpiReach">0</div>
-                    <div class="kpi-label">Audience reached <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
+                    <div class="kpi-label">People reached <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
                     <div class="kpi-change" id="kpiReachChange"></div>
+                    <!-- Per-platform mini-viz — populated by renderPillarMix() in renderKpis -->
+                    <div class="pillar-mix" id="pillarMixReach" data-pillar="reach"></div>
                     <div class="pillar-score-row">
                         <span class="pillar-score-label">Pillar score</span>
                         <span class="pillar-score-bar"><span class="pillar-score-fill" id="pillarFillReach" style="width:0%"></span></span>
@@ -3041,10 +3103,11 @@
                     </div>
                 </button>
                 <button type="button" class="kpi-card pillar-card" data-kpi="interactions" data-pillar="engagement" onclick="toggleKpiBreakdown(this)" aria-expanded="false">
-                    <div class="pillar-tag"><span class="pillar-icon">💪</span>Engagement <span class="pillar-weight">40%</span></div>
+                    <div class="pillar-tag"><span class="pillar-icon">💪</span>Engagement <span class="pillar-weight">25%</span></div>
                     <div class="kpi-value" id="kpiInteractions">0</div>
-                    <div class="kpi-label">Total interactions <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
+                    <div class="kpi-label">Interactions <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
                     <div class="kpi-change" id="kpiInteractionsChange"></div>
+                    <div class="pillar-mix" id="pillarMixEngagement" data-pillar="engagement"></div>
                     <div class="pillar-score-row">
                         <span class="pillar-score-label">Pillar score</span>
                         <span class="pillar-score-bar"><span class="pillar-score-fill" id="pillarFillEngagement" style="width:0%"></span></span>
@@ -3054,8 +3117,9 @@
                 <button type="button" class="kpi-card pillar-card" data-kpi="comments" data-pillar="sentiment" onclick="toggleKpiBreakdown(this)" aria-expanded="false">
                     <div class="pillar-tag"><span class="pillar-icon">🧠</span>Sentiment <span class="pillar-weight">25%</span></div>
                     <div class="kpi-value" id="kpiComments">0</div>
-                    <div class="kpi-label">Comments analyzed <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
+                    <div class="kpi-label">Comments scored <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
                     <div class="kpi-change" id="kpiCommentsChange"></div>
+                    <div class="pillar-mix" id="pillarMixSentiment" data-pillar="sentiment"></div>
                     <div class="pillar-score-row">
                         <span class="pillar-score-label">Pillar score</span>
                         <span class="pillar-score-bar"><span class="pillar-score-fill" id="pillarFillSentiment" style="width:0%"></span></span>
@@ -3063,10 +3127,11 @@
                     </div>
                 </button>
                 <button type="button" class="kpi-card pillar-card" data-kpi="views" data-pillar="attention" onclick="toggleKpiBreakdown(this)" aria-expanded="false">
-                    <div class="pillar-tag"><span class="pillar-icon">👁️</span>Attention <span class="pillar-weight">20%</span></div>
+                    <div class="pillar-tag"><span class="pillar-icon">👁️</span>Attention <span class="pillar-weight">25%</span></div>
                     <div class="kpi-value" id="kpiViews">0</div>
                     <div class="kpi-label">Video views <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
                     <div class="kpi-change" id="kpiViewsChange"></div>
+                    <div class="pillar-mix" id="pillarMixAttention" data-pillar="attention"></div>
                     <div class="pillar-score-row">
                         <span class="pillar-score-label">Pillar score</span>
                         <span class="pillar-score-bar"><span class="pillar-score-fill" id="pillarFillAttention" style="width:0%"></span></span>
@@ -4786,6 +4851,136 @@ function renderKPIs(data) {
         }).join('');
     }
     renderPlatformPerformance(data);
+    renderPillarMix(data);
+}
+
+// Per-platform mini-viz inside each pillar card.
+// One unified component, four pillar-specific data sets. Pulls live values from the processed
+// dashboard data so the breakdown stays in sync with whatever date range is selected.
+function renderPillarMix(data) {
+    const fmtN = function(n) {
+        if (n == null) return '--';
+        if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+        if (n >= 1e3) return (n / 1e3).toFixed(n >= 1e4 ? 0 : 1) + 'K';
+        return Math.round(n).toLocaleString();
+    };
+    const platOrder = [
+        { key: 'fb', label: 'FB' },
+        { key: 'ig', label: 'IG' },
+        { key: 'li', label: 'LI' },
+        { key: 'yt', label: 'YT' }
+    ];
+
+    // ---- REACH: per-platform reach numbers ----
+    (function() {
+        const el = document.getElementById('pillarMixReach');
+        if (!el || !data.audience) return;
+        const rows = platOrder.map(function(p) {
+            return { key: p.key, label: p.label, val: (data.audience[p.key] && data.audience[p.key].reach) || 0 };
+        });
+        const total = rows.reduce(function(s, r) { return s + r.val; }, 0);
+        const max = rows.reduce(function(m, r) { return r.val > m ? r.val : m; }, 0);
+        el.innerHTML = renderMixRows(rows, total, max, 'platform', fmtN, 'Reach by platform');
+    })();
+
+    // ---- ENGAGEMENT: total interactions per platform (reactions+comments+shares+saves) ----
+    (function() {
+        const el = document.getElementById('pillarMixEngagement');
+        if (!el || !data.platformEngagement) return;
+        const rows = platOrder.map(function(p) {
+            const d = data.platformEngagement[p.key] || {};
+            let val = 0;
+            if (p.key === 'fb') {
+                val = (d.like||0)+(d.love||0)+(d.wow||0)+(d.haha||0)+(d.sad||0)+(d.angry||0)+(d.care||0)+(d.comments||0)+(d.shares||0);
+            } else if (p.key === 'ig') {
+                val = (d.likes||0)+(d.comments||0)+(d.saves||0)+(d.shares||0);
+            } else if (p.key === 'li') {
+                val = (d.likes||0)+(d.comments||0)+(d.shares||0);
+            } else if (p.key === 'yt') {
+                val = (d.likes||0)+(d.comments||0);
+            }
+            return { key: p.key, label: p.label, val: val };
+        });
+        const total = rows.reduce(function(s, r) { return s + r.val; }, 0);
+        const max = rows.reduce(function(m, r) { return r.val > m ? r.val : m; }, 0);
+        el.innerHTML = renderMixRows(rows, total, max, 'platform', fmtN, 'Interactions by platform');
+    })();
+
+    // ---- SENTIMENT: per-platform AVG comment score (tier-colored) ----
+    (function() {
+        const el = document.getElementById('pillarMixSentiment');
+        if (!el) return;
+        // Walk per-platform comments and average the per-comment score
+        const rows = platOrder.map(function(p) {
+            const cs = (data.platformComments && data.platformComments[p.key]) || [];
+            if (!cs.length) return { key: p.key, label: p.label, val: null, count: 0 };
+            let sum = 0, n = 0;
+            cs.forEach(function(c) {
+                const sc = (typeof commentScore === 'function') ? commentScore(c) : null;
+                if (sc && sc.score != null) { sum += sc.score; n++; }
+            });
+            return { key: p.key, label: p.label, val: n ? Math.round(sum / n) : null, count: n };
+        });
+        const total = rows.reduce(function(s, r) { return s + (r.count || 0); }, 0);
+        // For sentiment, "bar width" = the score itself (0-100), tier-colored
+        el.innerHTML = renderSentimentMixRows(rows, total);
+    })();
+
+    // ---- ATTENTION: per-platform video views ----
+    (function() {
+        const el = document.getElementById('pillarMixAttention');
+        if (!el || !data.platformEngagement) return;
+        const rows = platOrder.map(function(p) {
+            const d = data.platformEngagement[p.key] || {};
+            return { key: p.key, label: p.label, val: d.views || 0 };
+        });
+        const total = rows.reduce(function(s, r) { return s + r.val; }, 0);
+        const max = rows.reduce(function(m, r) { return r.val > m ? r.val : m; }, 0);
+        el.innerHTML = renderMixRows(rows, total, max, 'platform', fmtN, 'Video views by platform');
+    })();
+}
+
+// Render shared platform-mix rows (Reach / Engagement / Attention)
+function renderMixRows(rows, total, max, mode, fmtN, headLabel) {
+    if (!total) return '<div class="pillar-mix-empty">No data in this window</div>';
+    const head = '<div class="pillar-mix-head"><span>' + headLabel + '</span><span class="pillar-mix-head-total">' + fmtN(total) + ' total</span></div>';
+    const rowsHtml = rows.map(function(r) {
+        const w = max > 0 ? Math.max(2, Math.round((r.val / max) * 100)) : 0;
+        return '<div class="pillar-mix-row">' +
+                 '<span class="pillar-mix-dot ' + r.key + '"></span>' +
+                 '<span class="pillar-mix-name">' + r.label + '</span>' +
+                 '<span class="pillar-mix-bar"><span class="pillar-mix-bar-fill ' + r.key + '" style="width:' + w + '%"></span></span>' +
+                 '<span class="pillar-mix-val">' + fmtN(r.val) + '</span>' +
+               '</div>';
+    }).join('');
+    return head + rowsHtml;
+}
+
+// Sentiment-specific rendering — bar width = score 0–100, color = tier
+function renderSentimentMixRows(rows, totalCount) {
+    if (!totalCount) return '<div class="pillar-mix-empty">No comments scored in this window</div>';
+    function tier(s) {
+        if (s == null) return 'tier-none';
+        if (s >= 80) return 'tier-strong';
+        if (s >= 65) return 'tier-good';
+        if (s >= 50) return 'tier-fair';
+        if (s >= 35) return 'tier-weak';
+        return 'tier-poor';
+    }
+    const head = '<div class="pillar-mix-head"><span>Avg score by platform</span><span class="pillar-mix-head-total">' + totalCount + ' scored</span></div>';
+    const rowsHtml = rows.map(function(r) {
+        const cls = tier(r.val);
+        const w = r.val == null ? 0 : Math.max(2, r.val);
+        const valStr = r.val == null ? '--' : r.val;
+        const meta = r.count ? '<span class="pillar-mix-val" title="' + r.count + ' comments">' + valStr + '</span>' : '<span class="pillar-mix-val" style="color:#94A3B8;">--</span>';
+        return '<div class="pillar-mix-row">' +
+                 '<span class="pillar-mix-dot ' + r.key + '"></span>' +
+                 '<span class="pillar-mix-name">' + r.label + '</span>' +
+                 '<span class="pillar-mix-bar"><span class="pillar-mix-bar-fill ' + cls + '" style="width:' + w + '%"></span></span>' +
+                 meta +
+               '</div>';
+    }).join('');
+    return head + rowsHtml;
 }
 
 // Active content-type filter state — null = no filter, otherwise key like 'ig_reel'
@@ -4918,10 +5113,10 @@ function renderPlatformPerformance(data) {
         let ahsBreakdownHtml = '';
         if (ppAhs && ppAhs.score !== null) {
             const pillarsList = [
-                { name: 'Engagement', weight: 40, val: ppAhs.pillars.engagement },
+                { name: 'Engagement', weight: 25, val: ppAhs.pillars.engagement },
                 { name: 'Sentiment',  weight: 25, val: ppAhs.pillars.sentiment },
-                { name: 'Reach',      weight: 15, val: ppAhs.pillars.reach },
-                { name: 'Attention',  weight: 20, val: ppAhs.pillars.attention }
+                { name: 'Reach',      weight: 25, val: ppAhs.pillars.reach },
+                { name: 'Attention',  weight: 25, val: ppAhs.pillars.attention }
             ];
             const tier = ppAhs.score >= 80 ? 'tier-strong'
                        : ppAhs.score >= 65 ? 'tier-good'
@@ -5449,18 +5644,17 @@ function ahsPillarGrowth(platformKey, followers) {
     const score = 50 + 50 * Math.tanh(mom.pct / 3);
     return Math.max(0, Math.min(100, Math.round(score)));
 }
-// AHS composite — 4-pillar weighted score (totals 100% by construction).
-// Weights rebalanced 2026-05-12 per Taylor for MGE utility-marketing context:
-//   Engagement 40%   — audience action volume; clearest signal of audience health
-//   Sentiment  25%   — still important, but MGE comment volumes are low so a few
-//                      negative comments shouldn't dominate the score (was 40%)
-//   Attention  20%   — video depth; bumped up to reflect content distribution mix
-//   Reach      15%   — bumped up so reach contributes meaningfully (was 5%)
-// History: 2026-05-04 -> { eng 40, sent 40, reach 5, attn 15 }
-//          2026-05-12 -> { eng 40, sent 25, reach 15, attn 20 } (current)
+// AHS composite — 4-pillar EQUALLY-weighted score (Sprout Social / Hootsuite-style methodology).
+// Each pillar carries 25% of the final score so no single signal dominates.
+// History: 2026-05-04    -> { eng 40, sent 40, reach 5,  attn 15 }
+//          2026-05-12 v1 -> { eng 40, sent 25, reach 15, attn 20 }
+//          2026-05-12 v2 -> { eng 25, sent 25, reach 25, attn 25 }  (current — industry standard)
+// Rationale: industry-leading social analytics platforms (Sprout Social, Hootsuite) treat
+// the four health signals as equally important. Equal weighting prevents any one pillar from
+// over-influencing the score and gives a balanced read on overall audience health.
 // If a pillar is null (e.g., no posts in window for engagement), we redistribute its weight
 // across the remaining pillars proportionally so the score stays comparable.
-const AHS_WEIGHTS = { engagement: 40, sentiment: 25, reach: 15, attention: 20 };
+const AHS_WEIGHTS = { engagement: 25, sentiment: 25, reach: 25, attention: 25 };
 function ahsComposite(pillars) {
     let num = 0, den = 0;
     Object.keys(AHS_WEIGHTS).forEach(k => {
@@ -5527,10 +5721,10 @@ function showAhsBreakdown() {
         </div>`;
     }
     const mathStr = `<div style="font-family:monospace; font-size:11.5px; line-height:1.6;">
-        ${pillarMathRow('Engagement', 40, op.engagement)}
+        ${pillarMathRow('Engagement', 25, op.engagement)}
         ${pillarMathRow('Sentiment',  25, op.sentiment)}
-        ${pillarMathRow('Reach',      15, op.reach)}
-        ${pillarMathRow('Attention',  20, op.attention)}
+        ${pillarMathRow('Reach',      25, op.reach)}
+        ${pillarMathRow('Attention',  25, op.attention)}
         <hr style="border:0; border-top:1px solid #E2E8F0; margin:6px 0;">
         <div style="display:flex; justify-content:space-between;">
             <span><strong>Overall MGE AHS (weighted composite)</strong></span>
@@ -5545,9 +5739,9 @@ function showAhsBreakdown() {
         <div class="ahs-modal-section">
             <h4>How the Score Works</h4>
             <div class="ahs-formula-box">
-                Overall MGE AHS = (Engagement &times; 0.40) + (Sentiment &times; 0.25) + (Reach &times; 0.15) + (Attention &times; 0.20)
+                Overall MGE AHS = (Engagement + Sentiment + Reach + Attention) &divide; 4
             </div>
-            <p style="color:#475569; margin:8px 0 0;">A 0&ndash;100 composite of <strong>four weighted pillars</strong>, computed from <strong>MGE's cumulative data across all platforms</strong>. Engagement leads at 40% (the clearest signal of audience health); Sentiment is 25% (still important, but MGE comment volumes are low so we don&rsquo;t want one negative streak to dominate the score); Attention (video views) is 20% to capture content depth; Reach rounds it out at 15%.</p>
+            <p style="color:#475569; margin:8px 0 0;">A 0&ndash;100 composite of <strong>four equally-weighted pillars</strong> (25% each), computed from <strong>MGE's cumulative data across all platforms</strong>. Equal weighting mirrors the methodology used by industry-leading social analytics platforms like <strong>Sprout Social</strong> and <strong>Hootsuite</strong> &mdash; no single signal dominates, so the score reflects balanced audience health rather than any one pillar's swings.</p>
             <p style="color:#475569; margin:8px 0 0;"><strong>No follower weighting:</strong> follower counts are not factored into AHS scoring. The overall score reflects the raw cumulative metrics of each pillar, not a per-platform composite that's been follower-weighted.</p>
             <p style="color:#475569; margin:8px 0 0;"><strong>Per-platform AHS (the cards in Platform Performance) is reference only.</strong> Each platform card's score is computed the same way but using only that platform's data &mdash; useful for spotting which platform is driving overall trend, but does NOT roll up into the gauge.</p>
             <p style="color:#475569; margin:8px 0 0;"><strong>Baseline-relative scoring:</strong> Engagement, Reach, and Attention pillars compare current-period rates to MGE's own running average. Reach + Attention are normalized to <strong>per-day rates</strong> so baselines are comparable across any selected window length (7D / 28D / 90D / custom). Sentiment uses absolute per-comment AI scores (already calibrated against real text). Baselines accumulate locally with each dashboard view (~26 weeks of memory).</p>
@@ -5557,7 +5751,7 @@ function showAhsBreakdown() {
             <h4>The Four Pillars</h4>
             <div class="ahs-pillar-grid">
                 <div class="ahs-pillar-box">
-                    <div class="ahs-pillar-title">Engagement &mdash; 40%</div>
+                    <div class="ahs-pillar-title">Engagement &mdash; 25%</div>
                     <p>Each interaction is weighted by depth, summed, and divided by post count to get per-post engagement. Scored relative to MGE's running average for the platform.</p>
                     <ul class="ahs-tier-list">
                         <li><span class="ahs-tier-w">5&times;</span> <strong>Comments</strong> &mdash; real conversation</li>
@@ -5572,26 +5766,27 @@ function showAhsBreakdown() {
                 </div>
                 <div class="ahs-pillar-box">
                     <div class="ahs-pillar-title">Sentiment &mdash; 25%</div>
+                    <!-- still 25%, kept consistent with equal-weight methodology -->
                     <p>Average of per-comment sentiment scores. Each comment is AI-scored by Claude Haiku 4.5 with full post context + parent-comment context (for replies). Pulled toward neutral when the sample is small.</p>
                     <div class="ahs-formula-box" style="font-size:10.5px; margin:6px 0;">
                         avgScore = mean(per-comment AI score)<br>
                         conf = min(1, comments &divide; 15)<br>
                         final = (avgScore &times; conf) + (50 &times; (1 &minus; conf))
                     </div>
-                    <p style="color:#64748B; margin:0;">Reduced from 40% to 25% &mdash; MGE comment volumes are low, so a few negative comments shouldn&rsquo;t dominate the overall score.</p>
+                    <p style="color:#64748B; margin:0;">Equal-weight with the other three pillars (25%). Sentiment is one of four signals &mdash; not the lead, not the afterthought.</p>
                 </div>
                 <div class="ahs-pillar-box">
-                    <div class="ahs-pillar-title">Reach &mdash; 15%</div>
+                    <div class="ahs-pillar-title">Reach &mdash; 25%</div>
                     <p>Window reach normalized to a per-day rate, scored relative to MGE's running average reach-per-day. No follower ratio &mdash; raw reach divided by days in window.</p>
                     <div class="ahs-formula-box" style="font-size:10.5px; margin:6px 0;">
                         perDay = totalReach &divide; periodDays<br>
                         ratio = perDay &divide; baseline<br>
                         score = 50 + 50 &times; tanh((ratio &minus; 1) &divide; 0.6)
                     </div>
-                    <p style="color:#64748B; margin:0;">Bumped to 15% (was 5%) so reach contributes meaningfully alongside the action-based pillars.</p>
+                    <p style="color:#64748B; margin:0;">Reach is the top-of-funnel signal &mdash; new eyeballs each window. Weighted equally with engagement/sentiment/attention.</p>
                 </div>
                 <div class="ahs-pillar-box">
-                    <div class="ahs-pillar-title">Attention &mdash; 20%</div>
+                    <div class="ahs-pillar-title">Attention &mdash; 25%</div>
                     <p>Video views per day, scored relative to MGE's running average. Captures depth of consumption. Period-normalized so 7D and 28D windows are comparable.</p>
                     <div class="ahs-formula-box" style="font-size:10.5px; margin:6px 0;">
                         perDay = videoViews &divide; periodDays<br>
@@ -5843,10 +6038,10 @@ function renderSentiment(data) {
     const pillarRow = document.getElementById('gaugePillarRow');
     if (pillarRow) {
         const chips = [
-            { name: 'Engagement', weight: '40%', val: pillarAvgs.engagement },
+            { name: 'Engagement', weight: '25%', val: pillarAvgs.engagement },
             { name: 'Sentiment',  weight: '25%', val: pillarAvgs.sentiment },
-            { name: 'Reach',      weight: '15%', val: pillarAvgs.reach },
-            { name: 'Attention',  weight: '20%', val: pillarAvgs.attention }
+            { name: 'Reach',      weight: '25%', val: pillarAvgs.reach },
+            { name: 'Attention',  weight: '25%', val: pillarAvgs.attention }
         ];
         pillarRow.innerHTML = chips.map(c =>
             '<span class="gauge-pillar-chip ' + pillarScoreClass(c.val) + '">' +
