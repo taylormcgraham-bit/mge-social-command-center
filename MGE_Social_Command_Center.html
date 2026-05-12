@@ -616,17 +616,37 @@
         .ar-trend-down { color: #DC2626; font-weight: 700; }
         .ar-trend-flat { color: #64748B; font-weight: 700; }
 
-        /* --- Hero Gauge (next-level) --- */
-        .sentiment-gauge { text-align: center; padding: 24px 0 10px; position: relative; }
+        /* --- Hero Gauge (next-level — enhanced wow factor 2026-05-12) --- */
+        .sentiment-gauge { text-align: center; padding: 30px 0 14px; position: relative; }
         .gauge-hero-bg {
             position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-            width: 340px; height: 200px; border-radius: 50%;
-            background: radial-gradient(ellipse at center, rgba(34,197,94,0.08) 0%, rgba(0,59,113,0.04) 50%, transparent 70%);
+            width: 420px; height: 240px; border-radius: 50%;
+            background:
+                radial-gradient(ellipse at center, rgba(34,197,94,0.10) 0%, rgba(0,102,204,0.06) 35%, transparent 70%),
+                conic-gradient(from 180deg at 50% 100%, rgba(34,197,94,0.05), rgba(0,59,113,0.05), rgba(34,197,94,0.05));
             pointer-events: none; z-index: 0;
+            animation: gaugeHeroPulse 8s ease-in-out infinite;
+        }
+        @keyframes gaugeHeroPulse {
+            0%, 100% { opacity: 0.85; transform: translateX(-50%) scale(1); }
+            50%      { opacity: 1;    transform: translateX(-50%) scale(1.04); }
+        }
+        /* Decorative orbiting dots above the gauge — adds motion + premium feel */
+        .gauge-hero-bg::before, .gauge-hero-bg::after {
+            content: ''; position: absolute; width: 6px; height: 6px;
+            border-radius: 50%; background: rgba(34,197,94,0.55);
+            top: 50%; left: 50%;
+            box-shadow: 0 0 12px rgba(34,197,94,0.6);
+            animation: gaugeOrbit 6s linear infinite;
+        }
+        .gauge-hero-bg::after { animation-delay: -3s; background: rgba(0,102,204,0.5); box-shadow: 0 0 12px rgba(0,102,204,0.5); }
+        @keyframes gaugeOrbit {
+            0%   { transform: translate(-50%, -50%) rotate(0deg) translateX(140px) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg) translateX(140px) rotate(-360deg); }
         }
         .gauge-wrap {
             position: relative; width: 320px; height: 180px; margin: 0 auto; z-index: 1;
-            filter: drop-shadow(0 0 24px rgba(34, 197, 94, 0.2));
+            filter: drop-shadow(0 0 28px rgba(34, 197, 94, 0.25));
             transition: filter 0.6s ease;
         }
         .gauge-wrap:hover { filter: drop-shadow(0 0 40px rgba(34, 197, 94, 0.35)); }
@@ -873,27 +893,27 @@
         .sentiment-legend .dot.neu { background: #EAB308; }
         .sentiment-legend .dot.neg { background: #EF4444; }
 
-        /* --- Comment Feed --- */
-        .comment-feed { overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; }
+        /* --- Comment Feed (tightened 2026-05-12) --- */
+        .comment-feed { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px; }
         .comment-feed::-webkit-scrollbar { width: 5px; }
         .comment-feed::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
 
         .comment-card {
-            background: #FFFFFF; border-radius: 12px; padding: 0;
+            background: #FFFFFF; border-radius: 11px; padding: 0;
             border: 1px solid #E2E8F0; transition: all 0.2s; overflow: hidden;
             flex-shrink: 0;
         }
         .comment-card:hover { border-color: #CBD5E1; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
         .comment-card-header {
-            display: flex; align-items: center; gap: 10px;
-            padding: 12px 14px; border-bottom: 1px solid #F1F5F9;
+            display: flex; align-items: center; gap: 9px;
+            padding: 9px 12px; border-bottom: 1px solid #F1F5F9;
             flex-wrap: nowrap;
         }
         .comment-header-sentiment { margin-left: auto; flex-shrink: 0; }
         .comment-avatar {
-            flex-shrink: 0; width: 38px; height: 38px;
+            flex-shrink: 0; width: 32px; height: 32px;
             border-radius: 50%; display: flex; align-items: center;
-            justify-content: center; color: white; font-size: 14px; font-weight: 700;
+            justify-content: center; color: white; font-size: 13px; font-weight: 700;
         }
         .comment-avatar.fb { background: #1877F2; }
         .comment-avatar.ig { background: linear-gradient(45deg, #F58529, #DD2A7B, #8134AF); }
@@ -913,26 +933,26 @@
         .comment-platform-tag.yt { background: #FEF2F2; color: #FF0000; }
         .comment-time { font-size: 11px; color: #94A3B8; margin-top: 1px; }
         .comment-post-preview {
-            display: flex; gap: 12px; padding: 10px 14px;
+            display: flex; gap: 10px; padding: 8px 12px;
             background: #F8FAFC; border-bottom: 1px solid #F1F5F9;
         }
         .comment-thumb {
-            width: 80px; height: 60px; border-radius: 8px; overflow: hidden;
+            width: 64px; height: 48px; border-radius: 7px; overflow: hidden;
             flex-shrink: 0; background: #E2E8F0;
         }
         .comment-thumb img { width: 100%; height: 100%; object-fit: cover; }
         .comment-post-copy {
-            flex: 1; font-size: 12px; color: #64748B; line-height: 1.45;
-            overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+            flex: 1; font-size: 11.5px; color: #64748B; line-height: 1.4;
+            overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
         }
-        .comment-body { padding: 12px 14px; }
+        .comment-body { padding: 9px 12px; }
         .comment-text {
-            font-size: 14px; color: #1E293B; line-height: 1.6; margin-bottom: 10px;
+            font-size: 13px; color: #1E293B; line-height: 1.5; margin-bottom: 7px;
             word-wrap: break-word; font-weight: 500;
         }
         .comment-footer {
-            display: flex; align-items: center; gap: 14px;
-            padding-top: 8px; border-top: 1px solid #F1F5F9;
+            display: flex; align-items: center; gap: 12px;
+            padding-top: 6px; border-top: 1px solid #F1F5F9;
         }
         .comment-sentiment-badge {
             margin-left: auto; flex-shrink: 0;
@@ -1284,19 +1304,29 @@
         .platform-performance {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 18px;
+            gap: 14px;
             margin-top: 14px;
         }
         @media (max-width: 1100px) { .platform-performance { grid-template-columns: 1fr; } }
         .pp-card {
             border-radius: 18px;
-            padding: 20px;
+            padding: 0;
             border: 1px solid #E2E8F0;
-            display: flex; flex-direction: column; gap: 16px;
+            display: flex; flex-direction: column;
             position: relative;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             overflow: hidden;
+            cursor: pointer;
         }
+        .pp-card[aria-expanded="true"] { cursor: default; }
+        /* Animated shine sweep — mirrors the old followers badge for wow factor */
+        .pp-card::after {
+            content: ''; position: absolute; top: -50%; left: -150%; width: 200%; height: 200%;
+            background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.28) 45%, rgba(255,255,255,0.1) 50%, transparent 55%);
+            pointer-events: none; animation: ppCardShine 5s ease-in-out infinite;
+            z-index: 0;
+        }
+        @keyframes ppCardShine { 0%, 80%, 100% { left: -150%; } 60% { left: 150%; } }
         /* Decorative top-edge accent stripe per platform */
         .pp-card::before {
             content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
@@ -1327,16 +1357,50 @@
         }
         .pp-top-badge::before { content: '★'; font-size: 9px; }
         .pp-card-header {
-            display: flex; align-items: center; justify-content: space-between;
-            padding-bottom: 12px;
-            border-bottom: 1px solid rgba(0,0,0,0.06);
+            display: grid;
+            grid-template-columns: auto 1fr auto auto auto;
+            align-items: center;
+            gap: 14px;
+            padding: 16px 18px;
+            border-bottom: 1px solid transparent;
+            position: relative;
+            z-index: 1;
+            user-select: none;
+            transition: border-color 0.2s ease, background 0.2s ease;
         }
+        .pp-card[aria-expanded="true"] .pp-card-header {
+            border-bottom-color: rgba(0,0,0,0.08);
+        }
+        .pp-card-body {
+            display: none;
+            flex-direction: column;
+            gap: 16px;
+            padding: 16px 18px 18px;
+            position: relative; z-index: 1;
+            animation: ppBodyFade 0.25s ease both;
+        }
+        .pp-card[aria-expanded="true"] .pp-card-body { display: flex; }
+        @keyframes ppBodyFade {
+            from { opacity: 0; transform: translateY(-4px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .pp-card-chev {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.65);
+            color: #1B2559; font-size: 11px; font-weight: 800;
+            transition: transform 0.25s ease, background 0.2s ease;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        .pp-card[aria-expanded="true"] .pp-card-chev { transform: rotate(180deg); background: white; }
         .pp-platform { display: flex; align-items: center; gap: 10px; }
         .pp-platform-icon {
-            width: 32px; height: 32px;
-            border-radius: 8px;
+            width: 36px; height: 36px;
+            border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
-            font-weight: 700; color: white; font-size: 14px;
+            font-weight: 700; color: white; font-size: 15px;
+            box-shadow: 0 3px 8px rgba(15,23,42,0.18);
         }
         .pp-card.fb .pp-platform-icon { background: linear-gradient(135deg, #1877F2, #4267B2); }
         .pp-card.ig .pp-platform-icon { background: linear-gradient(135deg, #E1306C, #C13584, #833AB4); }
@@ -1347,6 +1411,52 @@
         }
         .pp-post-count {
             font-size: 11px; color: #64748B; line-height: 1.3;
+        }
+        /* Follower pill embedded in the card header (replaces standalone followers section).
+           Inherits the platform gradient + shine of the old foll-badge but in a slimmer pill. */
+        .pp-followers {
+            display: flex; flex-direction: column; align-items: flex-end;
+            justify-content: center;
+            padding: 8px 14px;
+            border-radius: 14px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            min-width: 96px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.10);
+        }
+        .pp-followers::before {
+            content: ''; position: absolute; top: -50%; left: -150%; width: 200%; height: 200%;
+            background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.35) 45%, rgba(255,255,255,0.1) 50%, transparent 55%);
+            pointer-events: none; animation: badgeShine 4s ease-in-out infinite;
+        }
+        .pp-card.fb .pp-followers { background: linear-gradient(135deg, #1877F2 0%, #0D47A1 70%, #082F6A 100%); }
+        .pp-card.ig .pp-followers { background: linear-gradient(135deg, #F58529 0%, #DD2A7B 35%, #8134AF 70%, #515BD4 100%); }
+        .pp-card.li .pp-followers { background: linear-gradient(135deg, #0A66C2 0%, #004182 70%, #002D5E 100%); }
+        .pp-card.yt .pp-followers { background: linear-gradient(135deg, #FF0000 0%, #CC0000 70%, #8B0000 100%); }
+        .pp-followers-val {
+            font-size: 17px; font-weight: 900;
+            font-variant-numeric: tabular-nums;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.30);
+            line-height: 1;
+            position: relative;
+        }
+        .pp-followers-label {
+            font-size: 8px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+            opacity: 0.92; margin-top: 3px; line-height: 1;
+            position: relative;
+        }
+        .pp-followers-mom {
+            display: inline-block;
+            font-size: 9px; font-weight: 700;
+            background: rgba(255,255,255,0.25);
+            padding: 1px 7px; border-radius: 10px;
+            margin-top: 4px; backdrop-filter: blur(4px);
+            position: relative;
+        }
+        @media (max-width: 720px) {
+            .pp-card-header { grid-template-columns: auto 1fr auto auto; gap: 10px; padding: 12px 14px; }
+            .pp-followers { display: none; }
         }
         .pp-total {
             text-align: right;
@@ -1503,23 +1613,52 @@
         }
 
         /* --- Our Posts horizontal feed --- */
-        .posts-category-tabs {
-            display: flex; gap: 6px; flex-wrap: wrap;
+        /* Toolbar that holds sort buttons + content-type dropdown */
+        .posts-toolbar {
+            display: flex; align-items: center; gap: 12px;
+            flex-wrap: wrap;
             margin-bottom: 14px;
         }
-        .posts-cat-btn {
-            padding: 5px 11px; border-radius: 16px; border: 1.5px solid #E2E8F0;
-            background: white; color: #64748B; font-size: 11px; font-weight: 600;
-            cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 5px;
+        .posts-sort-group {
+            display: inline-flex; align-items: center; gap: 0;
+            border: 1.5px solid #E2E8F0; border-radius: 18px;
+            overflow: hidden; background: white;
+        }
+        .posts-sort-label {
+            font-size: 10px; font-weight: 700; color: #94A3B8;
+            text-transform: uppercase; letter-spacing: 0.6px;
+            padding: 0 4px 0 12px;
+        }
+        .posts-sort-btn {
+            padding: 6px 13px; border: none; background: transparent;
+            color: #64748B; font-size: 11.5px; font-weight: 600;
+            cursor: pointer; transition: all 0.15s;
             font-family: inherit;
         }
-        .posts-cat-btn:hover { border-color: #94A3B8; color: #334155; }
-        .posts-cat-btn.active { background: #003B71; color: white; border-color: #003B71; }
-        .posts-cat-btn .cat-count {
-            padding: 1px 6px; border-radius: 10px; font-size: 10px;
-            background: #F1F5F9; color: #64748B;
+        .posts-sort-btn:hover { color: #334155; }
+        .posts-sort-btn.active { background: #003B71; color: white; }
+        .posts-cat-dropdown-wrap {
+            display: inline-flex; align-items: center; gap: 6px;
         }
-        .posts-cat-btn.active .cat-count { background: rgba(255,255,255,0.22); color: white; }
+        .posts-cat-dropdown-label {
+            font-size: 10px; font-weight: 700; color: #94A3B8;
+            text-transform: uppercase; letter-spacing: 0.6px;
+        }
+        .posts-cat-dropdown {
+            padding: 6px 30px 6px 12px;
+            border-radius: 18px; border: 1.5px solid #E2E8F0;
+            background: white url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path fill='%2364748B' d='M3 4.5l3 3 3-3'/></svg>") no-repeat right 10px center;
+            background-size: 12px 12px;
+            font-size: 11.5px; font-weight: 600; color: #1B2559;
+            font-family: inherit;
+            cursor: pointer;
+            -webkit-appearance: none; appearance: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .posts-cat-dropdown:hover { border-color: #94A3B8; }
+        .posts-cat-dropdown:focus { outline: none; border-color: #003B71; box-shadow: 0 0 0 3px rgba(0,59,113,0.10); }
+        /* Legacy category tab class kept for backward compat (no longer rendered) */
+        .posts-category-tabs { display: none; }
         .posts-feed-section { position: relative; overflow: hidden; }
         .posts-scroll-btn {
             position: absolute; top: 50%; transform: translateY(-50%);
@@ -2811,44 +2950,14 @@
                     <span id="sentDistPos"></span><span id="sentDistNeu"></span><span id="sentDistNeg"></span>
                 </div>
             </div>
-            <div style="font-size:10px; font-weight:700; color:#64748B; text-transform:uppercase; letter-spacing:0.7px; margin:0 0 6px 0; padding-left:2px;">AHS by Platform <span style="font-weight:400; text-transform:none; letter-spacing:0; color:#94A3B8;">— composite score 0–100 weighted across pillars</span></div>
-            <div class="platform-sentiments" id="platformSentiments">
-                <div class="plat-sent fb" id="sentBlockFB">
-                    <div class="plat-sent-name">Facebook</div>
-                    <div class="plat-sent-gauge score-unknown" id="sentGaugeFB">
-                        <svg viewBox="0 0 64 64"><circle class="gauge-track" cx="32" cy="32" r="28"/><circle class="gauge-fill" cx="32" cy="32" r="28" stroke-dasharray="0 176" id="sentArcFB"/></svg>
-                        <div class="plat-sent-gauge-num" id="sentFB">--</div>
-                    </div>
-                    <div class="plat-sent-tier tier-none" id="sentTierFB">--</div>
-                    <div class="plat-sent-meta" id="sentMetaFB"></div>
-                </div>
-                <div class="plat-sent ig" id="sentBlockIG">
-                    <div class="plat-sent-name">Instagram</div>
-                    <div class="plat-sent-gauge score-unknown" id="sentGaugeIG">
-                        <svg viewBox="0 0 64 64"><circle class="gauge-track" cx="32" cy="32" r="28"/><circle class="gauge-fill" cx="32" cy="32" r="28" stroke-dasharray="0 176" id="sentArcIG"/></svg>
-                        <div class="plat-sent-gauge-num" id="sentIG">--</div>
-                    </div>
-                    <div class="plat-sent-tier tier-none" id="sentTierIG">--</div>
-                    <div class="plat-sent-meta" id="sentMetaIG"></div>
-                </div>
-                <div class="plat-sent li" id="sentBlockLI">
-                    <div class="plat-sent-name">LinkedIn</div>
-                    <div class="plat-sent-gauge score-unknown" id="sentGaugeLI">
-                        <svg viewBox="0 0 64 64"><circle class="gauge-track" cx="32" cy="32" r="28"/><circle class="gauge-fill" cx="32" cy="32" r="28" stroke-dasharray="0 176" id="sentArcLI"/></svg>
-                        <div class="plat-sent-gauge-num" id="sentLI">--</div>
-                    </div>
-                    <div class="plat-sent-tier tier-none" id="sentTierLI">--</div>
-                    <div class="plat-sent-meta" id="sentMetaLI"></div>
-                </div>
-                <div class="plat-sent yt" id="sentBlockYT">
-                    <div class="plat-sent-name">YouTube</div>
-                    <div class="plat-sent-gauge score-unknown" id="sentGaugeYT">
-                        <svg viewBox="0 0 64 64"><circle class="gauge-track" cx="32" cy="32" r="28"/><circle class="gauge-fill" cx="32" cy="32" r="28" stroke-dasharray="0 176" id="sentArcYT"/></svg>
-                        <div class="plat-sent-gauge-num" id="sentYT">--</div>
-                    </div>
-                    <div class="plat-sent-tier tier-none" id="sentTierYT">--</div>
-                    <div class="plat-sent-meta" id="sentMetaYT"></div>
-                </div>
+            <!-- AHS by Platform moved into each Platform Performance card (2026-05-12).
+                 Hidden mirror nodes kept so legacy populator code (renderAhs) doesn't error
+                 when it tries to write per-platform gauge scores to these IDs. -->
+            <div style="display:none;" id="platformSentiments" aria-hidden="true">
+                <div id="sentBlockFB"><div id="sentGaugeFB"><div id="sentArcFB"></div><div id="sentFB"></div></div><div id="sentTierFB"></div><div id="sentMetaFB"></div></div>
+                <div id="sentBlockIG"><div id="sentGaugeIG"><div id="sentArcIG"></div><div id="sentIG"></div></div><div id="sentTierIG"></div><div id="sentMetaIG"></div></div>
+                <div id="sentBlockLI"><div id="sentGaugeLI"><div id="sentArcLI"></div><div id="sentLI"></div></div><div id="sentTierLI"></div><div id="sentMetaLI"></div></div>
+                <div id="sentBlockYT"><div id="sentGaugeYT"><div id="sentArcYT"></div><div id="sentYT"></div></div><div id="sentTierYT"></div><div id="sentMetaYT"></div></div>
             </div>
         </div>
 
@@ -2931,10 +3040,9 @@
             </div>
             <!-- Inline breakdown, shown when any KPI card is clicked -->
             <div class="kpi-breakdown" id="kpiBreakdown" hidden></div>
-            <div class="followers-section">
-                <div class="followers-section-title">Followers by Platform</div>
-                <div class="kpi-followers-row" id="kpiFollowersRow"></div>
-            </div>
+            <!-- Followers by Platform retired 2026-05-12 — follower counts now live in each Platform Performance card header.
+                 Hidden node kept so legacy populator code in renderKpis can still write to it without errors. -->
+            <div class="kpi-followers-row" id="kpiFollowersRow" style="display:none;"></div>
         </div>
 
         <!-- Platform Performance — engagement metrics + content type mix per platform.
@@ -2948,31 +3056,51 @@
         </div>
 
 
-        <!-- Our Posts feed -->
-        <div class="card" style="margin-bottom:24px;">
-            <div class="card-title">Our Posts <span class="posts-count" id="postsCount"></span></div>
-            <!-- Active content-type filter banner (hidden when no filter active) -->
-            <div class="posts-filter-banner" id="postsFilterBanner" style="display:none;"></div>
-            <!-- Posts vs Stories mode toggle. Default = posts (stories filtered out). -->
-            <div class="posts-mode-toggle" id="postsModeToggle">
-                <button type="button" class="posts-mode-btn active" data-posts-mode="posts" onclick="setPostsMode('posts')">📰 Posts <span class="posts-mode-count" id="postsModeCountPosts">0</span></button>
-                <button type="button" class="posts-mode-btn" data-posts-mode="stories" onclick="setPostsMode('stories')">📱 Stories <span class="posts-mode-count" id="postsModeCountStories">0</span></button>
+        <!-- Our Posts feed moved out of right column to full-width section below (above timeline). -->
+        </div>
+
+
+    </div>
+</div>
+
+<!-- Full-width: Our Posts (moved here 2026-05-12 — full-width above timeline) -->
+<div style="max-width: 1600px; margin: 0 auto; padding: 0 36px 24px;">
+    <div class="card">
+        <div class="card-title">Our Posts <span class="posts-count" id="postsCount"></span></div>
+        <!-- Active content-type filter banner (hidden when no filter active) -->
+        <div class="posts-filter-banner" id="postsFilterBanner" style="display:none;"></div>
+        <!-- Posts vs Stories mode toggle. Default = posts (stories filtered out). -->
+        <div class="posts-mode-toggle" id="postsModeToggle">
+            <button type="button" class="posts-mode-btn active" data-posts-mode="posts" onclick="setPostsMode('posts')">📰 Posts <span class="posts-mode-count" id="postsModeCountPosts">0</span></button>
+            <button type="button" class="posts-mode-btn" data-posts-mode="stories" onclick="setPostsMode('stories')">📱 Stories <span class="posts-mode-count" id="postsModeCountStories">0</span></button>
+        </div>
+        <!-- Toolbar: sort buttons + content-type dropdown (replaces category tabs) -->
+        <div class="posts-toolbar" id="postsToolbar">
+            <div class="posts-sort-group" role="group" aria-label="Sort posts">
+                <span class="posts-sort-label">Sort</span>
+                <button type="button" class="posts-sort-btn active" data-sort="rank" onclick="setPostsSort('rank')">By rank</button>
+                <button type="button" class="posts-sort-btn" data-sort="recent" onclick="setPostsSort('recent')">Most recent</button>
             </div>
-            <div class="posts-category-tabs" id="postsCategoryTabs"></div>
-            <div class="posts-feed-wrap">
-                <div class="posts-feed-section">
-                <button class="posts-scroll-btn left" id="postsScrollLeft" onclick="document.getElementById('postsWrap').scrollLeft -= 520">&#8249;</button>
-                <div class="posts-feed-wrap" id="postsWrap">
-                    <div class="posts-feed" id="postsFeed">
-                    <div class="empty-state" style="width:100%;text-align:center;padding:40px;">Loading posts...</div>
-                    </div>
+            <div class="posts-cat-dropdown-wrap">
+                <span class="posts-cat-dropdown-label">Content type</span>
+                <select class="posts-cat-dropdown" id="postsCatDropdown" onchange="setPostsCategory(this.value)" aria-label="Filter by content type">
+                    <option value="all">All</option>
+                </select>
+            </div>
+        </div>
+        <!-- Legacy tabs element kept (hidden via CSS) so any older code referencing it doesn't error -->
+        <div class="posts-category-tabs" id="postsCategoryTabs"></div>
+        <div class="posts-feed-wrap">
+            <div class="posts-feed-section">
+            <button class="posts-scroll-btn left" id="postsScrollLeft" onclick="document.getElementById('postsWrap').scrollLeft -= 520">&#8249;</button>
+            <div class="posts-feed-wrap" id="postsWrap">
+                <div class="posts-feed" id="postsFeed">
+                <div class="empty-state" style="width:100%;text-align:center;padding:40px;">Loading posts...</div>
                 </div>
-                <button class="posts-scroll-btn right" id="postsScrollRight" onclick="document.getElementById('postsWrap').scrollLeft += 520">&#8250;</button>
+            </div>
+            <button class="posts-scroll-btn right" id="postsScrollRight" onclick="document.getElementById('postsWrap').scrollLeft += 520">&#8250;</button>
             </div>
         </div>
-        </div>
-
-
     </div>
 </div>
 
@@ -2980,7 +3108,7 @@
 <div style="max-width: 1600px; margin: 0 auto; padding: 0 36px 24px;">
     <div class="card">
         <div class="timeline-header">
-            <div class="card-title" style="margin-bottom:0;">Audience Health Over Time <span class="timeline-sub">last 52 weeks &middot; weekly snapshots</span></div>
+            <div class="card-title" style="margin-bottom:0;">Audience Health Over Time <span class="timeline-sub">last 365 days &middot; daily snapshots</span></div>
             <div class="timeline-legend" style="flex-wrap:wrap;">
                 <span class="tl-legend-item"><span class="tl-band tl-band-pos"></span>Healthy 60+</span>
                 <span class="tl-legend-item"><span class="tl-band tl-band-neu"></span>Fair 45-59</span>
@@ -4380,6 +4508,38 @@ function renderKpiBreakdown(kpiKey) {
 // weeks, so we start fresh; history rebuilds as the dashboard is used.
 // ============================================================
 var AHS_HISTORY_KEY = 'mge_ahs_history_v7'; // bumped from v6 (2026-05-04): overall AHS now from cumulative MGE data (no follower weighting)
+// Daily AHS snapshot store — keyed by YYYY-MM-DD. Powers the Audience Health Over Time chart
+// at full-year resolution (365 daily points). Added 2026-05-12.
+var AHS_DAILY_KEY = 'mge_ahs_daily_v1';
+function getAhsDailyHistory() {
+    try {
+        var raw = localStorage.getItem(AHS_DAILY_KEY);
+        return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+}
+// Local-date key YYYY-MM-DD (uses local time so a day "starts" at midnight Central, not UTC).
+function dayKey(date) {
+    var d = date instanceof Date ? date : new Date(date);
+    if (isNaN(d.getTime())) return null;
+    var y = d.getFullYear();
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var da = String(d.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + da;
+}
+function currentDayKey() { return dayKey(new Date()); }
+// Stamp today's AHS into the daily store. Called from saveAhsScore so the daily chart
+// builds up day-over-day as the dashboard runs.
+function saveDailyAhs(overallScore) {
+    if (overallScore === null || overallScore === undefined || isNaN(overallScore)) return;
+    var history = getAhsDailyHistory();
+    var key = currentDayKey();
+    history[key] = { ts: new Date().toISOString(), score: Math.round(overallScore) };
+    // Prune anything older than 400 days so localStorage doesn't grow unbounded
+    var cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 400);
+    var cutoffKey = dayKey(cutoff);
+    Object.keys(history).forEach(function(k) { if (k < cutoffKey) delete history[k]; });
+    try { localStorage.setItem(AHS_DAILY_KEY, JSON.stringify(history)); } catch (e) {}
+}
 function getAhsHistory() {
     try {
         var raw = localStorage.getItem(AHS_HISTORY_KEY);
@@ -4416,6 +4576,8 @@ function currentYmKey() { return currentWeekKey(); }
 
 function saveAhsScore(overallScore, perPlatform) {
     if (overallScore === null) return;
+    // Stamp today's overall AHS so the daily timeline (365d) builds up over time
+    saveDailyAhs(overallScore);
     var history = getAhsHistory();
     var key = currentWeekKey();
     var existing = history[key] || { platforms: {} };
@@ -4594,6 +4756,26 @@ function renderKPIs(data) {
 
 // Active content-type filter state — null = no filter, otherwise key like 'ig_reel'
 var _activeContentTypeFilter = null;
+// Track which Platform Performance cards are expanded (set of platform keys: 'fb','ig','li','yt')
+// Persisted to localStorage so the user's preferred view sticks across reloads.
+var _ppExpanded = (function() {
+    try {
+        var raw = localStorage.getItem('mge_pp_expanded_v1');
+        if (raw) return new Set(JSON.parse(raw));
+    } catch(e) {}
+    return new Set(); // default: all collapsed
+})();
+function _savePpExpanded() {
+    try { localStorage.setItem('mge_pp_expanded_v1', JSON.stringify(Array.from(_ppExpanded))); } catch(e) {}
+}
+// Toggle a Platform Performance card open/closed. Called from the card header onclick.
+window.togglePlatformCard = function(plat) {
+    if (_ppExpanded.has(plat)) _ppExpanded.delete(plat); else _ppExpanded.add(plat);
+    _savePpExpanded();
+    // Find the card and flip aria-expanded without a full re-render
+    var card = document.querySelector('.pp-card[data-platform="' + plat + '"]');
+    if (card) card.setAttribute('aria-expanded', _ppExpanded.has(plat) ? 'true' : 'false');
+};
 
 // Renders the unified Platform Performance section — engagement + content type per platform.
 // Each content-type row is a button; clicking filters the Our Posts feed below.
@@ -4827,9 +5009,20 @@ function renderPlatformPerformance(data) {
             }
         }
 
-        return '<div class="pp-card ' + p.cls + '" data-platform="' + p.key + '">' +
+        // Follower count + MoM change for the header badge (was the standalone Followers section)
+        var folCount = (data.audience && data.audience[p.key] && data.audience[p.key].followers) || 0;
+        var momPct = (typeof getFollowerMoMChange === 'function') ? getFollowerMoMChange(p.key, folCount) : null;
+        var momStr = (momPct === null || isNaN(momPct)) ? null : ((momPct > 0 ? '+' : '') + momPct.toFixed(1) + '%');
+        var followersHtml = '<div class="pp-followers" aria-hidden="false">' +
+                              '<div class="pp-followers-val">' + (folCount > 0 ? folCount.toLocaleString() : '--') + '</div>' +
+                              '<div class="pp-followers-label">Followers</div>' +
+                              (momStr ? '<div class="pp-followers-mom">' + momStr + ' MoM</div>' : '') +
+                            '</div>';
+
+        var isOpen = _ppExpanded.has(p.key);
+        return '<div class="pp-card ' + p.cls + '" data-platform="' + p.key + '" aria-expanded="' + (isOpen ? 'true' : 'false') + '">' +
                  (isTop ? '<div class="pp-top-badge">Top</div>' : '') +
-                 '<div class="pp-card-header">' +
+                 '<div class="pp-card-header" role="button" tabindex="0" onclick="togglePlatformCard(\'' + p.key + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();togglePlatformCard(\'' + p.key + '\');}" aria-label="Toggle ' + p.name + ' details">' +
                    '<div class="pp-platform">' +
                      '<div class="pp-platform-icon">' + p.icon + '</div>' +
                      '<div>' +
@@ -4837,22 +5030,27 @@ function renderPlatformPerformance(data) {
                        '<div class="pp-post-count">' + postCount + (postCount === 1 ? ' post' : ' posts') + ' this window</div>' +
                      '</div>' +
                    '</div>' +
+                   '<div></div>' + // spacer for grid auto-fit
+                   followersHtml +
                    '<div class="pp-total">' +
                      '<div class="pp-total-num ' + ahsTierClass + '">' + (ahsScoreHeader == null ? '--' : ahsScoreHeader) + '</div>' +
                      '<div class="pp-total-label">AHS Score</div>' +
                      (ahsTierLabel ? '<div class="pp-total-tier ' + ahsTierClass + '">' + ahsTierLabel + '</div>' : '') +
                    '</div>' +
+                   '<div class="pp-card-chev" aria-hidden="true">&#x25BE;</div>' +
                  '</div>' +
-                 '<div>' +
-                   '<div class="pp-section-title">Engagement</div>' +
-                   '<div class="pp-engagement-grid">' + statsHtml + '</div>' +
+                 '<div class="pp-card-body">' +
+                   '<div>' +
+                     '<div class="pp-section-title">Engagement</div>' +
+                     '<div class="pp-engagement-grid">' + statsHtml + '</div>' +
+                   '</div>' +
+                   storiesHtml +
+                   '<div>' +
+                     '<div class="pp-section-title">Content Types</div>' +
+                     '<div class="pp-content-types">' + ctHtml + '</div>' +
+                   '</div>' +
+                   ahsBreakdownHtml +
                  '</div>' +
-                 storiesHtml +
-                 '<div>' +
-                   '<div class="pp-section-title">Content Types</div>' +
-                   '<div class="pp-content-types">' + ctHtml + '</div>' +
-                 '</div>' +
-                 ahsBreakdownHtml +
                '</div>';
     }).join('');
 }
@@ -4908,6 +5106,22 @@ function applyPostsFilters() {
     }
     if (_activeContentTypeFilter) {
         filtered = filtered.filter(function(p) { return p.contentType === _activeContentTypeFilter; });
+    }
+    // Sort: rank (ascending — best first) or recent (date descending — newest first)
+    filtered = filtered.slice();
+    if (_postsSortMode === 'recent') {
+        filtered.sort(function(a, b) {
+            var ta = a.date ? new Date(a.date).getTime() : 0;
+            var tb = b.date ? new Date(b.date).getTime() : 0;
+            return tb - ta;
+        });
+    } else {
+        // Default: by rank ascending. Posts without a rank fall to the bottom.
+        filtered.sort(function(a, b) {
+            var ra = (typeof a.rank === 'number') ? a.rank : Infinity;
+            var rb = (typeof b.rank === 'number') ? b.rank : Infinity;
+            return ra - rb;
+        });
     }
     renderPostCards(filtered, sourceList.length);
     const wrap = document.getElementById('postsWrap');
@@ -6093,6 +6307,8 @@ function classifyPostTheme(text) {
 var _allPostsCached = [];
 var _allStoriesCached = [];
 var _activePostCategory = 'all';
+// Posts sort mode: 'rank' (default — by p.rank ascending) or 'recent' (by p.date descending)
+var _postsSortMode = 'rank';
 // Posts vs Stories mode for the Posts section. Default 'posts' so stories are
 // filtered out unless the user toggles. The user wants stories visible in this
 // section only on demand, with the existing theme + content-type filters still
@@ -6112,14 +6328,21 @@ window.setPostsMode = function(mode) {
 };
 
 function renderPostsCategoryTabs(allPosts) {
+    // Hidden legacy tabs container — no longer rendered as buttons; the dropdown replaced it.
     var tabsEl = document.getElementById('postsCategoryTabs');
-    if (!tabsEl) return;
+    if (tabsEl) tabsEl.innerHTML = '';
+
+    var dd = document.getElementById('postsCatDropdown');
+    if (!dd) return;
     // In stories mode, themes don't apply (most stories have no caption);
-    // just hide the theme tabs entirely.
+    // just hide the dropdown wrapper entirely.
+    var wrap = dd.parentElement;
     if (_postsMode === 'stories') {
-        tabsEl.innerHTML = '';
+        if (wrap) wrap.style.display = 'none';
         return;
     }
+    if (wrap) wrap.style.display = '';
+
     var counts = { all: allPosts.length };
     allPosts.forEach(function(p) {
         var cat = p._theme || classifyPostTheme(p.text);
@@ -6131,25 +6354,28 @@ function renderPostsCategoryTabs(allPosts) {
     Object.keys(POST_THEMES).forEach(function(t) { if (counts[t]) ordered.push(t); });
     if (counts['Other']) ordered.push('Other');
 
-    tabsEl.innerHTML = ordered.map(function(cat) {
+    dd.innerHTML = ordered.map(function(cat) {
         var label = cat === 'all' ? 'All' : cat;
-        var active = cat === _activePostCategory ? ' active' : '';
-        return '<button class="posts-cat-btn' + active + '" data-cat="' + escapeHtml(cat) + '">' +
-                    escapeHtml(label) +
-                    ' <span class="cat-count">' + counts[cat] + '</span>' +
-               '</button>';
+        var sel = cat === _activePostCategory ? ' selected' : '';
+        return '<option value="' + escapeHtml(cat) + '"' + sel + '>' + escapeHtml(label) + ' (' + counts[cat] + ')</option>';
     }).join('');
-
-    tabsEl.querySelectorAll('.posts-cat-btn').forEach(function(btn) {
-        btn.onclick = function() {
-            tabsEl.querySelectorAll('.posts-cat-btn').forEach(function(b) { b.classList.remove('active'); });
-            btn.classList.add('active');
-            _activePostCategory = btn.getAttribute('data-cat');
-            // Use unified filter so theme + content-type filters compose
-            applyPostsFilters();
-        };
-    });
+    // Make sure the dropdown reflects the currently-active category
+    dd.value = _activePostCategory || 'all';
 }
+// Called when the content-type dropdown changes
+window.setPostsCategory = function(cat) {
+    _activePostCategory = cat || 'all';
+    applyPostsFilters();
+};
+// Called when a sort button is clicked
+window.setPostsSort = function(mode) {
+    if (mode !== 'rank' && mode !== 'recent') return;
+    _postsSortMode = mode;
+    document.querySelectorAll('.posts-sort-btn').forEach(function(b) {
+        b.classList.toggle('active', b.getAttribute('data-sort') === mode);
+    });
+    applyPostsFilters();
+};
 
 function renderPostsFeed(data) {
     const countEl = document.getElementById('postsCount');
@@ -6172,7 +6398,8 @@ function renderPostsFeed(data) {
     }
     if (countEl) countEl.textContent = '(' + activeList.length + ')';
     renderPostsCategoryTabs(activeList);
-    renderPostCards(activeList, activeList.length);
+    // Use the unified filter so initial render honors the sort mode (default = rank)
+    applyPostsFilters();
 }
 
 function renderPostCards(posts, totalCount) {
@@ -6324,22 +6551,20 @@ function extractAllRawComments(raw) {
 }
 
 function renderSentimentTimeline(rawOrData, processedData) {
-    // Build a rolling 52-WEEK window ending at the current ISO week.
-    // Viewing window remains ~12 months, but each data point is one week
-    // so trends are far more granular than the prior monthly buckets.
+    // Build a rolling 365-DAY window ending today.
+    // Each data point = one day's overall AHS, pulled from the daily history store.
+    // History persists across reloads, so the chart fills in day-over-day as the dashboard runs.
     var rolling = [];
     var nowDate = new Date();
-    for (var i = 51; i >= 0; i--) {
+    for (var i = 364; i >= 0; i--) {
         var d = new Date(nowDate);
-        d.setDate(d.getDate() - i * 7);
-        var key = isoWeekKey(d);
-        var monday = weekStartFromKey(key);
-        // Short label (e.g. "Apr 13") — chart will thin these via maxTicksLimit
-        var label = monday ? monday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : key;
-        rolling.push({ key: key, label: label, monday: monday });
+        d.setDate(d.getDate() - i);
+        var key = dayKey(d);
+        var label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        rolling.push({ key: key, label: label, date: new Date(d) });
     }
 
-    // Extract all raw comments for sentiment per week
+    // Extract all raw comments (for commentVolumes stat row, still useful at the daily level)
     var allComments = [];
     if (rawOrData && (rawOrData.facebook || rawOrData.instagram || rawOrData.linkedin || rawOrData.youtube)) {
         allComments = extractAllRawComments(rawOrData);
@@ -6347,76 +6572,24 @@ function renderSentimentTimeline(rawOrData, processedData) {
         allComments = rawOrData.comments;
     }
 
-    // Extract all posts for engagement per week (processedData uses allPosts)
-    var allPosts = [];
-    if (processedData) {
-        if (Array.isArray(processedData.allPosts)) allPosts = processedData.allPosts;
-        else if (Array.isArray(processedData.posts)) allPosts = processedData.posts;
-    }
-
-    // Bucket comments by week
+    // Bucket comments by day — used only for the "Comments tracked" stat
     var commentMap = {};
-    rolling.forEach(function(w) { commentMap[w.key] = []; });
+    rolling.forEach(function(w) { commentMap[w.key] = 0; });
     allComments.forEach(function(c) {
         if (!c.time) return;
         var d = new Date(c.time);
         if (isNaN(d.getTime())) return;
-        var key = isoWeekKey(d);
-        if (commentMap[key]) commentMap[key].push(c.text || '');
-    });
-
-    // Bucket engagement by week from posts (live, this session).
-    // processData posts use .date and .totalEngagement.
-    var engMap = {};
-    rolling.forEach(function(w) { engMap[w.key] = 0; });
-    allPosts.forEach(function(p) {
-        var dateStr = p.date || p.time;
-        if (!dateStr) return;
-        var d = new Date(dateStr);
-        if (isNaN(d.getTime())) return;
-        var key = isoWeekKey(d);
-        if (engMap[key] !== undefined) {
-            var eng = (typeof p.totalEngagement === 'number') ? p.totalEngagement
-                    : (typeof p.engagement === 'number') ? p.engagement
-                    : ((p.reactions || 0) + (p.comments || 0) + (p.shares || 0));
-            engMap[key] += eng;
-        }
+        var key = dayKey(d);
+        if (commentMap[key] != null) commentMap[key]++;
     });
 
     var labels = rolling.map(function(w) { return w.label; });
-    var commentVolumes = rolling.map(function(w) { return commentMap[w.key].length; });
+    var commentVolumes = rolling.map(function(w) { return commentMap[w.key] || 0; });
 
-    // Compute current-week sentiment from raw comments (not filtered by date window)
-    var thisWeekKey = currentWeekKey();
-    var thisWeekSentiment = null;
-    if (commentMap[thisWeekKey] && commentMap[thisWeekKey].length > 0) {
-        var thisWeekTexts = commentMap[thisWeekKey].join(' ');
-        if (thisWeekTexts.trim()) {
-            thisWeekSentiment = analyzeSentiment(thisWeekTexts).score;
-        }
-    }
-    // Stamp current week's engagement + sentiment so the trend builds over time.
-    // Previous weeks are frozen — we only ever update the live week.
-    saveWeeklyMetrics(engMap[thisWeekKey] || 0, thisWeekSentiment);
-
-    // Now pull ALL three metric series from localStorage history, so the chart
-    // shows month-over-month data regardless of the currently selected date window.
-    var ahsHistory = getAhsHistory();
-    var engVolumes = rolling.map(function(m) {
-        var entry = ahsHistory[m.key];
-        return entry && entry.engagement != null ? entry.engagement : 0;
-    });
-    var sentimentScores = rolling.map(function(m) {
-        var entry = ahsHistory[m.key];
-        if (entry && entry.sentiment != null) return entry.sentiment;
-        // Fallback: if no stored sentiment but we have live comments for this month,
-        // compute from those. Keeps the chart useful the very first month.
-        var texts = (commentMap[m.key] || []).join(' ');
-        if (!texts.trim()) return null;
-        return analyzeSentiment(texts).score;
-    });
+    // Pull daily AHS series from localStorage. Days with no recorded score render as gaps.
+    var ahsDaily = getAhsDailyHistory();
     var ahsScores = rolling.map(function(m) {
-        var entry = ahsHistory[m.key];
+        var entry = ahsDaily[m.key];
         return entry && entry.score != null ? entry.score : null;
     });
 
@@ -6462,7 +6635,6 @@ function renderSentimentTimeline(rawOrData, processedData) {
     };
 
     var ahsPointColors = ahsScores.map(function(s) { return s == null ? '#CBD5E1' : s >= 60 ? '#003B71' : s >= 45 ? '#EAB308' : '#EF4444'; });
-    var sentPointColors = sentimentScores.map(function(s) { return s == null ? '#CBD5E1' : s >= 60 ? '#22C55E' : s <= 40 ? '#EF4444' : '#EAB308'; });
 
     sentimentTimelineInstance = new Chart(ctx, {
         type: 'line',
@@ -6479,10 +6651,11 @@ function renderSentimentTimeline(rawOrData, processedData) {
                     tension: 0.4,
                     borderWidth: 3,
                     pointRadius: function(ctx) {
-                        // Only show points where data exists; smaller default to reduce noise
-                        return ctx.parsed && ctx.parsed.y != null ? 4 : 0;
+                        // Only show points where data exists; tiny default since 365 points
+                        // would otherwise crowd the line. Hover reveals individual values.
+                        return ctx.parsed && ctx.parsed.y != null ? 2 : 0;
                     },
-                    pointHoverRadius: 8,
+                    pointHoverRadius: 7,
                     spanGaps: true,
                     pointBackgroundColor: ahsPointColors,
                     pointBorderColor: '#fff',
@@ -6507,7 +6680,7 @@ function renderSentimentTimeline(rawOrData, processedData) {
                     cornerRadius: 8,
                     displayColors: false,
                     callbacks: {
-                        title: function(items) { return 'Week of ' + items[0].label; },
+                        title: function(items) { return items[0].label; },
                         label: function(ctx) {
                             if (ctx.parsed.y == null) return 'AHS: no data';
                             var tier = ctx.parsed.y >= 75 ? 'Excellent' : ctx.parsed.y >= 60 ? 'Healthy' : ctx.parsed.y >= 45 ? 'Fair' : 'Weak';
@@ -6528,7 +6701,7 @@ function renderSentimentTimeline(rawOrData, processedData) {
                         font: { size: 10 },
                         color: '#64748B',
                         autoSkip: true,
-                        maxTicksLimit: 7, // monthly-ish, less label noise
+                        maxTicksLimit: 12, // ~monthly, less label noise across 365 days
                         maxRotation: 0,
                         minRotation: 0
                     }
@@ -6547,16 +6720,16 @@ function renderTimelineStats(rolling, scores, volumes) {
         if (scores[i] != null) withData.push({ label: rolling[i].label, score: scores[i], vol: volumes[i] });
     }
     if (withData.length === 0) {
-        statsEl.innerHTML = '<div class="tl-stat" style="grid-column: 1 / -1;"><div class="tl-stat-label">No history yet</div><div class="tl-stat-sub">AHS scores will build up each week as the dashboard runs.</div></div>';
+        statsEl.innerHTML = '<div class="tl-stat" style="grid-column: 1 / -1;"><div class="tl-stat-label">No history yet</div><div class="tl-stat-sub">AHS scores will build up each day as the dashboard runs.</div></div>';
         return;
     }
     var totalComments = volumes.reduce(function(a, b) { return a + b; }, 0);
     var avgScore = Math.round(withData.reduce(function(a, b) { return a + b.score; }, 0) / withData.length);
     var best = withData.reduce(function(a, b) { return b.score > a.score ? b : a; });
     var worst = withData.reduce(function(a, b) { return b.score < a.score ? b : a; });
-    // 4-week vs prior 4-week comparison (~monthly) using the new weekly buckets
-    var recent = withData.slice(-4);
-    var prior  = withData.slice(-8, -4);
+    // 30-day vs prior 30-day comparison (~monthly) using the new daily buckets
+    var recent = withData.slice(-30);
+    var prior  = withData.slice(-60, -30);
     var trendBadgeHtml = '';
     if (recent.length && prior.length) {
         var rAvg = recent.reduce(function(a, b) { return a + b.score; }, 0) / recent.length;
@@ -6573,16 +6746,16 @@ function renderTimelineStats(rolling, scores, volumes) {
     statsEl.innerHTML =
         '<div class="tl-stat"><div class="tl-stat-label">Avg AHS Score</div>' +
             '<div class="tl-stat-value ' + avgCls + '">' + avgScore + '<span style="font-size:12px;font-weight:600;color:#94A3B8;"> /100</span></div>' +
-            '<div class="tl-stat-sub">' + avgLabel + ' &middot; ' + withData.length + ' week' + (withData.length !== 1 ? 's' : '') + ' of data</div></div>' +
-        '<div class="tl-stat"><div class="tl-stat-label">4-wk Trend</div>' +
+            '<div class="tl-stat-sub">' + avgLabel + ' &middot; ' + withData.length + ' day' + (withData.length !== 1 ? 's' : '') + ' of data</div></div>' +
+        '<div class="tl-stat"><div class="tl-stat-label">30-day Trend</div>' +
             trendBadgeHtml +
-            '<div class="tl-stat-sub">vs. prior 4 weeks</div></div>' +
-        '<div class="tl-stat"><div class="tl-stat-label">Strongest Week</div>' +
+            '<div class="tl-stat-sub">vs. prior 30 days</div></div>' +
+        '<div class="tl-stat"><div class="tl-stat-label">Strongest Day</div>' +
             '<div class="tl-stat-value pos">' + best.score + '</div>' +
-            '<div class="tl-stat-sub">Week of ' + best.label + ' &middot; ' + best.vol + ' comments</div></div>' +
-        '<div class="tl-stat"><div class="tl-stat-label">Weakest Week</div>' +
+            '<div class="tl-stat-sub">' + best.label + ' &middot; ' + best.vol + ' comments</div></div>' +
+        '<div class="tl-stat"><div class="tl-stat-label">Weakest Day</div>' +
             '<div class="tl-stat-value ' + (worst.score < 45 ? 'neg' : worst.score >= 60 ? 'pos' : 'neu') + '">' + worst.score + '</div>' +
-            '<div class="tl-stat-sub">Week of ' + worst.label + ' &middot; ' + totalComments.toLocaleString() + ' total comments</div></div>';
+            '<div class="tl-stat-sub">' + worst.label + ' &middot; ' + totalComments.toLocaleString() + ' total comments</div></div>';
 }
 
 // ============================================================
