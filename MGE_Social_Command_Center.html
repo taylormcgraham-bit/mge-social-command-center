@@ -1022,19 +1022,24 @@
         .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
         /* Pillar variant — adds a tag at top, weight badge, and pillar-score row at bottom */
-        .pillar-card { display: flex; flex-direction: column; gap: 6px; padding-top: 12px; }
+        .pillar-card { display: flex; flex-direction: column; gap: 6px; padding-top: 14px; }
+        /* Pillar header (Reach / Engagement / Sentiment / Attention) — more predominant per Taylor 2026-05-12 */
         .pillar-tag {
-            display: flex; align-items: center; gap: 6px;
-            font-size: 10px; font-weight: 700; color: #6366F1;
-            text-transform: uppercase; letter-spacing: 0.6px;
-            padding-bottom: 4px;
+            display: flex; align-items: center; gap: 8px;
+            font-size: 14px; font-weight: 800; color: #1B2559;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            padding: 0 0 8px 0;
+            margin-bottom: 4px;
+            border-bottom: 2px solid #EEF2FF;
         }
-        .pillar-icon { font-size: 13px; }
+        .pillar-icon { font-size: 18px; line-height: 1; }
         .pillar-weight {
             margin-left: auto;
-            font-size: 9px; font-weight: 700; color: #94A3B8;
-            background: #F1F5F9; padding: 2px 6px; border-radius: 10px;
+            font-size: 10px; font-weight: 800; color: white;
+            background: linear-gradient(135deg, #6366F1, #4F46E5);
+            padding: 3px 9px; border-radius: 12px;
             letter-spacing: 0.4px;
+            box-shadow: 0 2px 4px rgba(99,102,241,0.25);
         }
         /* Promote the period-over-period change badge — bigger, bolder, more prominent */
         .pillar-card .kpi-change {
@@ -3088,11 +3093,9 @@
 
 
         <!-- Our Posts feed moved out of right column to full-width section below (above timeline). -->
-        </div>
 
-
-    </div>
-</div>
+    </div><!-- /.right-col -->
+</div><!-- /.main-grid -->
 
 <!-- Full-width: Our Posts (moved here 2026-05-12 — full-width above timeline) -->
 <div style="max-width: 1600px; margin: 0 auto; padding: 0 36px 24px;">
@@ -4112,8 +4115,8 @@ function processData(raw, dateRangeOverride) {
         return tb - ta;
     });
 
-    // Keep most recent 100
-    result.comments = result.comments.slice(0, 100);
+    // Keep most recent 300 (bumped from 100 on 2026-05-12 — bigger capture net for AHS + Live Feed)
+    result.comments = result.comments.slice(0, 300);
 
     // Sort post engagement for chart (top 10)
     result.postEngagement.sort((a, b) => b.value - a.value);
@@ -5525,9 +5528,9 @@ function showAhsBreakdown() {
     }
     const mathStr = `<div style="font-family:monospace; font-size:11.5px; line-height:1.6;">
         ${pillarMathRow('Engagement', 40, op.engagement)}
-        ${pillarMathRow('Sentiment',  40, op.sentiment)}
-        ${pillarMathRow('Reach',       5, op.reach)}
-        ${pillarMathRow('Attention',  15, op.attention)}
+        ${pillarMathRow('Sentiment',  25, op.sentiment)}
+        ${pillarMathRow('Reach',      15, op.reach)}
+        ${pillarMathRow('Attention',  20, op.attention)}
         <hr style="border:0; border-top:1px solid #E2E8F0; margin:6px 0;">
         <div style="display:flex; justify-content:space-between;">
             <span><strong>Overall MGE AHS (weighted composite)</strong></span>
@@ -5542,7 +5545,7 @@ function showAhsBreakdown() {
         <div class="ahs-modal-section">
             <h4>How the Score Works</h4>
             <div class="ahs-formula-box">
-                Overall MGE AHS = (Engagement &times; 0.40) + (Sentiment &times; 0.40) + (Reach &times; 0.05) + (Attention &times; 0.15)
+                Overall MGE AHS = (Engagement &times; 0.40) + (Sentiment &times; 0.25) + (Reach &times; 0.15) + (Attention &times; 0.20)
             </div>
             <p style="color:#475569; margin:8px 0 0;">A 0&ndash;100 composite of <strong>four weighted pillars</strong>, computed from <strong>MGE's cumulative data across all platforms</strong>. Engagement leads at 40% (the clearest signal of audience health); Sentiment is 25% (still important, but MGE comment volumes are low so we don&rsquo;t want one negative streak to dominate the score); Attention (video views) is 20% to capture content depth; Reach rounds it out at 15%.</p>
             <p style="color:#475569; margin:8px 0 0;"><strong>No follower weighting:</strong> follower counts are not factored into AHS scoring. The overall score reflects the raw cumulative metrics of each pillar, not a per-platform composite that's been follower-weighted.</p>
@@ -5575,7 +5578,7 @@ function showAhsBreakdown() {
                         conf = min(1, comments &divide; 15)<br>
                         final = (avgScore &times; conf) + (50 &times; (1 &minus; conf))
                     </div>
-                    <p style="color:#64748B; margin:0;">No baseline calibration &mdash; the AI score is already calibrated against real comment text.</p>
+                    <p style="color:#64748B; margin:0;">Reduced from 40% to 25% &mdash; MGE comment volumes are low, so a few negative comments shouldn&rsquo;t dominate the overall score.</p>
                 </div>
                 <div class="ahs-pillar-box">
                     <div class="ahs-pillar-title">Reach &mdash; 15%</div>
@@ -5585,7 +5588,7 @@ function showAhsBreakdown() {
                         ratio = perDay &divide; baseline<br>
                         score = 50 + 50 &times; tanh((ratio &minus; 1) &divide; 0.6)
                     </div>
-                    <p style="color:#64748B; margin:0;">Weighted lightly because utility reach matters less than engagement quality.</p>
+                    <p style="color:#64748B; margin:0;">Bumped to 15% (was 5%) so reach contributes meaningfully alongside the action-based pillars.</p>
                 </div>
                 <div class="ahs-pillar-box">
                     <div class="ahs-pillar-title">Attention &mdash; 20%</div>
