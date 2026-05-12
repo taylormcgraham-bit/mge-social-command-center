@@ -616,37 +616,22 @@
         .ar-trend-down { color: #DC2626; font-weight: 700; }
         .ar-trend-flat { color: #64748B; font-weight: 700; }
 
-        /* --- Hero Gauge (next-level — enhanced wow factor 2026-05-12) --- */
-        .sentiment-gauge { text-align: center; padding: 30px 0 14px; position: relative; }
-        .gauge-hero-bg {
-            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-            width: 420px; height: 240px; border-radius: 50%;
+        /* --- Hero Gauge (refined elevation — 2026-05-12 v2) --- */
+        .sentiment-gauge {
+            text-align: center; padding: 26px 8px 14px; position: relative;
+            /* Subtle premium mesh — no animation, no orbiting elements.
+               Soft brand-toned wash that sits behind the arc. */
             background:
-                radial-gradient(ellipse at center, rgba(34,197,94,0.10) 0%, rgba(0,102,204,0.06) 35%, transparent 70%),
-                conic-gradient(from 180deg at 50% 100%, rgba(34,197,94,0.05), rgba(0,59,113,0.05), rgba(34,197,94,0.05));
-            pointer-events: none; z-index: 0;
-            animation: gaugeHeroPulse 8s ease-in-out infinite;
+                radial-gradient(ellipse 80% 60% at 50% 35%, rgba(0,102,204,0.04), transparent 70%),
+                radial-gradient(ellipse 50% 40% at 50% 90%, rgba(34,197,94,0.05), transparent 70%);
+            border-radius: 16px;
         }
-        @keyframes gaugeHeroPulse {
-            0%, 100% { opacity: 0.85; transform: translateX(-50%) scale(1); }
-            50%      { opacity: 1;    transform: translateX(-50%) scale(1.04); }
-        }
-        /* Decorative orbiting dots above the gauge — adds motion + premium feel */
-        .gauge-hero-bg::before, .gauge-hero-bg::after {
-            content: ''; position: absolute; width: 6px; height: 6px;
-            border-radius: 50%; background: rgba(34,197,94,0.55);
-            top: 50%; left: 50%;
-            box-shadow: 0 0 12px rgba(34,197,94,0.6);
-            animation: gaugeOrbit 6s linear infinite;
-        }
-        .gauge-hero-bg::after { animation-delay: -3s; background: rgba(0,102,204,0.5); box-shadow: 0 0 12px rgba(0,102,204,0.5); }
-        @keyframes gaugeOrbit {
-            0%   { transform: translate(-50%, -50%) rotate(0deg) translateX(140px) rotate(0deg); }
-            100% { transform: translate(-50%, -50%) rotate(360deg) translateX(140px) rotate(-360deg); }
-        }
+        /* Mirror node kept for backward-compat with existing markup; visually disabled. */
+        .gauge-hero-bg { display: none; }
         .gauge-wrap {
             position: relative; width: 320px; height: 180px; margin: 0 auto; z-index: 1;
-            filter: drop-shadow(0 0 28px rgba(34, 197, 94, 0.25));
+            /* Soft tier-colored halo glow that intensifies on hover */
+            filter: drop-shadow(0 6px 16px rgba(0,59,113,0.10)) drop-shadow(0 0 18px rgba(34,197,94,0.12));
             transition: filter 0.6s ease;
         }
         .gauge-wrap:hover { filter: drop-shadow(0 0 40px rgba(34, 197, 94, 0.35)); }
@@ -656,11 +641,12 @@
             text-align: center;
         }
         .gauge-score {
-            font-size: 68px; font-weight: 900; line-height: 1;
+            font-size: 76px; font-weight: 900; line-height: 1;
+            letter-spacing: -2px;
             background: linear-gradient(135deg, #003B71 0%, #0066CC 50%, #22C55E 100%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             background-clip: text;
-            filter: drop-shadow(0 2px 8px rgba(0,59,113,0.15));
+            filter: drop-shadow(0 3px 10px rgba(0,59,113,0.18));
         }
         .gauge-score-ring {
             position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
@@ -670,8 +656,13 @@
             pointer-events: none; z-index: -1;
         }
         .gauge-label {
-            font-size: 12px; font-weight: 800; letter-spacing: 1px;
-            text-transform: uppercase; color: #64748B; margin-top: 6px;
+            font-size: 12px; font-weight: 800; letter-spacing: 1.4px;
+            text-transform: uppercase; color: #1B2559; margin-top: 8px;
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(0,59,113,0.06), rgba(34,197,94,0.06));
+            border: 1px solid rgba(0,59,113,0.10);
         }
         .gauge-pillar-row {
             display: flex; justify-content: center; gap: 8px; margin-top: 18px;
@@ -893,8 +884,12 @@
         .sentiment-legend .dot.neu { background: #EAB308; }
         .sentiment-legend .dot.neg { background: #EF4444; }
 
-        /* --- Comment Feed (tightened 2026-05-12) --- */
-        .comment-feed { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px; }
+        /* --- Comment Feed (tightened cards, more section breathing room — 2026-05-12 v2) --- */
+        /* Add overall breathing room around the Live Comment Feed card */
+        .main-grid .left-col > .card:last-child { padding: 24px 26px; }
+        .main-grid .left-col > .card:last-child .card-title { margin-bottom: 16px; }
+        .main-grid .left-col > .card:last-child .comment-controls { margin-bottom: 18px; }
+        .comment-feed { overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 6px; }
         .comment-feed::-webkit-scrollbar { width: 5px; }
         .comment-feed::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
 
@@ -1304,64 +1299,69 @@
         .platform-performance {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 14px;
-            margin-top: 14px;
+            gap: 20px;
+            margin-top: 20px;
         }
         @media (max-width: 1100px) { .platform-performance { grid-template-columns: 1fr; } }
         .pp-card {
-            border-radius: 18px;
+            border-radius: 20px;
             padding: 0;
             border: 1px solid #E2E8F0;
             display: flex; flex-direction: column;
             position: relative;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
             overflow: hidden;
             cursor: pointer;
+            color: white; /* default white text — header sits on top of platform gradient */
+            box-shadow: 0 6px 20px rgba(15,23,42,0.10);
         }
         .pp-card[aria-expanded="true"] { cursor: default; }
-        /* Animated shine sweep — mirrors the old followers badge for wow factor */
+        /* Animated shine sweep across the whole card (premium feel) */
         .pp-card::after {
             content: ''; position: absolute; top: -50%; left: -150%; width: 200%; height: 200%;
-            background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.28) 45%, rgba(255,255,255,0.1) 50%, transparent 55%);
-            pointer-events: none; animation: ppCardShine 5s ease-in-out infinite;
+            background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.22) 45%, rgba(255,255,255,0.08) 50%, transparent 55%);
+            pointer-events: none; animation: ppCardShine 5.5s ease-in-out infinite;
             z-index: 0;
         }
-        @keyframes ppCardShine { 0%, 80%, 100% { left: -150%; } 60% { left: 150%; } }
+        @keyframes ppCardShine { 0%, 75%, 100% { left: -150%; } 55% { left: 150%; } }
         /* Decorative top-edge accent stripe per platform */
         .pp-card::before {
             content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
             border-radius: 18px 18px 0 0;
         }
-        .pp-card.fb { background: linear-gradient(180deg, #DBEAFE 0%, #F8FAFC 60%); border-color: #93C5FD; box-shadow: 0 4px 12px rgba(24,119,242,0.06); }
-        .pp-card.fb::before { background: linear-gradient(90deg, #1877F2, #4267B2); }
-        .pp-card.ig { background: linear-gradient(180deg, #FCE7F3 0%, #F8FAFC 60%); border-color: #F9A8D4; box-shadow: 0 4px 12px rgba(225,48,108,0.06); }
+        /* Full-card platform gradient — matches the old followers pill look but applied to the whole card */
+        .pp-card.fb { background: linear-gradient(135deg, #1877F2 0%, #0D47A1 70%, #082F6A 100%); border-color: #0D47A1; }
+        .pp-card.fb::before { background: linear-gradient(90deg, #82B6FB, #4267B2); }
+        .pp-card.ig { background: linear-gradient(135deg, #F58529 0%, #DD2A7B 35%, #8134AF 70%, #515BD4 100%); border-color: #DD2A7B; }
         .pp-card.ig::before { background: linear-gradient(90deg, #FFDC80, #FCAF45, #F77737, #F56040, #FD1D1D, #E1306C, #C13584, #833AB4, #5851DB, #405DE6); }
-        .pp-card.li { background: linear-gradient(180deg, #DBEAFE 0%, #F8FAFC 60%); border-color: #60A5FA; box-shadow: 0 4px 12px rgba(10,102,194,0.06); }
-        .pp-card.li::before { background: linear-gradient(90deg, #0A66C2, #004182); }
-        .pp-card.yt { background: linear-gradient(180deg, #FEE2E2 0%, #F8FAFC 60%); border-color: #FCA5A5; box-shadow: 0 4px 12px rgba(255,0,0,0.06); }
-        .pp-card.yt::before { background: linear-gradient(90deg, #FF0000, #CC0000); }
+        .pp-card.li { background: linear-gradient(135deg, #0A66C2 0%, #004182 70%, #002D5E 100%); border-color: #004182; }
+        .pp-card.li::before { background: linear-gradient(90deg, #82B6FB, #0A66C2); }
+        .pp-card.yt { background: linear-gradient(135deg, #FF0000 0%, #CC0000 70%, #8B0000 100%); border-color: #CC0000; }
+        .pp-card.yt::before { background: linear-gradient(90deg, #FF8C8C, #FF0000); }
         /* Hover lift */
-        .pp-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(15,23,42,0.10); }
-        /* Top-performer crown badge — small pill on the card edge so it doesn't overshadow the metric */
+        .pp-card:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(15,23,42,0.18); }
+        /* Top-performer star — tiny crown indicator tucked into the corner. No "TOP" text. */
         .pp-top-badge {
-            position: absolute; top: 8px; right: 10px;
-            display: flex; align-items: center; gap: 3px;
-            padding: 2px 7px;
-            background: linear-gradient(90deg, #FBBF24, #F59E0B);
-            color: white; font-size: 8px; font-weight: 800;
-            text-transform: uppercase; letter-spacing: 0.5px;
-            border-radius: 10px;
-            box-shadow: 0 1px 3px rgba(245,158,11,0.35);
-            z-index: 2;
+            position: absolute; top: 10px; right: 12px;
+            width: 18px; height: 18px;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #FBBF24, #F59E0B);
+            color: white; font-size: 10px; font-weight: 900;
+            border-radius: 50%;
+            box-shadow: 0 2px 6px rgba(245,158,11,0.45), 0 0 0 2px rgba(255,255,255,0.6);
+            z-index: 3;
             line-height: 1;
         }
-        .pp-top-badge::before { content: '★'; font-size: 9px; }
+        .pp-top-badge::before { content: '★'; font-size: 10px; }
+        /* Hide the text node — only the star renders */
+        .pp-top-badge { font-size: 0; }
+        .pp-top-badge::before { font-size: 11px; }
         .pp-card-header {
             display: grid;
-            grid-template-columns: auto 1fr auto auto auto;
+            grid-template-columns: auto 1fr auto auto;
             align-items: center;
             gap: 14px;
-            padding: 16px 18px;
+            padding: 18px 22px;
             border-bottom: 1px solid transparent;
             position: relative;
             z-index: 1;
@@ -1369,14 +1369,20 @@
             transition: border-color 0.2s ease, background 0.2s ease;
         }
         .pp-card[aria-expanded="true"] .pp-card-header {
-            border-bottom-color: rgba(0,0,0,0.08);
+            border-bottom-color: rgba(255,255,255,0.15);
         }
+        /* Body is white-on-card: rounded interior panel that pops over the gradient frame */
         .pp-card-body {
             display: none;
             flex-direction: column;
-            gap: 16px;
-            padding: 16px 18px 18px;
+            gap: 18px;
+            margin: 0 12px 12px;
+            padding: 18px 20px 20px;
             position: relative; z-index: 1;
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+            color: #1B2559;
             animation: ppBodyFade 0.25s ease both;
         }
         .pp-card[aria-expanded="true"] .pp-card-body { display: flex; }
@@ -1386,104 +1392,104 @@
         }
         .pp-card-chev {
             display: inline-flex; align-items: center; justify-content: center;
-            width: 22px; height: 22px;
+            width: 26px; height: 26px;
             border-radius: 50%;
-            background: rgba(255,255,255,0.65);
-            color: #1B2559; font-size: 11px; font-weight: 800;
+            background: rgba(255,255,255,0.20);
+            color: white; font-size: 12px; font-weight: 800;
             transition: transform 0.25s ease, background 0.2s ease;
-            border: 1px solid rgba(0,0,0,0.05);
+            border: 1px solid rgba(255,255,255,0.30);
+            backdrop-filter: blur(4px);
         }
-        .pp-card[aria-expanded="true"] .pp-card-chev { transform: rotate(180deg); background: white; }
-        .pp-platform { display: flex; align-items: center; gap: 10px; }
+        .pp-card-header:hover .pp-card-chev { background: rgba(255,255,255,0.32); }
+        .pp-card[aria-expanded="true"] .pp-card-chev { transform: rotate(180deg); }
+        .pp-platform { display: flex; align-items: center; gap: 12px; }
         .pp-platform-icon {
-            width: 36px; height: 36px;
-            border-radius: 10px;
+            width: 40px; height: 40px;
+            border-radius: 12px;
             display: flex; align-items: center; justify-content: center;
-            font-weight: 700; color: white; font-size: 15px;
-            box-shadow: 0 3px 8px rgba(15,23,42,0.18);
+            font-weight: 800; color: white; font-size: 16px;
+            background: rgba(255,255,255,0.20);
+            border: 1px solid rgba(255,255,255,0.30);
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            backdrop-filter: blur(4px);
         }
-        .pp-card.fb .pp-platform-icon { background: linear-gradient(135deg, #1877F2, #4267B2); }
-        .pp-card.ig .pp-platform-icon { background: linear-gradient(135deg, #E1306C, #C13584, #833AB4); }
-        .pp-card.li .pp-platform-icon { background: linear-gradient(135deg, #0A66C2, #004182); }
-        .pp-card.yt .pp-platform-icon { background: linear-gradient(135deg, #FF0000, #CC0000); }
+        /* Icon backgrounds now use a translucent white overlay on top of the card gradient
+           (defined in .pp-platform-icon). The per-platform overrides are intentionally removed. */
         .pp-platform-name {
-            font-size: 16px; font-weight: 800; color: #1B2559; line-height: 1.1;
+            font-size: 17px; font-weight: 800; color: white; line-height: 1.1;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.25);
+            letter-spacing: 0.2px;
         }
         .pp-post-count {
-            font-size: 11px; color: #64748B; line-height: 1.3;
+            font-size: 11px; color: rgba(255,255,255,0.85); line-height: 1.3;
+            font-weight: 500;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.15);
         }
-        /* Follower pill embedded in the card header (replaces standalone followers section).
-           Inherits the platform gradient + shine of the old foll-badge but in a slimmer pill. */
-        .pp-followers {
-            display: flex; flex-direction: column; align-items: flex-end;
-            justify-content: center;
-            padding: 8px 14px;
-            border-radius: 14px;
-            color: white;
-            position: relative;
-            overflow: hidden;
-            min-width: 96px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.10);
+        /* Followers metric row — now lives INSIDE the expanded body (not the header). */
+        .pp-followers-metric {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            background: linear-gradient(90deg, #F8FAFC, #FFFFFF);
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
         }
-        .pp-followers::before {
-            content: ''; position: absolute; top: -50%; left: -150%; width: 200%; height: 200%;
-            background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.35) 45%, rgba(255,255,255,0.1) 50%, transparent 55%);
-            pointer-events: none; animation: badgeShine 4s ease-in-out infinite;
+        .pp-followers-metric-icon { font-size: 18px; }
+        .pp-followers-metric-label {
+            font-size: 10px; font-weight: 800; color: #64748B;
+            text-transform: uppercase; letter-spacing: 0.7px;
         }
-        .pp-card.fb .pp-followers { background: linear-gradient(135deg, #1877F2 0%, #0D47A1 70%, #082F6A 100%); }
-        .pp-card.ig .pp-followers { background: linear-gradient(135deg, #F58529 0%, #DD2A7B 35%, #8134AF 70%, #515BD4 100%); }
-        .pp-card.li .pp-followers { background: linear-gradient(135deg, #0A66C2 0%, #004182 70%, #002D5E 100%); }
-        .pp-card.yt .pp-followers { background: linear-gradient(135deg, #FF0000 0%, #CC0000 70%, #8B0000 100%); }
-        .pp-followers-val {
-            font-size: 17px; font-weight: 900;
+        .pp-followers-metric-mom {
+            font-size: 11px; font-weight: 700; color: #16A34A; margin-top: 1px;
+        }
+        .pp-followers-metric-val {
+            font-size: 22px; font-weight: 900; color: #1B2559;
             font-variant-numeric: tabular-nums;
-            text-shadow: 0 1px 4px rgba(0,0,0,0.30);
-            line-height: 1;
-            position: relative;
-        }
-        .pp-followers-label {
-            font-size: 8px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
-            opacity: 0.92; margin-top: 3px; line-height: 1;
-            position: relative;
-        }
-        .pp-followers-mom {
-            display: inline-block;
-            font-size: 9px; font-weight: 700;
-            background: rgba(255,255,255,0.25);
-            padding: 1px 7px; border-radius: 10px;
-            margin-top: 4px; backdrop-filter: blur(4px);
-            position: relative;
+            letter-spacing: -0.5px;
         }
         @media (max-width: 720px) {
-            .pp-card-header { grid-template-columns: auto 1fr auto auto; gap: 10px; padding: 12px 14px; }
-            .pp-followers { display: none; }
+            .pp-card-header { grid-template-columns: auto 1fr auto auto; gap: 10px; padding: 14px 16px; }
         }
+        /* AHS Score block — sits on the right of the header on the platform gradient */
         .pp-total {
             text-align: right;
-            min-width: 60px;
+            min-width: 62px;
+            padding: 6px 12px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.16);
+            border: 1px solid rgba(255,255,255,0.25);
+            backdrop-filter: blur(4px);
         }
         .pp-total-num {
-            font-size: 28px; font-weight: 900; color: #1B2559; line-height: 1;
+            font-size: 26px; font-weight: 900; color: white; line-height: 1;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.25);
+            font-variant-numeric: tabular-nums;
         }
-        .pp-total-num.tier-strong { color: #15803D; }
-        .pp-total-num.tier-good   { color: #4D7C0F; }
-        .pp-total-num.tier-fair   { color: #A16207; }
-        .pp-total-num.tier-weak   { color: #C2410C; }
-        .pp-total-num.tier-poor   { color: #B91C1C; }
-        .pp-total-num.tier-none   { color: #94A3B8; font-size: 22px; }
+        /* Tier colors no longer recolor the number itself (white on gradient is the look);
+           they recolor the tier pill below for a subtler signal. */
+        .pp-total-num.tier-none   { font-size: 22px; opacity: 0.7; }
         .pp-total-label {
-            font-size: 9px; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;
+            font-size: 9px; color: rgba(255,255,255,0.80); text-transform: uppercase; letter-spacing: 0.6px; margin-top: 3px;
+            font-weight: 700;
         }
         .pp-total-tier {
-            font-size: 9px; font-weight: 700; margin-top: 1px;
-            text-transform: uppercase; letter-spacing: 0.5px;
+            font-size: 9px; font-weight: 800; margin-top: 4px;
+            text-transform: uppercase; letter-spacing: 0.6px;
+            display: inline-block;
+            padding: 2px 7px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.95);
+            color: #1B2559;
         }
         .pp-total-tier.tier-strong { color: #15803D; }
         .pp-total-tier.tier-good   { color: #4D7C0F; }
         .pp-total-tier.tier-fair   { color: #A16207; }
         .pp-total-tier.tier-weak   { color: #C2410C; }
         .pp-total-tier.tier-poor   { color: #B91C1C; }
-        .pp-total-tier.tier-none   { color: #94A3B8; }
+        .pp-total-tier.tier-none   { color: #64748B; background: rgba(255,255,255,0.6); }
         .pp-section-title {
             font-size: 10px; font-weight: 700; color: #64748B;
             text-transform: uppercase; letter-spacing: 0.7px;
@@ -5009,19 +5015,24 @@ function renderPlatformPerformance(data) {
             }
         }
 
-        // Follower count + MoM change for the header badge (was the standalone Followers section)
+        // Follower count + MoM change — now lives inside the expanded body as one of the metrics,
+        // NOT on the front of the card.
         var folCount = (data.audience && data.audience[p.key] && data.audience[p.key].followers) || 0;
         var momPct = (typeof getFollowerMoMChange === 'function') ? getFollowerMoMChange(p.key, folCount) : null;
         var momStr = (momPct === null || isNaN(momPct)) ? null : ((momPct > 0 ? '+' : '') + momPct.toFixed(1) + '%');
-        var followersHtml = '<div class="pp-followers" aria-hidden="false">' +
-                              '<div class="pp-followers-val">' + (folCount > 0 ? folCount.toLocaleString() : '--') + '</div>' +
-                              '<div class="pp-followers-label">Followers</div>' +
-                              (momStr ? '<div class="pp-followers-mom">' + momStr + ' MoM</div>' : '') +
-                            '</div>';
+        var followersMetricHtml =
+            '<div class="pp-followers-metric">' +
+              '<div class="pp-followers-metric-icon">👥</div>' +
+              '<div class="pp-followers-metric-text">' +
+                '<div class="pp-followers-metric-label">Followers</div>' +
+                (momStr ? '<div class="pp-followers-metric-mom">' + momStr + ' MoM</div>' : '') +
+              '</div>' +
+              '<div class="pp-followers-metric-val">' + (folCount > 0 ? folCount.toLocaleString() : '--') + '</div>' +
+            '</div>';
 
         var isOpen = _ppExpanded.has(p.key);
         return '<div class="pp-card ' + p.cls + '" data-platform="' + p.key + '" aria-expanded="' + (isOpen ? 'true' : 'false') + '">' +
-                 (isTop ? '<div class="pp-top-badge">Top</div>' : '') +
+                 (isTop ? '<div class="pp-top-badge" title="Top performer this window">Top</div>' : '') +
                  '<div class="pp-card-header" role="button" tabindex="0" onclick="togglePlatformCard(\'' + p.key + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();togglePlatformCard(\'' + p.key + '\');}" aria-label="Toggle ' + p.name + ' details">' +
                    '<div class="pp-platform">' +
                      '<div class="pp-platform-icon">' + p.icon + '</div>' +
@@ -5030,8 +5041,7 @@ function renderPlatformPerformance(data) {
                        '<div class="pp-post-count">' + postCount + (postCount === 1 ? ' post' : ' posts') + ' this window</div>' +
                      '</div>' +
                    '</div>' +
-                   '<div></div>' + // spacer for grid auto-fit
-                   followersHtml +
+                   '<div></div>' + // spacer cell so AHS pill + chev align right
                    '<div class="pp-total">' +
                      '<div class="pp-total-num ' + ahsTierClass + '">' + (ahsScoreHeader == null ? '--' : ahsScoreHeader) + '</div>' +
                      '<div class="pp-total-label">AHS Score</div>' +
@@ -5040,6 +5050,7 @@ function renderPlatformPerformance(data) {
                    '<div class="pp-card-chev" aria-hidden="true">&#x25BE;</div>' +
                  '</div>' +
                  '<div class="pp-card-body">' +
+                   followersMetricHtml +
                    '<div>' +
                      '<div class="pp-section-title">Engagement</div>' +
                      '<div class="pp-engagement-grid">' + statsHtml + '</div>' +
