@@ -643,10 +643,12 @@
         .gauge-score {
             font-size: 76px; font-weight: 900; line-height: 1;
             letter-spacing: -2px;
-            background: linear-gradient(135deg, #003B71 0%, #0066CC 50%, #22C55E 100%);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            background-clip: text;
-            filter: drop-shadow(0 3px 10px rgba(0,59,113,0.18));
+            /* Solid high-contrast brand navy — much more readable than the prior gradient
+               that faded into light green at the right side of the number. */
+            color: #003B71;
+            text-shadow:
+                0 2px 4px rgba(255,255,255,0.65),  /* lifts off the soft mesh background */
+                0 4px 14px rgba(0,59,113,0.25);
         }
         .gauge-score-ring {
             position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
@@ -1299,6 +1301,8 @@
         .platform-performance {
             display: grid;
             grid-template-columns: 1fr 1fr;
+            grid-auto-rows: min-content;
+            align-items: start;
             gap: 20px;
             margin-top: 20px;
         }
@@ -1407,12 +1411,19 @@
             width: 40px; height: 40px;
             border-radius: 12px;
             display: flex; align-items: center; justify-content: center;
-            font-weight: 800; color: white; font-size: 16px;
+            font-weight: 800; color: white; font-size: 15px;
+            line-height: 1;
+            letter-spacing: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            text-align: center;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
             background: rgba(255,255,255,0.20);
             border: 1px solid rgba(255,255,255,0.30);
-            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
             box-shadow: 0 3px 10px rgba(0,0,0,0.2);
             backdrop-filter: blur(4px);
+            /* Lock the glyph inside a centered baseline so 'in' (LinkedIn) aligns with 'f'/'IG'/'▶' */
+            text-transform: none;
+            box-sizing: border-box;
         }
         /* Icon backgrounds now use a translucent white overlay on top of the card gradient
            (defined in .pp-platform-icon). The per-platform overrides are intentionally removed. */
@@ -1453,24 +1464,38 @@
         @media (max-width: 720px) {
             .pp-card-header { grid-template-columns: auto 1fr auto auto; gap: 10px; padding: 14px 16px; }
         }
-        /* AHS Score block — sits on the right of the header on the platform gradient */
+        /* AHS Score block — sits on the right of the header on the platform gradient.
+           Fixed min-height so cards without a tier pill (LinkedIn when AHS < min posts) still
+           align vertically with cards that have one. */
         .pp-total {
-            text-align: right;
-            min-width: 62px;
+            text-align: center;
+            min-width: 72px;
+            min-height: 66px;
             padding: 6px 12px;
             border-radius: 12px;
             background: rgba(255,255,255,0.16);
             border: 1px solid rgba(255,255,255,0.25);
             backdrop-filter: blur(4px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
         .pp-total-num {
-            font-size: 26px; font-weight: 900; color: white; line-height: 1;
-            text-shadow: 0 1px 4px rgba(0,0,0,0.25);
+            font-size: 26px; font-weight: 900; line-height: 1;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.30);
             font-variant-numeric: tabular-nums;
         }
-        /* Tier colors no longer recolor the number itself (white on gradient is the look);
-           they recolor the tier pill below for a subtler signal. */
-        .pp-total-num.tier-none   { font-size: 22px; opacity: 0.7; }
+        /* Force white regardless of tier class. The global .tier-strong/.tier-good/.tier-fair/
+           .tier-weak/.tier-poor rules use !important so we need to win on specificity AND !important. */
+        .pp-card .pp-total .pp-total-num,
+        .pp-card .pp-total .pp-total-num.tier-strong,
+        .pp-card .pp-total .pp-total-num.tier-good,
+        .pp-card .pp-total .pp-total-num.tier-fair,
+        .pp-card .pp-total .pp-total-num.tier-weak,
+        .pp-card .pp-total .pp-total-num.tier-poor,
+        .pp-card .pp-total .pp-total-num.tier-none { color: #ffffff !important; }
+        .pp-total-num.tier-none   { font-size: 22px; opacity: 0.75; }
         .pp-total-label {
             font-size: 9px; color: rgba(255,255,255,0.80); text-transform: uppercase; letter-spacing: 0.6px; margin-top: 3px;
             font-weight: 700;
@@ -3000,7 +3025,7 @@
             </div>
             <div class="kpi-grid">
                 <button type="button" class="kpi-card pillar-card" data-kpi="reach" data-pillar="reach" onclick="toggleKpiBreakdown(this)" aria-expanded="false">
-                    <div class="pillar-tag"><span class="pillar-icon">📡</span>Reach <span class="pillar-weight">5%</span></div>
+                    <div class="pillar-tag"><span class="pillar-icon">📡</span>Reach <span class="pillar-weight">15%</span></div>
                     <div class="kpi-value" id="kpiReach">0</div>
                     <div class="kpi-label">Audience reached <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
                     <div class="kpi-change" id="kpiReachChange"></div>
@@ -3022,7 +3047,7 @@
                     </div>
                 </button>
                 <button type="button" class="kpi-card pillar-card" data-kpi="comments" data-pillar="sentiment" onclick="toggleKpiBreakdown(this)" aria-expanded="false">
-                    <div class="pillar-tag"><span class="pillar-icon">🧠</span>Sentiment <span class="pillar-weight">40%</span></div>
+                    <div class="pillar-tag"><span class="pillar-icon">🧠</span>Sentiment <span class="pillar-weight">25%</span></div>
                     <div class="kpi-value" id="kpiComments">0</div>
                     <div class="kpi-label">Comments analyzed <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
                     <div class="kpi-change" id="kpiCommentsChange"></div>
@@ -3033,7 +3058,7 @@
                     </div>
                 </button>
                 <button type="button" class="kpi-card pillar-card" data-kpi="views" data-pillar="attention" onclick="toggleKpiBreakdown(this)" aria-expanded="false">
-                    <div class="pillar-tag"><span class="pillar-icon">👁️</span>Attention <span class="pillar-weight">15%</span></div>
+                    <div class="pillar-tag"><span class="pillar-icon">👁️</span>Attention <span class="pillar-weight">20%</span></div>
                     <div class="kpi-value" id="kpiViews">0</div>
                     <div class="kpi-label">Video views <span class="kpi-chev" aria-hidden="true">&#x25BE;</span></div>
                     <div class="kpi-change" id="kpiViewsChange"></div>
@@ -4891,9 +4916,9 @@ function renderPlatformPerformance(data) {
         if (ppAhs && ppAhs.score !== null) {
             const pillarsList = [
                 { name: 'Engagement', weight: 40, val: ppAhs.pillars.engagement },
-                { name: 'Sentiment',  weight: 40, val: ppAhs.pillars.sentiment },
-                { name: 'Reach',      weight: 5,  val: ppAhs.pillars.reach },
-                { name: 'Attention',  weight: 15, val: ppAhs.pillars.attention }
+                { name: 'Sentiment',  weight: 25, val: ppAhs.pillars.sentiment },
+                { name: 'Reach',      weight: 15, val: ppAhs.pillars.reach },
+                { name: 'Attention',  weight: 20, val: ppAhs.pillars.attention }
             ];
             const tier = ppAhs.score >= 80 ? 'tier-strong'
                        : ppAhs.score >= 65 ? 'tier-good'
@@ -5422,14 +5447,17 @@ function ahsPillarGrowth(platformKey, followers) {
     return Math.max(0, Math.min(100, Math.round(score)));
 }
 // AHS composite — 4-pillar weighted score (totals 100% by construction).
-// Weights set 2026-05-04 for MGE utility-marketing context:
-//   Engagement 40%   — audience action volume drives the dashboard's primary purpose
-//   Sentiment  40%   — perception/trust matters disproportionately for utilities
-//   Reach       5%   — utility reach less strategic than engagement quality
-//   Attention  15%   — video depth signal weighted moderately (skewed by platform mix)
+// Weights rebalanced 2026-05-12 per Taylor for MGE utility-marketing context:
+//   Engagement 40%   — audience action volume; clearest signal of audience health
+//   Sentiment  25%   — still important, but MGE comment volumes are low so a few
+//                      negative comments shouldn't dominate the score (was 40%)
+//   Attention  20%   — video depth; bumped up to reflect content distribution mix
+//   Reach      15%   — bumped up so reach contributes meaningfully (was 5%)
+// History: 2026-05-04 -> { eng 40, sent 40, reach 5, attn 15 }
+//          2026-05-12 -> { eng 40, sent 25, reach 15, attn 20 } (current)
 // If a pillar is null (e.g., no posts in window for engagement), we redistribute its weight
 // across the remaining pillars proportionally so the score stays comparable.
-const AHS_WEIGHTS = { engagement: 40, sentiment: 40, reach: 5, attention: 15 };
+const AHS_WEIGHTS = { engagement: 40, sentiment: 25, reach: 15, attention: 20 };
 function ahsComposite(pillars) {
     let num = 0, den = 0;
     Object.keys(AHS_WEIGHTS).forEach(k => {
@@ -5516,7 +5544,7 @@ function showAhsBreakdown() {
             <div class="ahs-formula-box">
                 Overall MGE AHS = (Engagement &times; 0.40) + (Sentiment &times; 0.40) + (Reach &times; 0.05) + (Attention &times; 0.15)
             </div>
-            <p style="color:#475569; margin:8px 0 0;">A 0&ndash;100 composite of <strong>four weighted pillars</strong>, computed from <strong>MGE's cumulative data across all platforms</strong>. Engagement and Sentiment carry the most weight (40% each); Reach is intentionally light (5%) since utility reach matters less than engagement quality; Attention (video views) gets 15% to capture content depth.</p>
+            <p style="color:#475569; margin:8px 0 0;">A 0&ndash;100 composite of <strong>four weighted pillars</strong>, computed from <strong>MGE's cumulative data across all platforms</strong>. Engagement leads at 40% (the clearest signal of audience health); Sentiment is 25% (still important, but MGE comment volumes are low so we don&rsquo;t want one negative streak to dominate the score); Attention (video views) is 20% to capture content depth; Reach rounds it out at 15%.</p>
             <p style="color:#475569; margin:8px 0 0;"><strong>No follower weighting:</strong> follower counts are not factored into AHS scoring. The overall score reflects the raw cumulative metrics of each pillar, not a per-platform composite that's been follower-weighted.</p>
             <p style="color:#475569; margin:8px 0 0;"><strong>Per-platform AHS (the cards in Platform Performance) is reference only.</strong> Each platform card's score is computed the same way but using only that platform's data &mdash; useful for spotting which platform is driving overall trend, but does NOT roll up into the gauge.</p>
             <p style="color:#475569; margin:8px 0 0;"><strong>Baseline-relative scoring:</strong> Engagement, Reach, and Attention pillars compare current-period rates to MGE's own running average. Reach + Attention are normalized to <strong>per-day rates</strong> so baselines are comparable across any selected window length (7D / 28D / 90D / custom). Sentiment uses absolute per-comment AI scores (already calibrated against real text). Baselines accumulate locally with each dashboard view (~26 weeks of memory).</p>
@@ -5540,7 +5568,7 @@ function showAhsBreakdown() {
                     </div>
                 </div>
                 <div class="ahs-pillar-box">
-                    <div class="ahs-pillar-title">Sentiment &mdash; 40%</div>
+                    <div class="ahs-pillar-title">Sentiment &mdash; 25%</div>
                     <p>Average of per-comment sentiment scores. Each comment is AI-scored by Claude Haiku 4.5 with full post context + parent-comment context (for replies). Pulled toward neutral when the sample is small.</p>
                     <div class="ahs-formula-box" style="font-size:10.5px; margin:6px 0;">
                         avgScore = mean(per-comment AI score)<br>
@@ -5550,7 +5578,7 @@ function showAhsBreakdown() {
                     <p style="color:#64748B; margin:0;">No baseline calibration &mdash; the AI score is already calibrated against real comment text.</p>
                 </div>
                 <div class="ahs-pillar-box">
-                    <div class="ahs-pillar-title">Reach &mdash; 5%</div>
+                    <div class="ahs-pillar-title">Reach &mdash; 15%</div>
                     <p>Window reach normalized to a per-day rate, scored relative to MGE's running average reach-per-day. No follower ratio &mdash; raw reach divided by days in window.</p>
                     <div class="ahs-formula-box" style="font-size:10.5px; margin:6px 0;">
                         perDay = totalReach &divide; periodDays<br>
@@ -5560,7 +5588,7 @@ function showAhsBreakdown() {
                     <p style="color:#64748B; margin:0;">Weighted lightly because utility reach matters less than engagement quality.</p>
                 </div>
                 <div class="ahs-pillar-box">
-                    <div class="ahs-pillar-title">Attention &mdash; 15%</div>
+                    <div class="ahs-pillar-title">Attention &mdash; 20%</div>
                     <p>Video views per day, scored relative to MGE's running average. Captures depth of consumption. Period-normalized so 7D and 28D windows are comparable.</p>
                     <div class="ahs-formula-box" style="font-size:10.5px; margin:6px 0;">
                         perDay = videoViews &divide; periodDays<br>
@@ -5813,9 +5841,9 @@ function renderSentiment(data) {
     if (pillarRow) {
         const chips = [
             { name: 'Engagement', weight: '40%', val: pillarAvgs.engagement },
-            { name: 'Sentiment',  weight: '40%', val: pillarAvgs.sentiment },
-            { name: 'Reach',      weight: '5%',  val: pillarAvgs.reach },
-            { name: 'Attention',  weight: '15%', val: pillarAvgs.attention }
+            { name: 'Sentiment',  weight: '25%', val: pillarAvgs.sentiment },
+            { name: 'Reach',      weight: '15%', val: pillarAvgs.reach },
+            { name: 'Attention',  weight: '20%', val: pillarAvgs.attention }
         ];
         pillarRow.innerHTML = chips.map(c =>
             '<span class="gauge-pillar-chip ' + pillarScoreClass(c.val) + '">' +
