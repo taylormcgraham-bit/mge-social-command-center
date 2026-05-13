@@ -2389,6 +2389,108 @@
             z-index: 2;
         }
         .pulse-modal-close:hover { background: #e2e8f0; color: #0f172a; transform: scale(1.06); }
+
+        /* Export button — sits to the LEFT of the close button in the modal top-right corner.
+           Triggers window.print() with a print-only stylesheet that produces a PDF-ready layout. */
+        .pulse-modal-export {
+            position: absolute; top: 14px; right: 62px;
+            background: rgba(241,245,249,0.85); border: none;
+            color: #003B71; cursor: pointer;
+            height: 36px; padding: 0 14px; border-radius: 18px;
+            font-size: 12px; font-weight: 600; letter-spacing: 0.02em;
+            display: inline-flex; align-items: center; gap: 6px;
+            transition: background 0.15s, color 0.15s, transform 0.15s, box-shadow 0.15s;
+            z-index: 2;
+        }
+        .pulse-modal-export:hover {
+            background: #003B71; color: #fff; transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,59,113,0.25);
+        }
+        .pulse-modal-export svg { width: 14px; height: 14px; }
+
+        /* ============================================================
+           PRINT / EXPORT TO PDF STYLES
+           When body.pulse-printing is set, hide everything except the open
+           pulse modal and lay it out as a clean printable report.
+           ============================================================ */
+        body.pulse-printing > *:not(#pulseModal) { display: none !important; }
+        body.pulse-printing #pulseModal {
+            position: static !important;
+            display: block !important;
+            background: #fff !important;
+            inset: auto !important;
+            padding: 0 !important;
+            overflow: visible !important;
+        }
+        body.pulse-printing .pulse-modal-card {
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            max-width: 100% !important;
+            max-height: none !important;
+            margin: 0 !important;
+            overflow: visible !important;
+            animation: none !important;
+        }
+        body.pulse-printing .pulse-modal-close,
+        body.pulse-printing .pulse-modal-export { display: none !important; }
+        body.pulse-printing .pulse-modal-section { animation: none !important; opacity: 1 !important; }
+
+        @media print {
+            @page { size: letter; margin: 0.6in 0.5in; }
+            html, body { background: #fff !important; }
+            body > *:not(#pulseModal) { display: none !important; }
+            #pulseModal {
+                position: static !important;
+                display: block !important;
+                background: #fff !important;
+                padding: 0 !important;
+                overflow: visible !important;
+            }
+            .pulse-modal-card {
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                max-width: 100% !important;
+                max-height: none !important;
+                margin: 0 !important;
+                animation: none !important;
+                overflow: visible !important;
+            }
+            .pulse-modal-close,
+            .pulse-modal-export { display: none !important; }
+            .pulse-modal-section {
+                animation: none !important; opacity: 1 !important;
+                page-break-inside: avoid;
+            }
+            .pulse-modal-source-card { page-break-inside: avoid; }
+            .pulse-modal-comment { page-break-inside: avoid; }
+            /* Force background colors to print (most browsers respect this) */
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+            /* Letterhead-style print header (printed at top of every page) */
+            .pulse-print-header { display: block !important; }
+        }
+        .pulse-print-header { display: none; }
+        body.pulse-printing .pulse-print-header {
+            display: block !important;
+            padding: 14px 38px 10px; border-bottom: 2px solid #003B71;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+        }
+        .pulse-print-header-row {
+            display: flex; justify-content: space-between; align-items: baseline;
+        }
+        .pulse-print-header-brand {
+            font-size: 13px; font-weight: 700; color: #003B71; letter-spacing: 0.04em; text-transform: uppercase;
+        }
+        .pulse-print-header-date { font-size: 11px; color: #64748B; }
+        .pulse-print-header-sub {
+            font-size: 11px; color: #475569; margin-top: 2px;
+        }
+        .pulse-print-footer { display: none; }
+        body.pulse-printing .pulse-print-footer {
+            display: block !important;
+            padding: 12px 38px; border-top: 1px solid #e2e8f0;
+            font-size: 10px; color: #94A3B8; text-align: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+        }
         /* Header banner: sentiment-tinted gradient, large hero feel */
         .pulse-modal-header {
             position: relative;
@@ -3480,6 +3582,20 @@
 <!-- Pulse modal -->
 <div id="pulseModal" class="pulse-modal" style="display:none;" onclick="closePulseModal(event)">
     <div class="pulse-modal-card" onclick="event.stopPropagation()">
+        <!-- Print-only letterhead (hidden on screen, shown when exporting to PDF) -->
+        <div class="pulse-print-header">
+            <div class="pulse-print-header-row">
+                <div class="pulse-print-header-brand">MGE &middot; Audience Pulse Report</div>
+                <div class="pulse-print-header-date" id="pulsePrintDate"></div>
+            </div>
+            <div class="pulse-print-header-sub">Madison Gas and Electric &mdash; Digital Marketing Analytics</div>
+        </div>
+        <button class="pulse-modal-export" onclick="exportPulseModal()" aria-label="Export report to PDF" title="Export this report as PDF">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M8 2v8m0 0l-3-3m3 3l3-3M3 12v1a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1"/>
+            </svg>
+            Export PDF
+        </button>
         <button class="pulse-modal-close" onclick="closePulseModal()" aria-label="Close">&times;</button>
         <div class="pulse-modal-header">
             <div class="pulse-modal-sentiment" id="pulseModalSentiment"></div>
@@ -3521,6 +3637,10 @@
         <div class="pulse-modal-section">
             <div class="pulse-modal-label">Top sources</div>
             <div class="pulse-modal-sources" id="pulseModalSources"></div>
+        </div>
+        <!-- Print-only footer -->
+        <div class="pulse-print-footer">
+            Generated from MGE Social Command Center &middot; mge-social-command-center.onrender.com
         </div>
     </div>
 </div>
@@ -8962,6 +9082,53 @@ async function renderInsightsPanel(data, previousData, force) {
         }
         var modal = document.getElementById('pulseModal');
         if (modal) modal.style.display = 'none';
+    };
+
+    // ============================================================
+    // EXPORT PULSE MODAL TO PDF
+    // Uses the browser's native print dialog with a print-only stylesheet
+    // (body.pulse-printing + @media print rules above) to render the open
+    // modal as a clean PDF-ready report. No external libraries; user picks
+    // "Save as PDF" from the print dialog on macOS / Windows / Linux.
+    // ============================================================
+    window.exportPulseModal = function() {
+        var modal = document.getElementById('pulseModal');
+        if (!modal || modal.style.display === 'none') return;
+
+        // Fill the print-only date stamp
+        var dateEl = document.getElementById('pulsePrintDate');
+        if (dateEl) {
+            dateEl.textContent = new Date().toLocaleDateString('en-US', {
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+            });
+        }
+
+        // Set the document title — most browsers use this as the default PDF filename
+        var titleEl = document.getElementById('pulseModalTitle');
+        var themeLabel = (titleEl && titleEl.textContent && titleEl.textContent.trim()) || 'Theme';
+        var dateStr = new Date().toISOString().slice(0, 10);
+        var prevTitle = document.title;
+        document.title = 'MGE Audience Pulse - ' + themeLabel + ' - ' + dateStr;
+
+        // Tag body so print stylesheet hides everything else (also helps print preview match)
+        document.body.classList.add('pulse-printing');
+
+        // Slight delay so the DOM repaints with the print classes before the dialog opens
+        setTimeout(function() {
+            window.print();
+            // Cleanup runs after the print dialog closes (or is cancelled). Use both an
+            // afterprint listener AND a fallback timeout in case afterprint doesn't fire.
+            var cleaned = false;
+            function cleanup() {
+                if (cleaned) return;
+                cleaned = true;
+                document.body.classList.remove('pulse-printing');
+                document.title = prevTitle;
+                window.removeEventListener('afterprint', cleanup);
+            }
+            window.addEventListener('afterprint', cleanup);
+            setTimeout(cleanup, 5000);
+        }, 60);
     };
 
     // ESC closes modal
