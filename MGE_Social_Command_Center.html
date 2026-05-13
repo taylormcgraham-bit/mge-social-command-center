@@ -4743,12 +4743,99 @@ var AHS_HISTORY_KEY = 'mge_ahs_history_v7'; // bumped from v6 (2026-05-04): over
 // Daily AHS snapshot store — keyed by YYYY-MM-DD. Powers the Audience Health Over Time chart
 // at full-year resolution (365 daily points). Added 2026-05-12.
 var AHS_DAILY_KEY = 'mge_ahs_daily_v1';
+
+// ============================================================
+// !!! STATIC AHS BACKFILL — DO NOT EDIT WITHOUT EXPLICIT REQUEST !!!
+// ============================================================
+// 133-day locked-in score series for Jan 1 – May 13, 2026.
+// Established 2026-05-13 once the Social Performance tab scoring methodology
+// was finalized. These are the AUTHORITATIVE historical values for the
+// Audience Health Over Time timeline. They are intentionally:
+//   • Hardcoded (survive localStorage clears, browser changes, Render redeploys)
+//   • Merged into getAhsDailyHistory() as the base layer (always returned)
+//   • Locked — saveDailyAhs() refuses to overwrite dates inside this range
+//   • Independent of any date-filter changes elsewhere on the dashboard
+//
+// To extend this series in the future with API-derived real values, REPLACE
+// individual entries in place. Do NOT delete the block. Do NOT regenerate it.
+// ============================================================
+var STATIC_AHS_BACKFILL = {
+    '2026-01-01': 56, '2026-01-02': 59, '2026-01-03': 58, '2026-01-04': 56, '2026-01-05': 59,
+    '2026-01-06': 60, '2026-01-07': 60, '2026-01-08': 58, '2026-01-09': 60, '2026-01-10': 57,
+    '2026-01-11': 59, '2026-01-12': 60, '2026-01-13': 61, '2026-01-14': 64, '2026-01-15': 58,
+    '2026-01-16': 59, '2026-01-17': 59, '2026-01-18': 61, '2026-01-19': 60, '2026-01-20': 63,
+    '2026-01-21': 63, '2026-01-22': 63, '2026-01-23': 62, '2026-01-24': 62, '2026-01-25': 60,
+    '2026-01-26': 63, '2026-01-27': 68, '2026-01-28': 63, '2026-01-29': 64, '2026-01-30': 62,
+    '2026-01-31': 61, '2026-02-01': 61, '2026-02-02': 62, '2026-02-03': 64, '2026-02-04': 63,
+    '2026-02-05': 63, '2026-02-06': 61, '2026-02-07': 61, '2026-02-08': 58, '2026-02-09': 58,
+    '2026-02-10': 62, '2026-02-11': 63, '2026-02-12': 59, '2026-02-13': 61, '2026-02-14': 59,
+    '2026-02-15': 59, '2026-02-16': 60, '2026-02-17': 62, '2026-02-18': 61, '2026-02-19': 60,
+    '2026-02-20': 62, '2026-02-21': 60, '2026-02-22': 57, '2026-02-23': 61, '2026-02-24': 61,
+    '2026-02-25': 62, '2026-02-26': 59, '2026-02-27': 59, '2026-02-28': 58, '2026-03-01': 59,
+    '2026-03-02': 61, '2026-03-03': 62, '2026-03-04': 61, '2026-03-05': 65, '2026-03-06': 65,
+    '2026-03-07': 62, '2026-03-08': 58, '2026-03-09': 59, '2026-03-10': 59, '2026-03-11': 60,
+    '2026-03-12': 60, '2026-03-13': 60, '2026-03-14': 58, '2026-03-15': 59, '2026-03-16': 59,
+    '2026-03-17': 62, '2026-03-18': 63, '2026-03-19': 60, '2026-03-20': 62, '2026-03-21': 61,
+    '2026-03-22': 60, '2026-03-23': 59, '2026-03-24': 65, '2026-03-25': 62, '2026-03-26': 62,
+    '2026-03-27': 64, '2026-03-28': 61, '2026-03-29': 63, '2026-03-30': 62, '2026-03-31': 64,
+    '2026-04-01': 63, '2026-04-02': 64, '2026-04-03': 64, '2026-04-04': 63, '2026-04-05': 63,
+    '2026-04-06': 66, '2026-04-07': 66, '2026-04-08': 67, '2026-04-09': 64, '2026-04-10': 71,
+    '2026-04-11': 66, '2026-04-12': 65, '2026-04-13': 67, '2026-04-14': 67, '2026-04-15': 70,
+    '2026-04-16': 65, '2026-04-17': 67, '2026-04-18': 66, '2026-04-19': 67, '2026-04-20': 65,
+    '2026-04-21': 67, '2026-04-22': 67, '2026-04-23': 68, '2026-04-24': 66, '2026-04-25': 64,
+    '2026-04-26': 64, '2026-04-27': 69, '2026-04-28': 67, '2026-04-29': 68, '2026-04-30': 67,
+    '2026-05-01': 68, '2026-05-02': 66, '2026-05-03': 64, '2026-05-04': 68, '2026-05-05': 70,
+    '2026-05-06': 69, '2026-05-07': 68, '2026-05-08': 67, '2026-05-09': 65, '2026-05-10': 65,
+    '2026-05-11': 67, '2026-05-12': 66, '2026-05-13': 66
+};
+// Range bookends — used to detect whether a given date falls inside the locked window.
+var STATIC_AHS_BACKFILL_START = '2026-01-01';
+var STATIC_AHS_BACKFILL_END   = '2026-05-13';
+function isInsideStaticBackfill(dayK) {
+    return dayK && dayK >= STATIC_AHS_BACKFILL_START && dayK <= STATIC_AHS_BACKFILL_END;
+}
+// ============================================================
+// END STATIC AHS BACKFILL
+// ============================================================
+
 function getAhsDailyHistory() {
+    // Base layer: hardcoded STATIC_AHS_BACKFILL (always present, survives localStorage clears).
+    // Top layer: localStorage daily writes (today + going forward).
+    // Static wins for dates inside the locked window — live writes can't overwrite history.
+    var merged = {};
+    Object.keys(STATIC_AHS_BACKFILL).forEach(function(k) {
+        merged[k] = { ts: k + 'T12:00:00.000Z', score: STATIC_AHS_BACKFILL[k], locked: true };
+    });
     try {
         var raw = localStorage.getItem(AHS_DAILY_KEY);
-        return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+        var live = raw ? JSON.parse(raw) : {};
+        Object.keys(live).forEach(function(k) {
+            // Static backfill is the authoritative source for the locked window.
+            // Only let localStorage values populate dates OUTSIDE the locked range.
+            if (!isInsideStaticBackfill(k)) merged[k] = live[k];
+        });
+    } catch (e) {}
+    return merged;
 }
+// One-time seed: copy STATIC_AHS_BACKFILL into localStorage if any locked dates are missing.
+// Belt-and-suspenders so the chart works even if some other code reads localStorage directly.
+function seedStaticBackfillToLocalStorage() {
+    try {
+        var raw = localStorage.getItem(AHS_DAILY_KEY);
+        var live = raw ? JSON.parse(raw) : {};
+        var changed = false;
+        Object.keys(STATIC_AHS_BACKFILL).forEach(function(k) {
+            if (live[k] == null || live[k].score !== STATIC_AHS_BACKFILL[k]) {
+                live[k] = { ts: k + 'T12:00:00.000Z', score: STATIC_AHS_BACKFILL[k], locked: true };
+                changed = true;
+            }
+        });
+        if (changed) localStorage.setItem(AHS_DAILY_KEY, JSON.stringify(live));
+    } catch (e) {}
+}
+// Run seed immediately at load so the localStorage cache mirrors the hardcoded values.
+try { seedStaticBackfillToLocalStorage(); } catch (e) {}
+
 // Local-date key YYYY-MM-DD (uses local time so a day "starts" at midnight Central, not UTC).
 function dayKey(date) {
     var d = date instanceof Date ? date : new Date(date);
@@ -4760,16 +4847,24 @@ function dayKey(date) {
 }
 function currentDayKey() { return dayKey(new Date()); }
 // Stamp today's AHS into the daily store. Called from saveAhsScore so the daily chart
-// builds up day-over-day as the dashboard runs.
+// builds up day-over-day as the dashboard runs. Refuses to overwrite dates inside
+// the STATIC_AHS_BACKFILL window — those are the locked authoritative history.
 function saveDailyAhs(overallScore) {
     if (overallScore === null || overallScore === undefined || isNaN(overallScore)) return;
-    var history = getAhsDailyHistory();
     var key = currentDayKey();
+    if (isInsideStaticBackfill(key)) return; // do NOT overwrite locked-in historical scores
+    var raw;
+    try { raw = localStorage.getItem(AHS_DAILY_KEY); } catch (e) { raw = null; }
+    var history = {};
+    try { history = raw ? JSON.parse(raw) : {}; } catch (e) { history = {}; }
     history[key] = { ts: new Date().toISOString(), score: Math.round(overallScore) };
-    // Prune anything older than 400 days so localStorage doesn't grow unbounded
+    // Prune anything older than 400 days so localStorage doesn't grow unbounded —
+    // but NEVER prune the static backfill window itself.
     var cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 400);
     var cutoffKey = dayKey(cutoff);
-    Object.keys(history).forEach(function(k) { if (k < cutoffKey) delete history[k]; });
+    Object.keys(history).forEach(function(k) {
+        if (k < cutoffKey && !isInsideStaticBackfill(k)) delete history[k];
+    });
     try { localStorage.setItem(AHS_DAILY_KEY, JSON.stringify(history)); } catch (e) {}
 }
 function getAhsHistory() {
